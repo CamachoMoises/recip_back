@@ -1,14 +1,21 @@
 import { Sequelize, DataTypes } from 'sequelize';
-import loadUser from './models/user.js';
+// import loadUser from './models/user.js';
+import loadParticipant from './models/participant.js';
 
-const sequelize = new Sequelize('luna_db', 'moises', '00000', {
-	host: '127.0.0.1',
-	dialect: 'mysql',
-	port: 3307,
-});
+const sequelize = new Sequelize(
+	'bgoescmoyuocwga4lecd',
+	'uy0mqaudoaohlgll',
+	'9wED4qXlLDQZ3NWMwgKZ',
+	{
+		host: 'bgoescmoyuocwga4lecd-mysql.services.clever-cloud.com',
+		dialect: 'mysql',
+		port: 3306,
+	}
+);
 
-const User = loadUser(sequelize, DataTypes);
+// const User = loadUser(sequelize, DataTypes);
+const Participant = loadParticipant(sequelize, DataTypes);
 
-const models = { User };
+const models = { Participant };
 
 export { sequelize, models };

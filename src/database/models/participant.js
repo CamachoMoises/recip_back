@@ -1,5 +1,5 @@
 export default (sequelize, DataTypes) => {
-	const user = sequelize.define('User', {
+	const participant = sequelize.define('participant', {
 		id: {
 			type: DataTypes.INTEGER,
 			primaryKey: true,
@@ -11,27 +11,28 @@ export default (sequelize, DataTypes) => {
 			allowNull: false,
 			unique: true,
 		},
-		username: {
-			type: DataTypes.STRING,
+		firstName: {
+			type: DataTypes.STRING(255),
 			allowNull: false,
-			unique: true,
+		},
+		lastName: {
+			type: DataTypes.STRING(255),
+			// allowNull: false
+		},
+		docNumber: {
+			type: DataTypes.INTEGER,
+			allowNull: false,
 		},
 		email: {
-			type: DataTypes.TEXT,
+			type: DataTypes.STRING(255),
 			// allowNull: false,
 			unique: true,
 		},
-		firstName: {
-			type: DataTypes.TEXT,
-			// allowNull: false
-		},
-		lastName: {
-			type: DataTypes.TEXT,
-			// allowNull: false
-		},
-		password: {
-			type: DataTypes.STRING,
-			allowNull: false,
+		phone: {
+			type: DataTypes.STRING(255),
+			// allowNull: false,
+
+			unique: true,
 		},
 		created_at: {
 			type: DataTypes.DATE,
@@ -42,6 +43,5 @@ export default (sequelize, DataTypes) => {
 			defaultValue: sequelize.NOW,
 		},
 	});
-
-	return user;
+	return participant;
 };
