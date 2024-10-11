@@ -6,25 +6,18 @@ import {
 	getAllParticipants,
 } from './database/repositories/participants.js';
 import { createParticipantShema } from './database/imput_validation/participant.js';
+import multer from 'multer';
 const app = express();
-
-token('body', (req) => {
-	if (req.body.username) {
-		return JSON.stringify(req.body);
-	}
-	return 'not body';
-});
-token('url', (req) => {
-	return req.url;
-});
-app.use(
-	morgan(
-		':method :url :status :res[content-length] - :response-time ms :body'
-	)
-);
+const upload = multer();
+app.use(morgan('dev'));
+// app.use(
+// 	morgan(
+// 		':method :url :status :res[content-length] - :response-time ms :body'
+// 	)
+// );
+app.use(urlencoded({ extended: true }));
 app.use(json());
 // app.use(raw());
-// app.use(urlencoded({ extended: true }));
 // app.use(cors());
 
 app.get('/participants', async (req, res) => {
@@ -37,8 +30,11 @@ app.get('/participants', async (req, res) => {
 	}
 });
 
-app.post('/participant', async (req, res) => {
-	console.log(req.params, req.body, 'ojo');
+app.post('/participant', upload.none(), async (req, res) => {
+	console.log(req.body, 'ojo');
+	req.on('data', (chunk) => {
+		console.log('Datos crudos:', chunk.toString());
+	});
 	const { error, value } = createParticipantShema.validate(req.body);
 
 	if (error) {
