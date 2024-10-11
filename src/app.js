@@ -3,7 +3,9 @@ import cors from 'cors';
 import morgan, { token } from 'morgan';
 import {
 	createParticipant,
+	edictParticipant,
 	getAllParticipants,
+	getParticipantByUUID,
 } from './database/repositories/participants.js';
 import { createParticipantShema } from './database/imput_validation/participant.js';
 import multer from 'multer';
@@ -50,6 +52,60 @@ app.post('/participant', upload.none(), async (req, res) => {
 			phone,
 		});
 		res.status(201).send(participant);
+	} catch (error) {
+		console.log(error);
+		res.status(500).send('Internal Server Error');
+	}
+});
+app.get('/participant/:uuid', async (req, res) => {
+	const uuid = req.params.uuid;
+	try {
+		const participant = await getParticipantByUUID({ uuid: uuid });
+		if (participant) {
+			return res.status(200).json(participant);
+		} else {
+			return res
+				.status(404)
+				.json({ message: 'Participant not found' });
+		}
+	} catch (error) {
+		console.log(error);
+		res.status(500).send('Internal Server Error');
+	}
+});
+app.put('/participant', upload.none(), async (req, res) => {
+	console.log(req.body, 'ojo');
+	req.on('data', (chunk) => {
+		console.log('Datos crudos:', chunk.toString());
+	});
+	const { error, value } = createParticipantShema.validate(req.body);
+
+	if (error) {
+		console.log(error);
+		return res.status(400).send('Input Validation Error');
+	}
+	const { firstName, lastName, docNumber, email, phone, uuid } =
+		value;
+	try {
+		const participant = await getParticipantByUUID({
+			uuid: uuid,
+		});
+
+		if (participant) {
+			const participantedit = await edictParticipant({
+				uuid,
+				newFirstName: firstName,
+				newLastName: lastName,
+				newDocNumber: docNumber,
+				newEmail: email,
+				newPhone: phone,
+			});
+			res.status(201).send(participantedit);
+		} else {
+			return res
+				.status(404)
+				.json({ message: 'Participant not found' });
+		}
 	} catch (error) {
 		console.log(error);
 		res.status(500).send('Internal Server Error');

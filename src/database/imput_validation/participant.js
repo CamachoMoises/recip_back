@@ -5,7 +5,8 @@ const createParticipantShema = Joi.object({
 	lastName: Joi.string().required(),
 	docNumber: Joi.number().required(),
 	email: Joi.string(),
-	phone: Joi.string().max(14),
+	phone: Joi.string().max(20),
+	uuid: Joi.string(),
 });
 
 export { createParticipantShema };

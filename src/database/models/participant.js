@@ -22,6 +22,7 @@ export default (sequelize, DataTypes) => {
 		docNumber: {
 			type: DataTypes.INTEGER,
 			allowNull: false,
+			unique: true,
 		},
 		email: {
 			type: DataTypes.STRING(255),
