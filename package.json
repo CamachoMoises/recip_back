@@ -23,6 +23,7 @@
 	"devDependencies": {
 		"@eslint/js": "^9.12.0",
 		"eslint": "^9.12.0",
-		"globals": "^15.10.0"
+		"globals": "^15.10.0",
+		"sequelize-auto": "^0.8.8"
 	}
 }
