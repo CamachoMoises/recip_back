@@ -32,7 +32,6 @@ export default (sequelize, DataTypes) => {
 		phone: {
 			type: DataTypes.STRING(255),
 			// allowNull: false,
-
 			unique: true,
 		},
 		created_at: {

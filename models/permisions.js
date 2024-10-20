@@ -1,6 +1,6 @@
 const Sequelize = require('sequelize');
 module.exports = function(sequelize, DataTypes) {
-  return sequelize.define('group', {
+  return sequelize.define('permisions', {
     id: {
       autoIncrement: true,
       type: DataTypes.INTEGER,
@@ -8,17 +8,25 @@ module.exports = function(sequelize, DataTypes) {
       primaryKey: true
     },
     name: {
-      type: DataTypes.STRING(45),
-      allowNull: true
+      type: DataTypes.STRING(500),
+      allowNull: false
     },
-    is_active: {
-      type: DataTypes.BOOLEAN,
+    module_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'module',
+        key: 'id'
+      }
+    },
+    status: {
+      type: DataTypes.TINYINT,
       allowNull: true,
       defaultValue: 1
     }
   }, {
     sequelize,
-    tableName: 'group',
+    tableName: 'permisions',
     timestamps: true,
     indexes: [
       {
@@ -27,6 +35,13 @@ module.exports = function(sequelize, DataTypes) {
         using: "BTREE",
         fields: [
           { name: "id" },
+        ]
+      },
+      {
+        name: "fk_permisions_module1_idx",
+        using: "BTREE",
+        fields: [
+          { name: "module_id" },
         ]
       },
     ]

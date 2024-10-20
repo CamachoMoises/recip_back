@@ -6,7 +6,7 @@ async function assertDbConnection() {
 	try {
 		await sequelize.authenticate();
 	} catch (error) {
-		console.log(error);
+		console.log('sequelizee error !!!!', error);
 	}
 }
 

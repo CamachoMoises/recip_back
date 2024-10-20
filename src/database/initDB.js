@@ -1,6 +1,7 @@
 import { Sequelize, DataTypes } from 'sequelize';
 // import loadUser from './models/user.js';
 import loadParticipant from './models/participant.js';
+import loadGroup from './models/group.js';
 
 const sequelize = new Sequelize('recip_db', 'moises', '0000', {
 	host: 'localhost',
@@ -9,8 +10,11 @@ const sequelize = new Sequelize('recip_db', 'moises', '0000', {
 });
 
 // const User = loadUser(sequelize, DataTypes);
+
 const Participant = loadParticipant(sequelize, DataTypes);
 
-const models = { Participant };
+const Group = loadGroup(sequelize, DataTypes);
+
+const models = { Participant, Group };
 
 export { sequelize, models };

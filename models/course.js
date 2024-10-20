@@ -1,6 +1,6 @@
 const Sequelize = require('sequelize');
 module.exports = function(sequelize, DataTypes) {
-  return sequelize.define('group', {
+  return sequelize.define('course', {
     id: {
       autoIncrement: true,
       type: DataTypes.INTEGER,
@@ -8,17 +8,26 @@ module.exports = function(sequelize, DataTypes) {
       primaryKey: true
     },
     name: {
-      type: DataTypes.STRING(45),
-      allowNull: true
+      type: DataTypes.STRING(500),
+      allowNull: false
     },
-    is_active: {
+    hours: {
+      type: DataTypes.FLOAT,
+      allowNull: true,
+      defaultValue: 0
+    },
+    type: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    status: {
       type: DataTypes.BOOLEAN,
       allowNull: true,
       defaultValue: 1
     }
   }, {
     sequelize,
-    tableName: 'group',
+    tableName: 'course',
     timestamps: true,
     indexes: [
       {
