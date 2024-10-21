@@ -10,6 +10,7 @@ import {
 import { createParticipantShema } from './database/imput_validation/participant.js';
 import multer from 'multer';
 import userRoutes from './route/config/user.js';
+import moduleRoutes from './route/config/module.js';
 import groupRoutes from './route/config/group.js';
 const app = express();
 const upload = multer();
@@ -20,6 +21,7 @@ app.use(cors());
 // app.use(raw());
 
 app.use('/api/user', userRoutes);
+app.use('/api/module', moduleRoutes);
 app.use('/api/group', groupRoutes);
 app.get('/participants', async (req, res) => {
 	try {

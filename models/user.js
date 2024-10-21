@@ -23,14 +23,6 @@ module.exports = function(sequelize, DataTypes) {
       type: DataTypes.STRING(255),
       allowNull: true
     },
-    group_id: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      references: {
-        model: 'group',
-        key: 'id'
-      }
-    },
     last_name: {
       type: DataTypes.STRING(500),
       allowNull: false
@@ -69,13 +61,6 @@ module.exports = function(sequelize, DataTypes) {
         using: "BTREE",
         fields: [
           { name: "id" },
-        ]
-      },
-      {
-        name: "fk_user_group_idx",
-        using: "BTREE",
-        fields: [
-          { name: "group_id" },
         ]
       },
     ]

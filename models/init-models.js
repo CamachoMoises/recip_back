@@ -5,12 +5,14 @@ var _group = require("./group");
 var _group_permision = require("./group_permision");
 var _instructor = require("./instructor");
 var _module = require("./module");
+var _participants = require("./participants");
 var _permisions = require("./permisions");
 var _rating = require("./rating");
 var _student = require("./student");
 var _subjects = require("./subjects");
 var _subjects_days = require("./subjects_days");
 var _user = require("./user");
+var _user_group = require("./user_group");
 var _user_permision = require("./user_permision");
 
 function initModels(sequelize) {
@@ -20,14 +22,18 @@ function initModels(sequelize) {
   var group_permision = _group_permision(sequelize, DataTypes);
   var instructor = _instructor(sequelize, DataTypes);
   var module = _module(sequelize, DataTypes);
+  var participants = _participants(sequelize, DataTypes);
   var permisions = _permisions(sequelize, DataTypes);
   var rating = _rating(sequelize, DataTypes);
   var student = _student(sequelize, DataTypes);
   var subjects = _subjects(sequelize, DataTypes);
   var subjects_days = _subjects_days(sequelize, DataTypes);
   var user = _user(sequelize, DataTypes);
+  var user_group = _user_group(sequelize, DataTypes);
   var user_permision = _user_permision(sequelize, DataTypes);
 
+  group.belongsToMany(user, { as: 'user_id_users', through: user_group, foreignKey: "group_id", otherKey: "user_id" });
+  user.belongsToMany(group, { as: 'group_id_groups', through: user_group, foreignKey: "user_id", otherKey: "group_id" });
   course_days.belongsTo(course, { as: "course", foreignKey: "course_id"});
   course.hasMany(course_days, { as: "course_days", foreignKey: "course_id"});
   subjects.belongsTo(course, { as: "course", foreignKey: "course_id"});
@@ -38,8 +44,8 @@ function initModels(sequelize) {
   course_days.hasMany(subjects_days, { as: "course_days_course_subjects_days", foreignKey: "course_days_course_id"});
   group_permision.belongsTo(group, { as: "group", foreignKey: "group_id"});
   group.hasMany(group_permision, { as: "group_permisions", foreignKey: "group_id"});
-  user.belongsTo(group, { as: "group", foreignKey: "group_id"});
-  group.hasMany(user, { as: "users", foreignKey: "group_id"});
+  user_group.belongsTo(group, { as: "group", foreignKey: "group_id"});
+  group.hasMany(user_group, { as: "user_groups", foreignKey: "group_id"});
   rating.belongsTo(instructor, { as: "instructor", foreignKey: "instructor_id"});
   instructor.hasMany(rating, { as: "ratings", foreignKey: "instructor_id"});
   permisions.belongsTo(module, { as: "module", foreignKey: "module_id"});
@@ -64,6 +70,8 @@ function initModels(sequelize) {
   user.hasMany(instructor, { as: "instructors", foreignKey: "user_id"});
   student.belongsTo(user, { as: "user", foreignKey: "user_id"});
   user.hasMany(student, { as: "students", foreignKey: "user_id"});
+  user_group.belongsTo(user, { as: "user", foreignKey: "user_id"});
+  user.hasMany(user_group, { as: "user_groups", foreignKey: "user_id"});
   user_permision.belongsTo(user, { as: "user", foreignKey: "user_id"});
   user.hasMany(user_permision, { as: "user_permisions", foreignKey: "user_id"});
 
@@ -74,12 +82,14 @@ function initModels(sequelize) {
     group_permision,
     instructor,
     module,
+    participants,
     permisions,
     rating,
     student,
     subjects,
     subjects_days,
     user,
+    user_group,
     user_permision,
   };
 }

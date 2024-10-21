@@ -1,47 +1,71 @@
 export default (sequelize, DataTypes) => {
-	const user = sequelize.define('User', {
-		id: {
-			type: DataTypes.INTEGER,
-			primaryKey: true,
-			autoIncrement: true,
+	const user = sequelize.define(
+		'user',
+		{
+			id: {
+				autoIncrement: true,
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				primaryKey: true,
+			},
+			uuid: {
+				type: DataTypes.CHAR(36),
+				allowNull: false,
+			},
+			name: {
+				type: DataTypes.STRING(500),
+				allowNull: false,
+			},
+			doc_number: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+			},
+			phone: {
+				type: DataTypes.STRING(255),
+				allowNull: true,
+			},
+			last_name: {
+				type: DataTypes.STRING(500),
+				allowNull: false,
+			},
+			password: {
+				type: DataTypes.STRING(200),
+				allowNull: true,
+			},
+			email: {
+				type: DataTypes.STRING(500),
+				allowNull: true,
+			},
+			is_superuser: {
+				type: DataTypes.BOOLEAN,
+				allowNull: true,
+				defaultValue: 0,
+			},
+			is_staff: {
+				type: DataTypes.BOOLEAN,
+				allowNull: true,
+				defaultValue: 0,
+			},
+			is_active: {
+				type: DataTypes.BOOLEAN,
+				allowNull: true,
+				defaultValue: 1,
+			},
 		},
-		uuid: {
-			type: DataTypes.UUID,
-			defaultValue: DataTypes.UUIDV4,
-			allowNull: false,
-			unique: true,
-		},
-		username: {
-			type: DataTypes.STRING,
-			allowNull: false,
-			unique: true,
-		},
-		email: {
-			type: DataTypes.TEXT,
-			// allowNull: false,
-			unique: true,
-		},
-		firstName: {
-			type: DataTypes.TEXT,
-			// allowNull: false
-		},
-		lastName: {
-			type: DataTypes.TEXT,
-			// allowNull: false
-		},
-		password: {
-			type: DataTypes.STRING,
-			allowNull: false,
-		},
-		created_at: {
-			type: DataTypes.DATE,
-			defaultValue: sequelize.NOW,
-		},
-		updated_at: {
-			type: DataTypes.DATE,
-			defaultValue: sequelize.NOW,
-		},
-	});
+		{
+			sequelize,
+			tableName: 'user',
+			timestamps: true,
+			indexes: [
+				{
+					name: 'PRIMARY',
+					unique: true,
+					using: 'BTREE',
+					fields: [{ name: 'id' }],
+				},
+			],
+		}
+	);
 
 	return user;
 };
