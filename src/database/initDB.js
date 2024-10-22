@@ -214,16 +214,22 @@ SubjectDays.hasMany(Rating, {
 
 const models = {
 	Participant,
-	Group,
-	User,
-	Module,
 	Course,
-	Subject,
+	CourseDays,
+	Group,
+	GroupPermission,
+	Instructor,
+	Module,
 	Permission,
 	Rating,
-	UserGroup,
-	CourseDays,
+	Student,
+	Subject,
 	SubjectDays,
+	Subject,
+	SubjectDays,
+	User,
+	UserGroup,
+	UserPermission,
 };
 
 export { sequelize, models };
