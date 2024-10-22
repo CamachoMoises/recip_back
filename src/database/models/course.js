@@ -1,6 +1,6 @@
 export default (sequelize, DataTypes) => {
 	return sequelize.define(
-		'group',
+		'course',
 		{
 			id: {
 				autoIncrement: true,
@@ -9,10 +9,19 @@ export default (sequelize, DataTypes) => {
 				primaryKey: true,
 			},
 			name: {
-				type: DataTypes.STRING(45),
-				allowNull: true,
+				type: DataTypes.STRING(500),
+				allowNull: false,
 			},
-			is_active: {
+			hours: {
+				type: DataTypes.FLOAT,
+				allowNull: true,
+				defaultValue: 0,
+			},
+			type: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+			},
+			status: {
 				type: DataTypes.BOOLEAN,
 				allowNull: true,
 				defaultValue: 1,
@@ -20,7 +29,7 @@ export default (sequelize, DataTypes) => {
 		},
 		{
 			sequelize,
-			tableName: 'group',
+			tableName: 'course',
 			timestamps: true,
 			indexes: [
 				{
@@ -34,9 +43,9 @@ export default (sequelize, DataTypes) => {
 	);
 };
 
-export const group_permission = (sequelize, DataTypes) => {
+export const course_days = (sequelize, DataTypes) => {
 	return sequelize.define(
-		'group_permission',
+		'course_days',
 		{
 			id: {
 				autoIncrement: true,
@@ -44,47 +53,40 @@ export const group_permission = (sequelize, DataTypes) => {
 				allowNull: false,
 				primaryKey: true,
 			},
-			name: {
-				type: DataTypes.STRING(45),
-				allowNull: false,
-			},
-			group_id: {
+			course_id: {
 				type: DataTypes.INTEGER,
 				allowNull: false,
+				primaryKey: true,
 				references: {
-					model: 'group',
+					model: 'course',
 					key: 'id',
 				},
 			},
-			permission_id: {
+			cant: {
 				type: DataTypes.INTEGER,
 				allowNull: false,
-				references: {
-					model: 'permission',
-					key: 'id',
-				},
+			},
+			status: {
+				type: DataTypes.TINYINT,
+				allowNull: true,
+				defaultValue: 1,
 			},
 		},
 		{
 			sequelize,
-			tableName: 'group_permission',
+			tableName: 'course_days',
 			timestamps: true,
 			indexes: [
 				{
 					name: 'PRIMARY',
 					unique: true,
 					using: 'BTREE',
-					fields: [{ name: 'id' }],
+					fields: [{ name: 'id' }, { name: 'course_id' }],
 				},
 				{
-					name: 'fk_group_permission_group1_idx',
+					name: 'fk_course_days_course1_idx',
 					using: 'BTREE',
-					fields: [{ name: 'group_id' }],
-				},
-				{
-					name: 'fk_group_permission_permission1_idx',
-					using: 'BTREE',
-					fields: [{ name: 'permission_id' }],
+					fields: [{ name: 'course_id' }],
 				},
 			],
 		}

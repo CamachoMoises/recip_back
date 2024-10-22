@@ -12,6 +12,7 @@ import multer from 'multer';
 import userRoutes from './route/config/user.js';
 import moduleRoutes from './route/config/module.js';
 import groupRoutes from './route/config/group.js';
+import groupPermission from './route/config/permission.js';
 const app = express();
 const upload = multer();
 app.use(morgan('dev'));
@@ -23,6 +24,7 @@ app.use(cors());
 app.use('/api/user', userRoutes);
 app.use('/api/module', moduleRoutes);
 app.use('/api/group', groupRoutes);
+app.use('/api/permission', groupPermission);
 app.get('/participants', async (req, res) => {
 	try {
 		const participants = await getAllParticipants();

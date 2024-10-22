@@ -1,5 +1,5 @@
 export default (sequelize, DataTypes) => {
-	const user = sequelize.define(
+	return sequelize.define(
 		'user',
 		{
 			id: {
@@ -66,6 +66,206 @@ export default (sequelize, DataTypes) => {
 			],
 		}
 	);
+};
 
-	return user;
+export const user_group = (sequelize, DataTypes) => {
+	return sequelize.define(
+		'user_group',
+		{
+			id: {
+				autoIncrement: true,
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				primaryKey: true,
+			},
+			user_id: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				primaryKey: true,
+				references: {
+					model: 'user',
+					key: 'id',
+				},
+			},
+			group_id: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				primaryKey: true,
+				references: {
+					model: 'group',
+					key: 'id',
+				},
+			},
+		},
+		{
+			sequelize,
+			tableName: 'user_group',
+			timestamps: false,
+			indexes: [
+				{
+					name: 'PRIMARY',
+					unique: true,
+					using: 'BTREE',
+					fields: [
+						{ name: 'id' },
+						{ name: 'user_id' },
+						{ name: 'group_id' },
+					],
+				},
+				{
+					name: 'fk_user_group_user1_idx',
+					using: 'BTREE',
+					fields: [{ name: 'user_id' }],
+				},
+				{
+					name: 'fk_user_group_group1_idx',
+					using: 'BTREE',
+					fields: [{ name: 'group_id' }],
+				},
+			],
+		}
+	);
+};
+
+export const user_permission = (sequelize, DataTypes) => {
+	return sequelize.define(
+		'user_permission',
+		{
+			id: {
+				autoIncrement: true,
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				primaryKey: true,
+			},
+			user_id: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				references: {
+					model: 'user',
+					key: 'id',
+				},
+			},
+			permission_id: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				references: {
+					model: 'permission',
+					key: 'id',
+				},
+			},
+		},
+		{
+			sequelize,
+			tableName: 'user_permission',
+			timestamps: true,
+			indexes: [
+				{
+					name: 'PRIMARY',
+					unique: true,
+					using: 'BTREE',
+					fields: [{ name: 'id' }],
+				},
+				{
+					name: 'fk_user_permission_user1_idx',
+					using: 'BTREE',
+					fields: [{ name: 'user_id' }],
+				},
+				{
+					name: 'fk_user_permission_permission1_idx',
+					using: 'BTREE',
+					fields: [{ name: 'permission_id' }],
+				},
+			],
+		}
+	);
+};
+
+export const student = (sequelize, DataTypes) => {
+	return sequelize.define(
+		'student',
+		{
+			id: {
+				autoIncrement: true,
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				primaryKey: true,
+			},
+			user_id: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				references: {
+					model: 'user',
+					key: 'id',
+				},
+			},
+			status: {
+				type: DataTypes.TINYINT,
+				allowNull: true,
+				defaultValue: 1,
+			},
+		},
+		{
+			sequelize,
+			tableName: 'student',
+			timestamps: true,
+			indexes: [
+				{
+					name: 'PRIMARY',
+					unique: true,
+					using: 'BTREE',
+					fields: [{ name: 'id' }],
+				},
+				{
+					name: 'fk_student_user1_idx',
+					using: 'BTREE',
+					fields: [{ name: 'user_id' }],
+				},
+			],
+		}
+	);
+};
+
+export const instructor = (sequelize, DataTypes) => {
+	return sequelize.define(
+		'instructor',
+		{
+			id: {
+				autoIncrement: true,
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				primaryKey: true,
+			},
+			user_id: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				references: {
+					model: 'user',
+					key: 'id',
+				},
+			},
+			status: {
+				type: DataTypes.TINYINT,
+				allowNull: true,
+				defaultValue: 1,
+			},
+		},
+		{
+			sequelize,
+			tableName: 'instructor',
+			timestamps: true,
+			indexes: [
+				{
+					name: 'PRIMARY',
+					unique: true,
+					using: 'BTREE',
+					fields: [{ name: 'id' }],
+				},
+				{
+					name: 'fk_instructor_user1_idx',
+					using: 'BTREE',
+					fields: [{ name: 'user_id' }],
+				},
+			],
+		}
+	);
 };
