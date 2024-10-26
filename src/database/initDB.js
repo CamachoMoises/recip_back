@@ -19,11 +19,23 @@ import loadSubject, {
 } from './models/subject.js';
 import loadPermission from './models/permission.js';
 import loadRating from './models/rating.js';
+const DB_NAME_CLEVER = 'b0dl2ortjhzfr9coi0x5';
+const DB_USER_CLEVER = 'uyfly4jduhoqkepm';
+const DB_HOST_CLEVER =
+	'b0dl2ortjhzfr9coi0x5-mysql.services.clever-cloud.com';
+const DB_PASSWORD_CLEVER = 'tWuFaiI5puvpVBMuqLPo';
+const DB_PORT_CLEVER = 3306;
 
-const sequelize = new Sequelize('recip_db', 'moises', '0000', {
-	host: 'localhost',
+const DB_NAME = 'recip_db';
+const DB_USER = 'moises';
+const DB_HOST = 'localhost';
+const DB_PASSWORD = '0000';
+const DB_PORT = 3306;
+
+const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
+	host: DB_HOST,
 	dialect: 'mysql',
-	port: 3306,
+	port: DB_PORT,
 	define: {
 		underscored: true, // Esto hará que Sequelize use snake_case por defecto
 	},
