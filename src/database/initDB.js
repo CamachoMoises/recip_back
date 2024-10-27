@@ -237,8 +237,6 @@ const models = {
 	Student,
 	Subject,
 	SubjectDays,
-	Subject,
-	SubjectDays,
 	User,
 	UserGroup,
 	UserPermission,
