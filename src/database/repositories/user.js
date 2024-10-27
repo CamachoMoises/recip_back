@@ -4,4 +4,27 @@ const { User } = models;
 
 const getAllUsers = async () => User.findAll();
 
-export { getAllUsers };
+const createUser = async ({
+	name,
+	doc_number,
+	last_name,
+	phone,
+	email,
+	is_active,
+	is_staff,
+	is_superuser,
+	password,
+}) =>
+	User.create({
+		name,
+		doc_number,
+		last_name,
+		phone,
+		email,
+		is_active,
+		is_staff,
+		is_superuser,
+		password,
+	});
+
+export { getAllUsers, createUser };

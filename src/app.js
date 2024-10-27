@@ -21,7 +21,7 @@ app.use(json());
 app.use(cors());
 // app.use(raw());
 
-app.use('/api/user', userRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/module', moduleRoutes);
 app.use('/api/group', groupRoutes);
 app.use('/api/permission', groupPermission);

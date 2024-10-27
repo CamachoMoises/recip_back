@@ -9,8 +9,10 @@ export default (sequelize, DataTypes) => {
 				primaryKey: true,
 			},
 			uuid: {
-				type: DataTypes.CHAR(36),
+				type: DataTypes.UUID,
+				defaultValue: DataTypes.UUIDV4,
 				allowNull: false,
+				unique: true,
 			},
 			name: {
 				type: DataTypes.STRING(500),
