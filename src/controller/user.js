@@ -79,7 +79,6 @@ export const UpdateUser = async (req, res) => {
 		is_superuser,
 		password,
 	} = value;
-
 	try {
 		const userEdit = await editUser({
 			id,

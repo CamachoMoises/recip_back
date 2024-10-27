@@ -39,6 +39,8 @@ const updateUserSchema = Joi.object({
 	is_superuser: Joi.boolean(),
 	is_staff: Joi.boolean(),
 	is_active: Joi.boolean(),
+	createdAt: Joi.string().allow(null, ''),
+	updatedAt: Joi.string().allow(null, ''),
 });
 
 export { createUserSchema, updateUserSchema };
