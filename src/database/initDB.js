@@ -137,14 +137,8 @@ User.hasOne(Student, { as: 'student', foreignKey: 'user_id' });
 Student.belongsTo(User, { as: 'user', foreignKey: 'user_id' });
 User.hasOne(Instructor, { as: 'instructor', foreignKey: 'user_id' });
 Instructor.belongsTo(User, { as: 'user', foreignKey: 'user_id' });
-Course.belongsTo(CourseType, {
-	as: 'course_type',
-	foreignKey: 'course_type_id',
-});
-CourseType.hasMany(Course, {
-	as: 'courses',
-	foreignKey: 'course_type_id',
-});
+Course.belongsTo(CourseType, { foreignKey: 'course_type_id' });
+CourseType.hasMany(Course, { foreignKey: 'course_type_id' });
 CourseDays.belongsTo(Course, {
 	as: 'course',
 	foreignKey: 'course_id',
@@ -237,6 +231,7 @@ const models = {
 	Participant,
 	Course,
 	CourseDays,
+	CourseType,
 	Group,
 	GroupPermission,
 	Instructor,
