@@ -1,21 +1,21 @@
-import express, { json, raw, urlencoded } from 'express';
+import express, { json, urlencoded } from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
-import {
-	createParticipant,
-	edictParticipant,
-	getAllParticipants,
-	getParticipantByUUID,
-} from './database/repositories/participants.js';
-import { createParticipantShema } from './database/imput_validation/participant.js';
-import multer from 'multer';
+// import {
+// 	createParticipant,
+// 	edictParticipant,
+// 	getAllParticipants,
+// 	getParticipantByUUID,
+// } from './database/repositories/participants.js';
+// import multer from 'multer';
 import userRoutes from './route/config/user.js';
 import moduleRoutes from './route/config/module.js';
 import groupRoutes from './route/config/group.js';
 import groupPermission from './route/config/permission.js';
+import courseRoutes from './route/config/course.js';
 import configRoutes from './route/config/config.js';
 const app = express();
-const upload = multer();
+// const upload = multer();
 app.use(morgan('dev'));
 app.use(urlencoded({ extended: true }));
 app.use(json());
@@ -23,6 +23,7 @@ app.use(cors());
 // app.use(raw());
 
 app.use('/api/users', userRoutes);
+app.use('/api/courses', courseRoutes);
 app.use('/api/module', moduleRoutes);
 app.use('/api/group', groupRoutes);
 app.use('/api/permission', groupPermission);

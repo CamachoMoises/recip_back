@@ -19,12 +19,12 @@ import loadSubject, {
 } from './models/subject.js';
 import loadPermission from './models/permission.js';
 import loadRating from './models/rating.js';
-const DB_NAME_CLEVER = 'b0dl2ortjhzfr9coi0x5';
-const DB_USER_CLEVER = 'uyfly4jduhoqkepm';
-const DB_HOST_CLEVER =
-	'b0dl2ortjhzfr9coi0x5-mysql.services.clever-cloud.com';
-const DB_PASSWORD_CLEVER = 'tWuFaiI5puvpVBMuqLPo';
-const DB_PORT_CLEVER = 3306;
+// const DB_NAME_CLEVER = 'b0dl2ortjhzfr9coi0x5';
+// const DB_USER_CLEVER = 'uyfly4jduhoqkepm';
+// const DB_HOST_CLEVER =
+// 	'b0dl2ortjhzfr9coi0x5-mysql.services.clever-cloud.com';
+// const DB_PASSWORD_CLEVER = 'tWuFaiI5puvpVBMuqLPo';
+// const DB_PORT_CLEVER = 3306;
 
 const DB_NAME = 'recip_db';
 const DB_USER = 'moises';

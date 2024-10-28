@@ -6,7 +6,6 @@ import {
 	createUser,
 	editUser,
 	getAllUsers,
-	getUserByUUID,
 } from '../database/repositories/user.js';
 export const ListUsers = async (req, res) => {
 	try {

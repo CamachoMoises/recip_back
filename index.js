@@ -22,7 +22,7 @@ async function init() {
 		// Iniciar el servidor
 		app.listen(PORT, () => {
 			console.log(
-				`Servidor ejecutándose! en http://localhost:${PORT}`
+				`Servidor ejecutándose en http://localhost:${PORT}`
 			);
 		});
 	} catch (error) {
