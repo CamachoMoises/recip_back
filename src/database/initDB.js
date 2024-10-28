@@ -13,6 +13,7 @@ import loadUser, {
 import loadModule from './models/module.js';
 import loadCourse, {
 	course_days as loadCourseDays,
+	course_type as loadCourseType,
 } from './models/course.js';
 import loadSubject, {
 	subject_days as loadSubjectDays,
@@ -55,6 +56,7 @@ const GroupPermission = loadGroupPermission(sequelize, DataTypes);
 const Student = loadStudent(sequelize, DataTypes);
 const Instructor = loadInstructor(sequelize, DataTypes);
 const CourseDays = loadCourseDays(sequelize, DataTypes);
+const CourseType = loadCourseType(sequelize, DataTypes);
 const SubjectDays = loadSubjectDays(sequelize, DataTypes);
 
 // Table associations!
@@ -135,7 +137,14 @@ User.hasOne(Student, { as: 'student', foreignKey: 'user_id' });
 Student.belongsTo(User, { as: 'user', foreignKey: 'user_id' });
 User.hasOne(Instructor, { as: 'instructor', foreignKey: 'user_id' });
 Instructor.belongsTo(User, { as: 'user', foreignKey: 'user_id' });
-
+Course.belongsTo(CourseType, {
+	as: 'course_type',
+	foreignKey: 'course_type_id',
+});
+CourseType.hasMany(Course, {
+	as: 'courses',
+	foreignKey: 'course_type_id',
+});
 CourseDays.belongsTo(Course, {
 	as: 'course',
 	foreignKey: 'course_id',

@@ -92,3 +92,34 @@ export const course_days = (sequelize, DataTypes) => {
 		}
 	);
 };
+
+export const course_type = (sequelize, DataTypes) => {
+	return sequelize.define(
+		'course_type',
+		{
+			id: {
+				autoIncrement: true,
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				primaryKey: true,
+			},
+			name: {
+				type: DataTypes.STRING(500),
+				allowNull: false,
+			},
+		},
+		{
+			sequelize,
+			tableName: 'course_type',
+			timestamps: true,
+			indexes: [
+				{
+					name: 'PRIMARY',
+					unique: true,
+					using: 'BTREE',
+					fields: [{ name: 'id' }],
+				},
+			],
+		}
+	);
+};
