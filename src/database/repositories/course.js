@@ -10,6 +10,9 @@ const getAllCourses = async () =>
 const getAllCoursesTypes = async () => CourseType.findAll();
 
 const getCourseById = async (value) =>
+	Course.findOne({ where: { id: value }, include: [CourseType] });
+
+const getCourseTypeById = async (value) =>
 	CourseType.findOne({ where: { id: value } });
 
 const createCourse = async ({
@@ -25,5 +28,6 @@ export {
 	getAllCourses,
 	getAllCoursesTypes,
 	getCourseById,
+	getCourseTypeById,
 	createCourse,
 };

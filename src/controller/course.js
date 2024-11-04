@@ -3,6 +3,7 @@ import {
 	createCourse,
 	getAllCourses,
 	getAllCoursesTypes,
+	getCourseById,
 } from '../database/repositories/course.js';
 
 export const ListCourses = async (req, res) => {
@@ -32,19 +33,24 @@ export const CreateCourse = async (req, res) => {
 	data.course_type_id = course_type_id;
 
 	try {
-		createCourseSchema.validateAsync(data);
+		console.log('iniciando validacion');
+
+		const new_data = await createCourseSchema.validateAsync(data);
 		console.log('Validación exitosa');
-		const { name, description, hours, course_type_id, status } = data;
-		console.log(data);
+		const { name, description, hours, course_type_id, status } =
+			new_data;
+		// console.log(data);
 		try {
-			const course = null;
-			// 	await createCourse({
-			// 	name,
-			// 	description,
-			// 	hours,
-			// 	course_type_id,
-			// 	status,
-			// });
+			const new_course = await createCourse({
+				name,
+				description,
+				hours,
+				course_type_id,
+				status,
+			});
+			const course = await getCourseById(new_course.id);
+
+			// console.log(course, 'OJOJOJOJO');
 			res.status(201).send(course);
 		} catch (error) {
 			console.log(error);
