@@ -12,19 +12,27 @@ export default (sequelize, DataTypes) => {
 				type: DataTypes.STRING(500),
 				allowNull: false,
 			},
+			description: {
+				type: DataTypes.STRING(500),
+				allowNull: false,
+			},
 			hours: {
 				type: DataTypes.FLOAT,
 				allowNull: true,
 				defaultValue: 0,
 			},
-			type: {
-				type: DataTypes.INTEGER,
-				allowNull: false,
-			},
 			status: {
 				type: DataTypes.BOOLEAN,
 				allowNull: true,
 				defaultValue: 1,
+			},
+			course_type_id: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				references: {
+					model: 'course_type',
+					key: 'id',
+				},
 			},
 		},
 		{

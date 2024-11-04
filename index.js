@@ -13,7 +13,7 @@ async function assertDbConnection() {
 async function init() {
 	try {
 		await assertDbConnection();
-		await sequelize.sync({ force: true });
+		await sequelize.sync({ force: false });
 		// Ruta básica para la raíz
 		app.get('/', (req, res) => {
 			res.send('¡Hola, mundo desde Express!!!!!');

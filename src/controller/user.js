@@ -19,7 +19,6 @@ export const ListUsers = async (req, res) => {
 
 export const CreateUser = async (req, res) => {
 	const { error, value } = createUserSchema.validate(req.body);
-	console.log(value, error);
 
 	if (error) {
 		console.log(error.message);

@@ -1,12 +1,22 @@
 import express from 'express';
-// import multer from 'multer';
-import { ListCourses } from '../../controller/course.js';
+import multer from 'multer';
+import convertTypes from '../../middleware/convertTypes.js';
 
-// const upload = multer();
+// import multer from 'multer';
+import {
+	CreateCourse,
+	ListCourses,
+	ListCoursesTypes,
+} from '../../controller/course.js';
+
+const upload = multer();
 const router = express.Router();
 
 // Rutas para usuarios
 router.get('/', ListCourses);
+router.get('/courseTypes', ListCoursesTypes);
+router.post('/', upload.none(), convertTypes, CreateCourse);
+
 // router.post('/', usuarioController.crearUsuario);
 // router.get('/:id', usuarioController.obtenerUsuarioPorId);
 // router.put('/:id', usuarioController.actualizarUsuario);

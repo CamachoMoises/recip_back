@@ -46,7 +46,7 @@ const editUser = async ({
 	const user = await User.findOne({
 		where: { uuid: uuid },
 	});
-	if (user) {
+	if (user && id) {
 		user.name = name;
 		user.doc_number = doc_number;
 		user.last_name = last_name;
