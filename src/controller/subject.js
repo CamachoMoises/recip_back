@@ -1,4 +1,4 @@
-import { getAllSubjects } from '../database/repositories/subject';
+import { getAllSubjects } from '../database/repositories/subject.js';
 
 export const ListSubjects = async (req, res) => {
 	try {
