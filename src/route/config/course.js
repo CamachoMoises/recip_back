@@ -7,6 +7,7 @@ import {
 	CreateCourse,
 	ListCourses,
 	ListCoursesTypes,
+	UpdateCourse,
 } from '../../controller/course.js';
 
 const upload = multer();
@@ -16,6 +17,7 @@ const router = express.Router();
 router.get('/', ListCourses);
 router.get('/courseTypes', ListCoursesTypes);
 router.post('/', upload.none(), convertTypes, CreateCourse);
+router.put('/', upload.none(), convertTypes, UpdateCourse);
 
 // router.post('/', usuarioController.crearUsuario);
 // router.get('/:id', usuarioController.obtenerUsuarioPorId);

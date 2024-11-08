@@ -2,6 +2,13 @@ import { models } from '../initDB.js';
 
 const { Subject } = models;
 
-const getAllSubjects = async () => Subject.findAll();
+const getAllSubjects = async () => await Subject.findAll();
 
-export { getAllSubjects };
+const getAllCourseSubjects = async ({ id }) =>
+	await Subject.findAll({
+		where: {
+			course_id: id, // Aquí defines el valor específico de course_id que buscas
+		},
+	});
+
+export { getAllSubjects, getAllCourseSubjects };

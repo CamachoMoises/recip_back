@@ -24,10 +24,32 @@ const createCourse = async ({
 }) =>
 	Course.create({ name, description, hours, course_type_id, status });
 
+const editCourse = async ({
+	id,
+	name,
+	description,
+	hours,
+	course_type_id,
+	status,
+}) => {
+	const course = await Course.findByPk(id);
+	if (!course) {
+		throw new Error('Course not found');
+	}
+	await course.update({
+		name,
+		description,
+		hours,
+		course_type_id,
+		status,
+	});
+	return course;
+};
 export {
 	getAllCourses,
 	getAllCoursesTypes,
 	getCourseById,
 	getCourseTypeById,
 	createCourse,
+	editCourse,
 };

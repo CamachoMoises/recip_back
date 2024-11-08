@@ -1,8 +1,8 @@
 import express from 'express';
-import multer from 'multer';
+// import multer from 'multer';
 import { getAllPermissions } from '../../database/repositories/permission.js';
 
-const upload = multer();
+// const upload = multer();
 const router = express.Router();
 
 // Rutas para usuarios

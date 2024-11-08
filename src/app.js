@@ -13,6 +13,7 @@ import moduleRoutes from './route/config/module.js';
 import groupRoutes from './route/config/group.js';
 import groupPermission from './route/config/permission.js';
 import courseRoutes from './route/config/course.js';
+import subjectRoutes from './route/config/subject.js';
 import configRoutes from './route/config/config.js';
 const app = express();
 // const upload = multer();
@@ -24,6 +25,7 @@ app.use(cors());
 
 app.use('/api/users', userRoutes);
 app.use('/api/courses', courseRoutes);
+app.use('/api/subjects', subjectRoutes);
 app.use('/api/module', moduleRoutes);
 app.use('/api/group', groupRoutes);
 app.use('/api/permission', groupPermission);
