@@ -139,44 +139,35 @@ Course.belongsTo(CourseType, { foreignKey: 'course_type_id' });
 CourseType.hasMany(Course, { foreignKey: 'course_type_id' });
 
 Subject.belongsTo(Course, {
-	as: 'course',
 	foreignKey: 'course_id',
 });
 Course.hasMany(Subject, { as: 'subject', foreignKey: 'course_id' });
 
 Course.hasMany(SubjectDays, {
-	as: 'subject_days',
 	foreignKey: 'course_id',
 });
 
 Rating.belongsTo(Instructor, {
-	as: 'instructor',
 	foreignKey: 'instructor_id',
 });
 Instructor.hasMany(Rating, {
-	as: 'ratings',
 	foreignKey: 'instructor_id',
 });
 
 Rating.belongsTo(Student, {
-	as: 'student',
 	foreignKey: 'student_id',
 });
 Student.hasMany(Rating, {
-	as: 'ratings',
 	foreignKey: 'student_id',
 });
 SubjectDays.belongsTo(Subject, {
-	as: 'subject',
 	foreignKey: 'subject_id',
 });
 Subject.hasMany(SubjectDays, {
-	as: 'subject_days',
 	foreignKey: 'subject_id',
 });
 
 SubjectDays.belongsTo(Course, {
-	as: 'course',
 	foreignKey: 'course_id',
 });
 Rating.belongsTo(SubjectDays, {
@@ -184,15 +175,12 @@ Rating.belongsTo(SubjectDays, {
 	foreignKey: 'subject_days_id',
 });
 SubjectDays.hasMany(Rating, {
-	as: 'ratings',
 	foreignKey: 'subject_days_id',
 });
 Rating.belongsTo(SubjectDays, {
-	as: 'subject_days_subject',
 	foreignKey: 'subject_days_subject_id',
 });
 SubjectDays.hasMany(Rating, {
-	as: 'subject_days_subject_ratings',
 	foreignKey: 'subject_days_subject_id',
 });
 

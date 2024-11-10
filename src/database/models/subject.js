@@ -16,7 +16,7 @@ export default (sequelize, DataTypes) => {
 				type: DataTypes.STRING(500),
 				allowNull: false,
 			},
-			stauts: {
+			status: {
 				type: DataTypes.TINYINT,
 				allowNull: true,
 				defaultValue: 1,
@@ -78,7 +78,10 @@ export const subject_days = (sequelize, DataTypes) => {
 					key: 'id',
 				},
 			},
-
+			day: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+			},
 			status: {
 				type: DataTypes.TINYINT,
 				allowNull: true,

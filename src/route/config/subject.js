@@ -1,18 +1,27 @@
 import express from 'express';
-// import multer from 'multer';
+import multer from 'multer';
 import {
+	CreateSubject,
 	ListSubjects,
 	ListSubjectsCourse,
+	UpdateSubject,
+	ChangeStatusDay,
 } from '../../controller/subject.js';
+import convertTypes from '../../middleware/convertTypes.js';
 
-// const upload = multer();
+const upload = multer();
 const router = express.Router();
 
-// Rutas para usuarios
+// Rutas para asingnaciones
 router.get('/', ListSubjects);
-// router.post('/', usuarioController.crearUsuario);
+router.post('/', upload.none(), convertTypes, CreateSubject);
+router.put('/', upload.none(), convertTypes, UpdateSubject);
 router.get('/course/:id', ListSubjectsCourse);
-// router.put('/:id', usuarioController.actualizarUsuario);
-// router.delete('/:id', usuarioController.eliminarUsuario);
+router.post(
+	'/subjects_days',
+	upload.none(),
+	convertTypes,
+	ChangeStatusDay
+);
 
 export default router;

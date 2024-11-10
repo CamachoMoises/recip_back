@@ -37,9 +37,7 @@ export const CreateCourse = async (req, res) => {
 	data.course_type_id = course_type_id;
 
 	try {
-		console.log('iniciando validacion');
 		const new_data = await createCourseSchema.validateAsync(data);
-		console.log('Validación exitosa');
 		const { name, description, hours, days, course_type_id, status } =
 			new_data;
 
@@ -52,8 +50,6 @@ export const CreateCourse = async (req, res) => {
 			status,
 		});
 		const course = await getCourseById(new_course.id);
-
-		// console.log(course, 'OJOJOJOJO');
 		res.status(201).send(course);
 	} catch (error) {
 		console.error('Error en la validación:', error.message);
@@ -71,9 +67,7 @@ export const UpdateCourse = async (req, res) => {
 	delete data.course_type;
 	data.course_type_id = course_type_id;
 	try {
-		console.log('iniciando validacion');
 		const new_data = await updateCourseSchema.validateAsync(data);
-		console.log('Validación exitosa');
 		const {
 			id,
 			name,
