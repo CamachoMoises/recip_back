@@ -38,24 +38,6 @@ export default (sequelize, DataTypes) => {
 					key: 'subject_id',
 				},
 			},
-			subject_days_course_days_id: {
-				type: DataTypes.INTEGER,
-				allowNull: false,
-				primaryKey: true,
-				references: {
-					model: 'subject_days',
-					key: 'course_days_id',
-				},
-			},
-			subject_days_course_days_course_id: {
-				type: DataTypes.INTEGER,
-				allowNull: false,
-				primaryKey: true,
-				references: {
-					model: 'subject_days',
-					key: 'course_days_course_id',
-				},
-			},
 			value: {
 				type: DataTypes.STRING(10),
 				allowNull: false,
@@ -75,8 +57,6 @@ export default (sequelize, DataTypes) => {
 						{ name: 'student_id' },
 						{ name: 'subject_days_id' },
 						{ name: 'subject_days_subject_id' },
-						{ name: 'subject_days_course_days_id' },
-						{ name: 'subject_days_course_days_course_id' },
 					],
 				},
 				{
@@ -90,8 +70,6 @@ export default (sequelize, DataTypes) => {
 					fields: [
 						{ name: 'subject_days_id' },
 						{ name: 'subject_days_subject_id' },
-						{ name: 'subject_days_course_days_id' },
-						{ name: 'subject_days_course_days_course_id' },
 					],
 				},
 			],

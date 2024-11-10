@@ -8,6 +8,10 @@ export default (sequelize, DataTypes) => {
 				allowNull: false,
 				primaryKey: true,
 			},
+			order: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+			},
 			name: {
 				type: DataTypes.STRING(500),
 				allowNull: false,
@@ -65,24 +69,16 @@ export const subject_days = (sequelize, DataTypes) => {
 					key: 'id',
 				},
 			},
-			course_days_id: {
+			course_id: {
 				type: DataTypes.INTEGER,
 				allowNull: false,
 				primaryKey: true,
 				references: {
-					model: 'course_days',
+					model: 'course',
 					key: 'id',
 				},
 			},
-			course_days_course_id: {
-				type: DataTypes.INTEGER,
-				allowNull: false,
-				primaryKey: true,
-				references: {
-					model: 'course_days',
-					key: 'course_id',
-				},
-			},
+
 			status: {
 				type: DataTypes.TINYINT,
 				allowNull: true,
@@ -101,8 +97,7 @@ export const subject_days = (sequelize, DataTypes) => {
 					fields: [
 						{ name: 'id' },
 						{ name: 'subject_id' },
-						{ name: 'course_days_id' },
-						{ name: 'course_days_course_id' },
+						{ name: 'course_id' },
 					],
 				},
 				{
@@ -111,12 +106,9 @@ export const subject_days = (sequelize, DataTypes) => {
 					fields: [{ name: 'subject_id' }],
 				},
 				{
-					name: 'fk_subject_days_course_days1_idx',
+					name: 'fk_subject_days_course1_idx',
 					using: 'BTREE',
-					fields: [
-						{ name: 'course_days_id' },
-						{ name: 'course_days_course_id' },
-					],
+					fields: [{ name: 'course_id' }],
 				},
 			],
 		}

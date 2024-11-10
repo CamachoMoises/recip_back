@@ -12,7 +12,6 @@ import loadUser, {
 } from './models/user.js';
 import loadModule from './models/module.js';
 import loadCourse, {
-	course_days as loadCourseDays,
 	course_type as loadCourseType,
 } from './models/course.js';
 import loadSubject, {
@@ -55,7 +54,6 @@ const UserPermission = loadUserPermission(sequelize, DataTypes);
 const GroupPermission = loadGroupPermission(sequelize, DataTypes);
 const Student = loadStudent(sequelize, DataTypes);
 const Instructor = loadInstructor(sequelize, DataTypes);
-const CourseDays = loadCourseDays(sequelize, DataTypes);
 const CourseType = loadCourseType(sequelize, DataTypes);
 const SubjectDays = loadSubjectDays(sequelize, DataTypes);
 
@@ -139,34 +137,16 @@ User.hasOne(Instructor, { as: 'instructor', foreignKey: 'user_id' });
 Instructor.belongsTo(User, { as: 'user', foreignKey: 'user_id' });
 Course.belongsTo(CourseType, { foreignKey: 'course_type_id' });
 CourseType.hasMany(Course, { foreignKey: 'course_type_id' });
-CourseDays.belongsTo(Course, {
-	as: 'course',
-	foreignKey: 'course_id',
-});
-Course.hasMany(CourseDays, {
-	as: 'course_days',
-	foreignKey: 'course_id',
-});
+
 Subject.belongsTo(Course, {
 	as: 'course',
 	foreignKey: 'course_id',
 });
 Course.hasMany(Subject, { as: 'subject', foreignKey: 'course_id' });
-SubjectDays.belongsTo(CourseDays, {
-	as: 'course_day',
-	foreignKey: 'course_days_id',
-});
-CourseDays.hasMany(SubjectDays, {
+
+Course.hasMany(SubjectDays, {
 	as: 'subject_days',
-	foreignKey: 'course_days_id',
-});
-SubjectDays.belongsTo(CourseDays, {
-	as: 'course_days_course',
-	foreignKey: 'course_days_course_id',
-});
-CourseDays.hasMany(SubjectDays, {
-	as: 'course_days_course_subject_days',
-	foreignKey: 'course_days_course_id',
+	foreignKey: 'course_id',
 });
 
 Rating.belongsTo(Instructor, {
@@ -194,6 +174,11 @@ Subject.hasMany(SubjectDays, {
 	as: 'subject_days',
 	foreignKey: 'subject_id',
 });
+
+SubjectDays.belongsTo(Course, {
+	as: 'course',
+	foreignKey: 'course_id',
+});
 Rating.belongsTo(SubjectDays, {
 	as: 'subject_day',
 	foreignKey: 'subject_days_id',
@@ -210,27 +195,10 @@ SubjectDays.hasMany(Rating, {
 	as: 'subject_days_subject_ratings',
 	foreignKey: 'subject_days_subject_id',
 });
-Rating.belongsTo(SubjectDays, {
-	as: 'subject_days_course_day',
-	foreignKey: 'subject_days_course_days_id',
-});
-SubjectDays.hasMany(Rating, {
-	as: 'subject_days_course_days_ratings',
-	foreignKey: 'subject_days_course_days_id',
-});
-Rating.belongsTo(SubjectDays, {
-	as: 'subject_days_course_days_course',
-	foreignKey: 'subject_days_course_days_course_id',
-});
-SubjectDays.hasMany(Rating, {
-	as: 'subject_days_course_days_course_ratings',
-	foreignKey: 'subject_days_course_days_course_id',
-});
 
 const models = {
 	Participant,
 	Course,
-	CourseDays,
 	CourseType,
 	Group,
 	GroupPermission,

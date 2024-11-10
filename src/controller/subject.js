@@ -1,4 +1,7 @@
-import { getAllSubjects } from '../database/repositories/subject.js';
+import {
+	getAllCourseSubjects,
+	getAllSubjects,
+} from '../database/repositories/subject.js';
 
 export const ListSubjects = async (req, res) => {
 	try {
@@ -13,7 +16,7 @@ export const ListSubjects = async (req, res) => {
 export const ListSubjectsCourse = async (req, res) => {
 	const id = req.params.id;
 	try {
-		const subjects = await getAllSubjects(id);
+		const subjects = await getAllCourseSubjects(id);
 		res.send(subjects);
 	} catch (error) {
 		console.log(error);

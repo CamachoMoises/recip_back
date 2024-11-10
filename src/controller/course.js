@@ -40,13 +40,14 @@ export const CreateCourse = async (req, res) => {
 		console.log('iniciando validacion');
 		const new_data = await createCourseSchema.validateAsync(data);
 		console.log('Validación exitosa');
-		const { name, description, hours, course_type_id, status } =
+		const { name, description, hours, days, course_type_id, status } =
 			new_data;
 
 		const new_course = await createCourse({
 			name,
 			description,
 			hours,
+			days,
 			course_type_id,
 			status,
 		});
@@ -73,13 +74,21 @@ export const UpdateCourse = async (req, res) => {
 		console.log('iniciando validacion');
 		const new_data = await updateCourseSchema.validateAsync(data);
 		console.log('Validación exitosa');
-		const { id, name, description, hours, course_type_id, status } =
-			new_data;
+		const {
+			id,
+			name,
+			description,
+			hours,
+			days,
+			course_type_id,
+			status,
+		} = new_data;
 		await editCourse({
 			id,
 			name,
 			description,
 			hours,
+			days,
 			course_type_id,
 			status,
 		});

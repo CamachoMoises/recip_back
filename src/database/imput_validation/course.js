@@ -8,6 +8,7 @@ const createCourseSchema = Joi.object({
 		Joi.number()
 	),
 	hours: Joi.number().required(),
+	days: Joi.number().required(),
 	course_type_id: Joi.number()
 		.required()
 		.external(async (value, helpers) => {
@@ -30,6 +31,8 @@ const updateCourseSchema = Joi.object({
 		Joi.number()
 	),
 	hours: Joi.number().required(),
+	days: Joi.number().required(),
+
 	course_type_id: Joi.number()
 		.required()
 		.external(async (value, helpers) => {

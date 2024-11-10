@@ -19,16 +19,25 @@ const createCourse = async ({
 	name,
 	description,
 	hours,
+	days,
 	course_type_id,
 	status,
 }) =>
-	Course.create({ name, description, hours, course_type_id, status });
+	Course.create({
+		name,
+		description,
+		hours,
+		days,
+		course_type_id,
+		status,
+	});
 
 const editCourse = async ({
 	id,
 	name,
 	description,
 	hours,
+	days,
 	course_type_id,
 	status,
 }) => {
@@ -40,6 +49,7 @@ const editCourse = async ({
 		name,
 		description,
 		hours,
+		days,
 		course_type_id,
 		status,
 	});
