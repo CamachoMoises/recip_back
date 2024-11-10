@@ -6,6 +6,7 @@ import {
 	createUser,
 	editUser,
 	getAllUsers,
+	getUserByUUID,
 } from '../database/repositories/user.js';
 export const ListUsers = async (req, res) => {
 	try {
@@ -57,7 +58,9 @@ export const CreateUser = async (req, res) => {
 	}
 };
 export const UpdateUser = async (req, res) => {
-	const { error, value } = updateUserSchema.validate(req.body);
+	const data = req.body;
+	delete data.student;
+	const { error, value } = updateUserSchema.validate(data);
 	if (error) {
 		console.log(error.message);
 		return res
@@ -92,7 +95,8 @@ export const UpdateUser = async (req, res) => {
 			password,
 		});
 		if (userEdit) {
-			res.status(201).send(userEdit);
+			const edited_user = await getUserByUUID({ uuid });
+			res.status(201).send(edited_user);
 		} else {
 			res.status(404).send('User not found');
 		}

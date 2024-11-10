@@ -14,7 +14,7 @@ async function init() {
 	try {
 		await assertDbConnection();
 		await sequelize.sync({
-			force: true,
+			force: false,
 		});
 		// Ruta básica para la raíz
 		app.get('/', (req, res) => {

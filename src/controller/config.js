@@ -25,12 +25,17 @@ export const createTriggers = async (req, res) => {
 	} catch (error) {
 		message.push(error.parent.code);
 	}
-	const trg = ` CREATE TRIGGER update_student_instructor BEFORE UPDATE ON user FOR EACH ROW BEGIN UPDATE student SET status = NEW.is_active WHERE (user_id = NEW.id); END;`;
+	const trg = `CREATE TRIGGER update_student_instructor
+  BEFORE UPDATE ON user
+  FOR EACH ROW
+  BEGIN
+    UPDATE student SET status = NEW.is_active WHERE (user_id = NEW.id);
+  END;`;
 	try {
 		await sequelize.query(trg);
 		message.push('user trigger creado');
 	} catch (error) {
-		message.push(error.parent.code);
+		message.push(error.parent);
 	}
 
 	res.status(200).json({ message: message });

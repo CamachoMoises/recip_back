@@ -59,53 +59,43 @@ const SubjectDays = loadSubjectDays(sequelize, DataTypes);
 
 // Table associations!
 Group.belongsToMany(User, {
-	as: 'user_id_users',
 	through: UserGroup,
 	foreignKey: 'group_id',
 	otherKey: 'user_id',
 });
 
 User.belongsToMany(Group, {
-	as: 'group_id_groups',
 	through: UserGroup,
 	foreignKey: 'user_id',
 	otherKey: 'group_id',
 });
 
 UserGroup.belongsTo(Group, {
-	as: 'group',
 	foreignKey: 'group_id',
 });
 Group.hasMany(UserGroup, {
-	as: 'user_groups',
 	foreignKey: 'group_id',
 });
 Module.hasMany(Permission, {
-	as: 'permisions',
 	foreignKey: 'module_id',
 });
 
 UserGroup.belongsTo(User, { as: 'user', foreignKey: 'user_id' });
 User.hasMany(UserGroup, {
-	as: 'user_groups',
 	foreignKey: 'user_id',
 });
 
 UserPermission.belongsTo(Permission, {
-	as: 'permission',
 	foreignKey: 'permission_id',
 });
 Permission.hasMany(UserPermission, {
-	as: 'user_permission',
 	foreignKey: 'permission_id',
 });
 
 UserPermission.belongsTo(User, {
-	as: 'user',
 	foreignKey: 'user_id',
 });
 User.hasMany(UserPermission, {
-	as: 'user_permission',
 	foreignKey: 'user_id',
 });
 
@@ -131,9 +121,9 @@ Permission.belongsTo(Module, {
 	as: 'module',
 	foreignKey: 'module_id',
 });
-User.hasOne(Student, { as: 'student', foreignKey: 'user_id' });
+User.hasOne(Student, { foreignKey: 'user_id' });
 Student.belongsTo(User, { as: 'user', foreignKey: 'user_id' });
-User.hasOne(Instructor, { as: 'instructor', foreignKey: 'user_id' });
+User.hasOne(Instructor, { foreignKey: 'user_id' });
 Instructor.belongsTo(User, { as: 'user', foreignKey: 'user_id' });
 Course.belongsTo(CourseType, { foreignKey: 'course_type_id' });
 CourseType.hasMany(Course, { foreignKey: 'course_type_id' });

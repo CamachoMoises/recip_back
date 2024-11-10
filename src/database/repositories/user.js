@@ -1,11 +1,23 @@
 import { models } from '../initDB.js';
 
-const { User } = models;
+const { User, Student } = models;
 
-const getAllUsers = async () => User.findAll();
+const getAllUsers = async () =>
+	User.findAll({
+		include: [
+			{
+				model: Student,
+			},
+		],
+	});
 const getUserByUUID = async ({ uuid }) =>
 	User.findOne({
 		where: { uuid },
+		include: [
+			{
+				model: Student,
+			},
+		],
 	});
 
 const createUser = async ({
