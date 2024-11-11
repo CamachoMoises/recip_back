@@ -6,11 +6,15 @@ import {
 	createUser,
 	editUser,
 	getAllUsers,
+	getInstructorByUserId,
+	getStudentByUserId,
+	getUserById,
 	getUserByUUID,
 } from '../database/repositories/user.js';
 export const ListUsers = async (req, res) => {
 	try {
 		const user = await getAllUsers();
+
 		res.send(user);
 	} catch (error) {
 		console.log(error);
@@ -19,7 +23,10 @@ export const ListUsers = async (req, res) => {
 };
 
 export const CreateUser = async (req, res) => {
-	const { error, value } = createUserSchema.validate(req.body);
+	const data = req.body;
+	delete data.student;
+	delete data.instructor;
+	const { error, value } = createUserSchema.validate(data);
 
 	if (error) {
 		console.log(error.message);
@@ -60,6 +67,7 @@ export const CreateUser = async (req, res) => {
 export const UpdateUser = async (req, res) => {
 	const data = req.body;
 	delete data.student;
+	delete data.instructor;
 	const { error, value } = updateUserSchema.validate(data);
 	if (error) {
 		console.log(error.message);
@@ -103,5 +111,32 @@ export const UpdateUser = async (req, res) => {
 	} catch (error) {
 		console.log(error);
 		res.status(500).send('Internal Server Error');
+	}
+};
+
+export const CreateStudent = async (req, res) => {
+	const data = req.body;
+	try {
+		await getStudentByUserId(data.user_id);
+		const user = await getUserById(data.user_id);
+		res.status(201).send(user);
+	} catch (error) {
+		console.error('Error en la validación:', error.message);
+		return res
+			.status(400)
+			.send(`Input Validation Error ${error.message}`);
+	}
+};
+export const CreateInstructor = async (req, res) => {
+	const data = req.body;
+	try {
+		await getInstructorByUserId(data.user_id);
+		const user = await getUserById(data.user_id);
+		res.status(201).send(user);
+	} catch (error) {
+		console.error('Error en la validación:', error.message);
+		return res
+			.status(400)
+			.send(`Input Validation Error ${error.message}`);
 	}
 };

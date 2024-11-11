@@ -9,13 +9,13 @@ export const createTriggers = async (req, res) => {
 		await sequelize.query(insert1);
 		message.push('Tipo Terico creado con éxito');
 	} catch (error) {
-		message.push(error.parent.code);
+		message.push(error.parent);
 	}
 	try {
 		await sequelize.query(insert2);
 		message.push('Tipo practico creado con éxito');
 	} catch (error) {
-		message.push(error.parent.code);
+		message.push(error.parent);
 	}
 
 	const insert3 = `INSERT INTO recip_db.course (name, description, hours, days, status, created_at, updated_at, course_type_id) VALUES ('King Air B200 Curso de Entrenamiento Inicial', 'Verificación de Competencia/Calificación del Piloto Registro de Entrenamiento de Escuela en Tierra', '20', '2',  '1', '2024-10-27 13:15:06', '2024-10-27 13:15:06', '1');`;
@@ -23,13 +23,14 @@ export const createTriggers = async (req, res) => {
 		await sequelize.query(insert3);
 		message.push('Curso King Air B200 en Tierra creado con éxito');
 	} catch (error) {
-		message.push(error.parent.code);
+		message.push(error.parent);
 	}
 	const trg = `CREATE TRIGGER update_student_instructor
   BEFORE UPDATE ON user
   FOR EACH ROW
   BEGIN
     UPDATE student SET status = NEW.is_active WHERE (user_id = NEW.id);
+    UPDATE instructor SET status = NEW.is_active WHERE (user_id = NEW.id);
   END;`;
 	try {
 		await sequelize.query(trg);
