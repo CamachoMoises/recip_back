@@ -1,6 +1,6 @@
 export default (sequelize, DataTypes) => {
 	return sequelize.define(
-		'rating',
+		'schedule',
 		{
 			id: {
 				autoIncrement: true,
@@ -48,14 +48,18 @@ export default (sequelize, DataTypes) => {
 					key: 'id',
 				},
 			},
-			value: {
-				type: DataTypes.DOUBLE,
+			date: {
+				type: DataTypes.DATEONLY,
+				allowNull: false,
+			},
+			hour: {
+				type: DataTypes.TIME,
 				allowNull: false,
 			},
 		},
 		{
 			sequelize,
-			tableName: 'rating',
+			tableName: 'schedule',
 			timestamps: true,
 			indexes: [
 				{
@@ -70,12 +74,12 @@ export default (sequelize, DataTypes) => {
 					fields: [{ name: 'subject_days_subject_id' }],
 				},
 				{
-					name: 'fk_rating_student1_idx',
+					name: 'fk_schedule_student1_idx',
 					using: 'BTREE',
 					fields: [{ name: 'student_id' }],
 				},
 				{
-					name: 'fk_rating_subject_days1_idx',
+					name: 'fk_schedule_subject_days1_idx',
 					using: 'BTREE',
 					fields: [
 						{ name: 'subject_days_id' },
@@ -83,12 +87,12 @@ export default (sequelize, DataTypes) => {
 					],
 				},
 				{
-					name: 'fk_rating_course_student1_idx',
+					name: 'fk_schedule_course_student1_idx',
 					using: 'BTREE',
 					fields: [{ name: 'course_student_id' }],
 				},
 				{
-					name: 'rating_ibfk_1',
+					name: 'schedule_ibfk_1',
 					using: 'BTREE',
 					fields: [{ name: 'instructor_id' }],
 				},

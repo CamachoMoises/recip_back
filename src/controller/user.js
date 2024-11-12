@@ -10,12 +10,36 @@ import {
 	getStudentByUserId,
 	getUserById,
 	getUserByUUID,
+	getUsersInstructors,
+	getUsersStudents,
 } from '../database/repositories/user.js';
 export const ListUsers = async (req, res) => {
 	try {
 		const user = await getAllUsers();
 
 		res.send(user);
+	} catch (error) {
+		console.log(error);
+		res.status(500).send('Internal Server Error');
+	}
+};
+
+export const ListStudents = async (req, res) => {
+	try {
+		const students = await getUsersStudents();
+
+		res.send(students);
+	} catch (error) {
+		console.log(error);
+		res.status(500).send('Internal Server Error');
+	}
+};
+
+export const ListInstructors = async (req, res) => {
+	try {
+		const instructors = await getUsersInstructors();
+
+		res.send(instructors);
 	} catch (error) {
 		console.log(error);
 		res.status(500).send('Internal Server Error');

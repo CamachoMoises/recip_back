@@ -63,7 +63,6 @@ export const subject_days = (sequelize, DataTypes) => {
 			subject_id: {
 				type: DataTypes.INTEGER,
 				allowNull: false,
-				primaryKey: true,
 				references: {
 					model: 'subject',
 					key: 'id',
@@ -72,7 +71,6 @@ export const subject_days = (sequelize, DataTypes) => {
 			course_id: {
 				type: DataTypes.INTEGER,
 				allowNull: false,
-				primaryKey: true,
 				references: {
 					model: 'course',
 					key: 'id',
@@ -97,11 +95,7 @@ export const subject_days = (sequelize, DataTypes) => {
 					name: 'PRIMARY',
 					unique: true,
 					using: 'BTREE',
-					fields: [
-						{ name: 'id' },
-						{ name: 'subject_id' },
-						{ name: 'course_id' },
-					],
+					fields: [{ name: 'id' }],
 				},
 				{
 					name: 'fk_subject_days_subject1_idx',

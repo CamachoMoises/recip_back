@@ -83,7 +83,6 @@ export const user_group = (sequelize, DataTypes) => {
 			user_id: {
 				type: DataTypes.INTEGER,
 				allowNull: false,
-				primaryKey: true,
 				references: {
 					model: 'user',
 					key: 'id',
@@ -92,7 +91,6 @@ export const user_group = (sequelize, DataTypes) => {
 			group_id: {
 				type: DataTypes.INTEGER,
 				allowNull: false,
-				primaryKey: true,
 				references: {
 					model: 'group',
 					key: 'id',
@@ -108,11 +106,13 @@ export const user_group = (sequelize, DataTypes) => {
 					name: 'PRIMARY',
 					unique: true,
 					using: 'BTREE',
-					fields: [
-						{ name: 'id' },
-						{ name: 'user_id' },
-						{ name: 'group_id' },
-					],
+					fields: [{ name: 'id' }],
+				},
+				{
+					name: 'user_group_user_id_group_id_unique',
+					unique: true,
+					using: 'BTREE',
+					fields: [{ name: 'user_id' }, { name: 'group_id' }],
 				},
 				{
 					name: 'fk_user_group_user1_idx',
