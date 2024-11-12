@@ -80,6 +80,11 @@ export const subject_days = (sequelize, DataTypes) => {
 				type: DataTypes.INTEGER,
 				allowNull: false,
 			},
+			classTime: {
+				type: DataTypes.INTEGER,
+				allowNull: true,
+				defaultValue: 1,
+			},
 			status: {
 				type: DataTypes.TINYINT,
 				allowNull: true,

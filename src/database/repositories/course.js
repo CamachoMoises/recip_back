@@ -9,11 +9,11 @@ const getAllCourses = async () =>
 
 const getAllCoursesTypes = async () => CourseType.findAll();
 
-const getCourseById = async (value) =>
-	Course.findOne({ where: { id: value }, include: [CourseType] });
+const getCourseById = async (id) =>
+	Course.findOne({ where: { id: id }, include: [CourseType] });
 
-const getCourseTypeById = async (value) =>
-	CourseType.findOne({ where: { id: value } });
+const getCourseTypeById = async (id) =>
+	CourseType.findOne({ where: { id: id } });
 
 const createCourse = async ({
 	name,

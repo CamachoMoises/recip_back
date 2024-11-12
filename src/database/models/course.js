@@ -104,6 +104,10 @@ export const course_student = (sequelize, DataTypes) => {
 					key: 'id',
 				},
 			},
+			date: {
+				type: DataTypes.DATEONLY,
+				allowNull: true,
+			},
 			student_id: {
 				type: DataTypes.INTEGER,
 				allowNull: true,

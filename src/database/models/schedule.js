@@ -50,11 +50,16 @@ export default (sequelize, DataTypes) => {
 			},
 			date: {
 				type: DataTypes.DATEONLY,
-				allowNull: false,
+				allowNull: true,
 			},
 			hour: {
 				type: DataTypes.TIME,
-				allowNull: false,
+				allowNull: true,
+			},
+			classTime: {
+				type: DataTypes.INTEGER,
+				allowNull: true,
+				defaultValue: 0,
 			},
 		},
 		{

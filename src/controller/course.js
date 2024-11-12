@@ -29,6 +29,17 @@ export const ListCoursesTypes = async (req, res) => {
 	}
 };
 
+export const CourseDetails = async (req, res) => {
+	const id = req.params.id;
+	try {
+		const course = await getCourseById(id);
+		res.send(course);
+	} catch (error) {
+		console.log(error);
+		res.status(500).send('Internal Server Error');
+	}
+};
+
 export const CreateCourse = async (req, res) => {
 	const data = req.body;
 	const course_type_id = data.type;
