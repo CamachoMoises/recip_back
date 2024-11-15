@@ -11,6 +11,7 @@ import {
 	ListCourses,
 	ListCoursesTypes,
 	UpdateCourse,
+	UpdateCourseStudent,
 } from '../../controller/course.js';
 
 const upload = multer();
@@ -27,6 +28,13 @@ router.post(
 	convertTypes,
 	CreateCourseStudent
 );
+router.put(
+	'/courseStudent/:course_id',
+	upload.none(),
+	convertTypes,
+	UpdateCourseStudent
+);
+
 router.get('/course/:id', CourseDetails);
 router.get('/courseStudent/:id', CourseStudentDetails);
 

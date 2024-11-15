@@ -120,6 +120,21 @@ export const course_student = (sequelize, DataTypes) => {
 				type: DataTypes.STRING(50),
 				allowNull: false,
 			},
+			type_trip: {
+				type: DataTypes.INTEGER,
+				allowNull: true,
+				defaultValue: 1,
+			},
+			license: {
+				type: DataTypes.INTEGER,
+				allowNull: true,
+				defaultValue: 1,
+			},
+			regulation: {
+				type: DataTypes.INTEGER,
+				allowNull: true,
+				defaultValue: 1,
+			},
 		},
 		{
 			sequelize,

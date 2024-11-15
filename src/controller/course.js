@@ -6,6 +6,7 @@ import {
 	createCourse,
 	createCourseStudent,
 	editCourse,
+	editCourseStudent,
 	getAllCourses,
 	getAllCoursesTypes,
 	getCourseById,
@@ -103,6 +104,7 @@ export const CreateCourseStudent = async (req, res) => {
 		}
 	}
 };
+
 export const UpdateCourse = async (req, res) => {
 	const data = req.body;
 	const course_type_id = data.type;
@@ -134,6 +136,27 @@ export const UpdateCourse = async (req, res) => {
 	} catch (error) {
 		console.error('Error en la validación:', error.message);
 
+		console.log(error.message);
+		return res
+			.status(400)
+			.send(`Input Validation Error ${error.message}`);
+	}
+};
+
+export const UpdateCourseStudent = async (req, res) => {
+	const data = req.body;
+	const course_id = req.params.course_id;
+	const { date, student_id } = data;
+
+	try {
+		const courseStudentEdited = await editCourseStudent(
+			course_id,
+			date,
+			student_id
+		);
+		res.send(courseStudentEdited);
+	} catch (error) {
+		console.error('Error en la actualizacion:', error.message);
 		console.log(error.message);
 		return res
 			.status(400)

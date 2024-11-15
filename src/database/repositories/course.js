@@ -76,6 +76,19 @@ const createCourseStudent = async (course_id) => {
 	});
 	return newCourseStudent;
 };
+
+const editCourseStudent = async (course_id, date, student_id) => {
+	const course = await Course.findByPk(course_id);
+	if (!course) {
+		throw new Error('Course not found');
+	}
+	await CourseStudent.update({
+		date,
+		student_id,
+	});
+	return course;
+};
+
 export {
 	getAllCourses,
 	getAllCoursesTypes,
@@ -84,5 +97,6 @@ export {
 	getCourseStudentById,
 	createCourse,
 	editCourse,
+	editCourseStudent,
 	createCourseStudent,
 };
