@@ -1,6 +1,6 @@
 import { models } from '../initDB.js';
 
-const { Course, CourseType } = models;
+const { Course, CourseType, CourseStudent } = models;
 
 const getAllCourses = async () =>
 	Course.findAll({
@@ -8,6 +8,9 @@ const getAllCourses = async () =>
 	});
 
 const getAllCoursesTypes = async () => CourseType.findAll();
+
+const getCourseStudentById = async (id) =>
+	CourseStudent.findOne({ where: { id: id } });
 
 const getCourseById = async (id) =>
 	Course.findOne({ where: { id: id }, include: [CourseType] });
@@ -55,11 +58,31 @@ const editCourse = async ({
 	});
 	return course;
 };
+
+const createCourseStudent = async (course_id) => {
+	let numberCode = 0;
+	const prevCourseStudent = await CourseStudent.findOne({
+		order: [['createdAt', 'DESC']],
+	});
+	console.log(prevCourseStudent);
+	if (prevCourseStudent) {
+		numberCode = prevCourseStudent.id + 1;
+	}
+	const stringCode = String(numberCode).padStart(8, '0');
+	const code = `CS-${stringCode}`;
+	const newCourseStudent = CourseStudent.create({
+		course_id,
+		code,
+	});
+	return newCourseStudent;
+};
 export {
 	getAllCourses,
 	getAllCoursesTypes,
 	getCourseById,
 	getCourseTypeById,
+	getCourseStudentById,
 	createCourse,
 	editCourse,
+	createCourseStudent,
 };

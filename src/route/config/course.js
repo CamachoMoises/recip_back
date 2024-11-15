@@ -5,7 +5,9 @@ import convertTypes from '../../middleware/convertTypes.js';
 // import multer from 'multer';
 import {
 	CourseDetails,
+	CourseStudentDetails,
 	CreateCourse,
+	CreateCourseStudent,
 	ListCourses,
 	ListCoursesTypes,
 	UpdateCourse,
@@ -16,14 +18,16 @@ const router = express.Router();
 
 // Rutas para usuarios
 router.get('/', ListCourses);
-router.get('/courseTypes', ListCoursesTypes);
-router.get('/course/:id', CourseDetails);
 router.post('/', upload.none(), convertTypes, CreateCourse);
 router.put('/', upload.none(), convertTypes, UpdateCourse);
-
-// router.post('/', usuarioController.crearUsuario);
-// router.get('/:id', usuarioController.obtenerUsuarioPorId);
-// router.put('/:id', usuarioController.actualizarUsuario);
-// router.delete('/:id', usuarioController.eliminarUsuario);
+router.get('/courseTypes', ListCoursesTypes);
+router.post(
+	'/courseStudent/:course_id',
+	upload.none(),
+	convertTypes,
+	CreateCourseStudent
+);
+router.get('/course/:id', CourseDetails);
+router.get('/courseStudent/:id', CourseStudentDetails);
 
 export default router;

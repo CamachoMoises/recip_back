@@ -4,10 +4,12 @@ import {
 } from '../database/imput_validation/course.js';
 import {
 	createCourse,
+	createCourseStudent,
 	editCourse,
 	getAllCourses,
 	getAllCoursesTypes,
 	getCourseById,
+	getCourseStudentById,
 } from '../database/repositories/course.js';
 
 export const ListCourses = async (req, res) => {
@@ -34,6 +36,17 @@ export const CourseDetails = async (req, res) => {
 	try {
 		const course = await getCourseById(id);
 		res.send(course);
+	} catch (error) {
+		console.log(error);
+		res.status(500).send('Internal Server Error');
+	}
+};
+
+export const CourseStudentDetails = async (req, res) => {
+	const id = req.params.id;
+	try {
+		const courseStudent = await getCourseStudentById(id);
+		res.send(courseStudent);
 	} catch (error) {
 		console.log(error);
 		res.status(500).send('Internal Server Error');
@@ -69,6 +82,25 @@ export const CreateCourse = async (req, res) => {
 		return res
 			.status(400)
 			.send(`Input Validation Error ${error.message}`);
+	}
+};
+
+export const CreateCourseStudent = async (req, res) => {
+	const course_id = req.params.course_id;
+	const course = await getCourseById(course_id);
+	if (!course) {
+		return res.status(404).send('Curso no encontrado');
+	} else {
+		try {
+			const courseStudent = await createCourseStudent(course_id);
+			res.send(courseStudent);
+		} catch (error) {
+			console.error('Error en la creacion:', error.message);
+			console.log(error.message);
+			return res
+				.status(400)
+				.send(`Input Validation Error ${error.message}`);
+		}
 	}
 };
 export const UpdateCourse = async (req, res) => {
