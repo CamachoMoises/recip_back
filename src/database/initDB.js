@@ -13,6 +13,7 @@ import loadUser, {
 import loadModule from './models/module.js';
 import loadCourse, {
 	course_type as loadCourseType,
+	course_level as loadCourseLevel,
 	course_student as loadCourseStudent,
 } from './models/course.js';
 import loadSubject, {
@@ -58,6 +59,7 @@ const GroupPermission = loadGroupPermission(sequelize, DataTypes);
 const Student = loadStudent(sequelize, DataTypes);
 const Instructor = loadInstructor(sequelize, DataTypes);
 const CourseType = loadCourseType(sequelize, DataTypes);
+const CourseLevel = loadCourseLevel(sequelize, DataTypes);
 const CourseStudent = loadCourseStudent(sequelize, DataTypes);
 const SubjectDays = loadSubjectDays(sequelize, DataTypes);
 
@@ -126,6 +128,9 @@ User.hasOne(Instructor, { foreignKey: 'user_id' });
 Instructor.belongsTo(User, { foreignKey: 'user_id' });
 Course.belongsTo(CourseType, { foreignKey: 'course_type_id' });
 CourseType.hasMany(Course, { foreignKey: 'course_type_id' });
+
+Course.belongsTo(CourseLevel, { foreignKey: 'course_type_id' });
+CourseLevel.hasMany(Course, { foreignKey: 'course_type_id' });
 
 Subject.belongsTo(Course, {
 	foreignKey: 'course_id',
@@ -230,6 +235,7 @@ const models = {
 	Participant,
 	Course,
 	CourseType,
+	CourseLevel,
 	CourseStudent,
 	Group,
 	GroupPermission,

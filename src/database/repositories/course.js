@@ -1,21 +1,50 @@
 import { models } from '../initDB.js';
 
-const { Course, CourseType, CourseStudent } = models;
+const {
+	Course,
+	CourseType,
+	CourseLevel,
+	CourseStudent,
+	Student,
+	User,
+} = models;
 
 const getAllCourses = async () =>
 	Course.findAll({
-		include: [CourseType],
+		include: [CourseType, CourseLevel],
+	});
+
+const getAllCoursesStudent = async () =>
+	CourseStudent.findAll({
+		include: [
+			{
+				model: Student,
+				include: [{ model: User }],
+			},
+			{
+				model: Course,
+				include: [CourseType, CourseLevel],
+			},
+		],
+		order: [['createdAt', 'DESC']],
 	});
 
 const getAllCoursesTypes = async () => CourseType.findAll();
+const getAllCoursesLevel = async () => CourseLevel.findAll();
 
 const getCourseStudentById = async (id) =>
-	CourseStudent.findOne({ where: { id: id } });
+	CourseStudent.findOne({ where: { id: id }, include: [Student] });
 
 const getCourseById = async (id) =>
-	Course.findOne({ where: { id: id }, include: [CourseType] });
+	Course.findOne({
+		where: { id: id },
+		include: [CourseType, CourseLevel],
+	});
 
 const getCourseTypeById = async (id) =>
+	CourseType.findOne({ where: { id: id } });
+
+const getCourseLevelById = async (id) =>
 	CourseType.findOne({ where: { id: id } });
 
 const createCourse = async ({
@@ -24,6 +53,7 @@ const createCourse = async ({
 	hours,
 	days,
 	course_type_id,
+	course_level_id,
 	status,
 }) =>
 	Course.create({
@@ -32,6 +62,7 @@ const createCourse = async ({
 		hours,
 		days,
 		course_type_id,
+		course_level_id,
 		status,
 	});
 
@@ -42,6 +73,7 @@ const editCourse = async ({
 	hours,
 	days,
 	course_type_id,
+	course_level_id,
 	status,
 }) => {
 	const course = await Course.findByPk(id);
@@ -54,6 +86,7 @@ const editCourse = async ({
 		hours,
 		days,
 		course_type_id,
+		course_level_id,
 		status,
 	});
 	return course;
@@ -77,23 +110,42 @@ const createCourseStudent = async (course_id) => {
 	return newCourseStudent;
 };
 
-const editCourseStudent = async (course_id, date, student_id) => {
-	const course = await Course.findByPk(course_id);
-	if (!course) {
+const editCourseStudent = async (
+	course_id,
+	course_student_id,
+	date,
+	student_id,
+	typeTrip,
+	license,
+	regulation
+) => {
+	const courseStudent = await CourseStudent.findByPk(
+		course_student_id
+	);
+	if (!courseStudent) {
 		throw new Error('Course not found');
 	}
-	await CourseStudent.update({
-		date,
-		student_id,
+	const type_trip = typeTrip;
+	const new_date = date ? date : null;
+
+	await courseStudent.update({
+		date: new_date,
+		student_id: student_id,
+		type_trip: type_trip,
+		license: license,
+		regulation: regulation,
 	});
-	return course;
+	return courseStudent;
 };
 
 export {
 	getAllCourses,
+	getAllCoursesStudent,
 	getAllCoursesTypes,
+	getAllCoursesLevel,
 	getCourseById,
 	getCourseTypeById,
+	getCourseLevelById,
 	getCourseStudentById,
 	createCourse,
 	editCourse,

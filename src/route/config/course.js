@@ -9,6 +9,8 @@ import {
 	CreateCourse,
 	CreateCourseStudent,
 	ListCourses,
+	ListCoursesLevel,
+	ListCoursesStudent,
 	ListCoursesTypes,
 	UpdateCourse,
 	UpdateCourseStudent,
@@ -19,9 +21,11 @@ const router = express.Router();
 
 // Rutas para usuarios
 router.get('/', ListCourses);
+router.get('/coursesStudents', ListCoursesStudent);
 router.post('/', upload.none(), convertTypes, CreateCourse);
 router.put('/', upload.none(), convertTypes, UpdateCourse);
 router.get('/courseTypes', ListCoursesTypes);
+router.get('/courseLevel', ListCoursesLevel);
 router.post(
 	'/courseStudent/:course_id',
 	upload.none(),

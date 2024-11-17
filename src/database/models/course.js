@@ -39,6 +39,14 @@ export default (sequelize, DataTypes) => {
 					key: 'id',
 				},
 			},
+			course_level_id: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				references: {
+					model: 'course_level',
+					key: 'id',
+				},
+			},
 		},
 		{
 			sequelize,
@@ -86,6 +94,38 @@ export const course_type = (sequelize, DataTypes) => {
 		}
 	);
 };
+
+export const course_level = (sequelize, DataTypes) => {
+	return sequelize.define(
+		'course_level',
+		{
+			id: {
+				autoIncrement: true,
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				primaryKey: true,
+			},
+			name: {
+				type: DataTypes.STRING(500),
+				allowNull: false,
+			},
+		},
+		{
+			sequelize,
+			tableName: 'course_level',
+			timestamps: true,
+			indexes: [
+				{
+					name: 'PRIMARY',
+					unique: true,
+					using: 'BTREE',
+					fields: [{ name: 'id' }],
+				},
+			],
+		}
+	);
+};
+
 export const course_student = (sequelize, DataTypes) => {
 	return sequelize.define(
 		'course_student',
@@ -132,6 +172,11 @@ export const course_student = (sequelize, DataTypes) => {
 			},
 			regulation: {
 				type: DataTypes.INTEGER,
+				allowNull: true,
+				defaultValue: 1,
+			},
+			status: {
+				type: DataTypes.BOOLEAN,
 				allowNull: true,
 				defaultValue: 1,
 			},

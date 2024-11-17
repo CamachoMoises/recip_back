@@ -1,5 +1,8 @@
 import Joi from 'joi';
-import { getCourseTypeById } from '../repositories/course.js';
+import {
+	getCourseLevelById,
+	getCourseTypeById,
+} from '../repositories/course.js';
 
 const createCourseSchema = Joi.object({
 	name: Joi.alternatives().try(Joi.string().max(500), Joi.number()),
@@ -16,6 +19,18 @@ const createCourseSchema = Joi.object({
 			if (!record) {
 				return helpers.error('custom', {
 					message: 'Course type not found',
+				});
+			}
+			// console.log(value);
+			return value;
+		}),
+	course_level_id: Joi.number()
+		.required()
+		.external(async (value, helpers) => {
+			const record = await getCourseLevelById(value);
+			if (!record) {
+				return helpers.error('custom', {
+					message: 'Course level not found',
 				});
 			}
 			// console.log(value);
@@ -40,6 +55,18 @@ const updateCourseSchema = Joi.object({
 			if (!record) {
 				return helpers.error('custom', {
 					message: 'Course type not found',
+				});
+			}
+			// console.log(value);
+			return value;
+		}),
+	course_level_id: Joi.number()
+		.required()
+		.external(async (value, helpers) => {
+			const record = await getCourseLevelById(value);
+			if (!record) {
+				return helpers.error('custom', {
+					message: 'Course level not found',
 				});
 			}
 			// console.log(value);
