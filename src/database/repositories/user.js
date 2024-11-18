@@ -1,6 +1,6 @@
 import { models } from '../initDB.js';
 
-const { User, Student, Instructor } = models;
+const { User, Student, Instructor, UserDocType } = models;
 
 const getAllUsers = async () =>
 	User.findAll({
@@ -10,6 +10,9 @@ const getAllUsers = async () =>
 			},
 			{
 				model: Instructor,
+			},
+			{
+				model: UserDocType,
 			},
 		],
 	});
@@ -23,8 +26,12 @@ const getUserByUUID = async ({ uuid }) =>
 			{
 				model: Instructor,
 			},
+			{
+				model: UserDocType,
+			},
 		],
 	});
+const getAllUserDocType = async () => UserDocType.findAll();
 
 const getStudentByUserId = async (user_id) => {
 	const user = await User.findByPk(user_id);
@@ -62,6 +69,9 @@ const getUserById = async (id) => {
 			{
 				model: Instructor,
 			},
+			{
+				model: UserDocType,
+			},
 		],
 	});
 	if (!user) throw new Error('User not found');
@@ -70,6 +80,7 @@ const getUserById = async (id) => {
 const createUser = async ({
 	name,
 	doc_number,
+	user_doc_type_id,
 	last_name,
 	phone,
 	email,
@@ -81,6 +92,7 @@ const createUser = async ({
 	User.create({
 		name,
 		doc_number,
+		user_doc_type_id,
 		last_name,
 		phone,
 		email,
@@ -94,6 +106,7 @@ const editUser = async ({
 	uuid,
 	name,
 	doc_number,
+	user_doc_type_id,
 	last_name,
 	phone,
 	email,
@@ -109,6 +122,7 @@ const editUser = async ({
 		user.name = name;
 		user.doc_number = doc_number;
 		user.last_name = last_name;
+		user.user_doc_type_id = user_doc_type_id;
 		user.phone = phone;
 		user.email = email;
 		user.is_active = is_active;
@@ -128,6 +142,9 @@ const getUsersStudents = async () => {
 				model: Student,
 				required: true,
 			},
+			{
+				model: UserDocType,
+			},
 		],
 	});
 	return students;
@@ -140,6 +157,9 @@ const getUsersInstructors = async () => {
 				model: Instructor,
 				required: true,
 			},
+			{
+				model: UserDocType,
+			},
 		],
 	});
 	return instructor;
@@ -149,6 +169,7 @@ export {
 	getAllUsers,
 	getUsersStudents,
 	getUsersInstructors,
+	getAllUserDocType,
 	getUserByUUID,
 	createUser,
 	editUser,

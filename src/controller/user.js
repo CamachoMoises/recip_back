@@ -5,6 +5,7 @@ import {
 import {
 	createUser,
 	editUser,
+	getAllUserDocType,
 	getAllUsers,
 	getInstructorByUserId,
 	getStudentByUserId,
@@ -23,7 +24,15 @@ export const ListUsers = async (req, res) => {
 		res.status(500).send('Internal Server Error');
 	}
 };
-
+export const ListUserDocType = async (req, res) => {
+	try {
+		const courses = await getAllUserDocType();
+		res.send(courses);
+	} catch (error) {
+		console.log(error);
+		res.status(500).send('Internal Server Error');
+	}
+};
 export const ListStudents = async (req, res) => {
 	try {
 		const students = await getUsersStudents();
@@ -61,6 +70,7 @@ export const CreateUser = async (req, res) => {
 	const {
 		name,
 		doc_number,
+		user_doc_type_id,
 		last_name,
 		phone,
 		email,
@@ -74,6 +84,7 @@ export const CreateUser = async (req, res) => {
 		const user = await createUser({
 			name,
 			doc_number,
+			user_doc_type_id,
 			last_name,
 			phone,
 			email,
@@ -104,6 +115,7 @@ export const UpdateUser = async (req, res) => {
 		uuid,
 		name,
 		doc_number,
+		user_doc_type_id,
 		last_name,
 		phone,
 		email,
@@ -118,6 +130,7 @@ export const UpdateUser = async (req, res) => {
 			uuid,
 			name,
 			doc_number,
+			user_doc_type_id,
 			last_name,
 			phone,
 			email,

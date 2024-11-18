@@ -20,7 +20,15 @@ export default (sequelize, DataTypes) => {
 			},
 			doc_number: {
 				type: DataTypes.INTEGER,
+				allowNull: false, // No permite valores nulos
+			},
+			user_doc_type_id: {
+				type: DataTypes.INTEGER,
 				allowNull: false,
+				references: {
+					model: 'user_doc_type',
+					key: 'id',
+				},
 			},
 			phone: {
 				type: DataTypes.STRING(255),
@@ -36,7 +44,11 @@ export default (sequelize, DataTypes) => {
 			},
 			email: {
 				type: DataTypes.STRING(500),
-				allowNull: true,
+				allowNull: false, // No permite valores nulos
+				unique: true, // Define el campo como único
+				validate: {
+					isEmail: true, // Validación para asegurarse de que el formato sea un correo electrónico válido
+				},
 			},
 			is_superuser: {
 				type: DataTypes.BOOLEAN,
@@ -266,6 +278,42 @@ export const instructor = (sequelize, DataTypes) => {
 					name: 'fk_instructor_user1_idx',
 					using: 'BTREE',
 					fields: [{ name: 'user_id' }],
+				},
+			],
+		}
+	);
+};
+
+export const user_doc_type = (sequelize, DataTypes) => {
+	return sequelize.define(
+		'user_doc_type',
+		{
+			id: {
+				autoIncrement: true,
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				primaryKey: true,
+			},
+			name: {
+				type: DataTypes.STRING(500),
+				allowNull: false,
+			},
+			symbol: {
+				type: DataTypes.STRING(500),
+				allowNull: false,
+				unique: true,
+			},
+		},
+		{
+			sequelize,
+			tableName: 'user_doc_type',
+			timestamps: true,
+			indexes: [
+				{
+					name: 'PRIMARY',
+					unique: true,
+					using: 'BTREE',
+					fields: [{ name: 'id' }],
 				},
 			],
 		}

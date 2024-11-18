@@ -7,6 +7,7 @@ import loadGroup, {
 import loadUser, {
 	user_group as loadUserGroup,
 	user_permission as loadUserPermission,
+	user_doc_type as loadUserDocType,
 	student as loadStudent,
 	instructor as loadInstructor,
 } from './models/user.js';
@@ -59,6 +60,7 @@ const GroupPermission = loadGroupPermission(sequelize, DataTypes);
 const Student = loadStudent(sequelize, DataTypes);
 const Instructor = loadInstructor(sequelize, DataTypes);
 const CourseType = loadCourseType(sequelize, DataTypes);
+const UserDocType = loadUserDocType(sequelize, DataTypes);
 const CourseLevel = loadCourseLevel(sequelize, DataTypes);
 const CourseStudent = loadCourseStudent(sequelize, DataTypes);
 const SubjectDays = loadSubjectDays(sequelize, DataTypes);
@@ -126,11 +128,12 @@ User.hasOne(Student, { foreignKey: 'user_id' });
 Student.belongsTo(User, { foreignKey: 'user_id' });
 User.hasOne(Instructor, { foreignKey: 'user_id' });
 Instructor.belongsTo(User, { foreignKey: 'user_id' });
+User.belongsTo(UserDocType, { foreignKey: 'user_doc_type_id' });
+UserDocType.hasMany(User, { foreignKey: 'user_doc_type_id' });
 Course.belongsTo(CourseType, { foreignKey: 'course_type_id' });
 CourseType.hasMany(Course, { foreignKey: 'course_type_id' });
-
-Course.belongsTo(CourseLevel, { foreignKey: 'course_type_id' });
-CourseLevel.hasMany(Course, { foreignKey: 'course_type_id' });
+Course.belongsTo(CourseLevel, { foreignKey: 'course_level_id' });
+CourseLevel.hasMany(Course, { foreignKey: 'course_level_id' });
 
 Subject.belongsTo(Course, {
 	foreignKey: 'course_id',
@@ -250,6 +253,7 @@ const models = {
 	User,
 	UserGroup,
 	UserPermission,
+	UserDocType,
 };
 
 export { sequelize, models };

@@ -15,6 +15,7 @@ const createUserSchema = Joi.object({
 		Joi.string().max(200),
 		Joi.number()
 	),
+	user_doc_type_id: Joi.number(),
 	is_superuser: Joi.boolean(),
 	is_staff: Joi.boolean(),
 	is_active: Joi.boolean(),
@@ -28,6 +29,7 @@ const updateUserSchema = Joi.object({
 		Joi.number()
 	),
 	doc_number: Joi.number().required(),
+	user_doc_type_id: Joi.number(),
 	email: Joi.string()
 		.email({ minDomainSegments: 2, tlds: { allow: ['com', 'net'] } })
 		.required(),

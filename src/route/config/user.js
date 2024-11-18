@@ -8,6 +8,7 @@ import {
 	CreateInstructor,
 	ListStudents,
 	ListInstructors,
+	ListUserDocType,
 } from '../../controller/user.js';
 import convertTypes from '../../middleware/convertTypes.js';
 const upload = multer();
@@ -15,6 +16,8 @@ const router = express.Router();
 
 // Rutas para usuarios
 router.get('/', ListUsers);
+router.get('/userDocType', ListUserDocType);
+
 router.get('/student', ListStudents);
 router.get('/instructor', ListInstructors);
 router.post('/', upload.none(), convertTypes, CreateUser);
