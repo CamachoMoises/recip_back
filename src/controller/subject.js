@@ -37,9 +37,10 @@ export const CreateSubject = async (req, res) => {
 	const data = req.body;
 	try {
 		const new_data = await createSubjectSchema.validateAsync(data);
-		const { name, course_id, order, status } = new_data;
+		const { name, hours, course_id, order, status } = new_data;
 		const new_subject = await createSubject({
 			name,
+			hours,
 			course_id,
 			order,
 			status,

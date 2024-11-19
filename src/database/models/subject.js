@@ -16,6 +16,11 @@ export default (sequelize, DataTypes) => {
 				type: DataTypes.STRING(500),
 				allowNull: false,
 			},
+			hours: {
+				type: DataTypes.FLOAT,
+				allowNull: true,
+				defaultValue: 0,
+			},
 			status: {
 				type: DataTypes.TINYINT,
 				allowNull: true,

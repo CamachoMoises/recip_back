@@ -3,6 +3,7 @@ import { getCourseById } from '../repositories/course.js';
 
 const createSubjectSchema = Joi.object({
 	name: Joi.alternatives().try(Joi.string().max(500), Joi.number()),
+	hours: Joi.number().required(),
 	course_id: Joi.number()
 		.required()
 		.external(async (value, helpers) => {
@@ -22,6 +23,7 @@ const createSubjectSchema = Joi.object({
 const updateSubjectSchema = Joi.object({
 	id: Joi.number().required(),
 	name: Joi.alternatives().try(Joi.string().max(500), Joi.number()),
+	hours: Joi.number().required(),
 	course_id: Joi.number()
 		.required()
 		.external(async (value, helpers) => {

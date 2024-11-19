@@ -18,9 +18,16 @@ const getAllCourseSubjects = async (id) => {
 	});
 	return data;
 };
-const createSubject = async ({ name, course_id, order, status }) =>
+const createSubject = async ({
+	name,
+	hours,
+	course_id,
+	order,
+	status,
+}) =>
 	Subject.create({
 		name,
+		hours,
 		course_id,
 		order,
 		status,
