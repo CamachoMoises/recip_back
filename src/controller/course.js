@@ -90,7 +90,7 @@ export const CreateCourse = async (req, res) => {
 		const {
 			name,
 			description,
-			hours,
+			// hours,
 			days,
 			course_type_id,
 			course_level_id,
@@ -100,7 +100,7 @@ export const CreateCourse = async (req, res) => {
 		const new_course = await createCourse({
 			name,
 			description,
-			hours,
+			// hours,
 			days,
 			course_type_id,
 			course_level_id,
@@ -143,6 +143,7 @@ export const UpdateCourse = async (req, res) => {
 	const course_level_id = data.level;
 	delete data.type;
 	delete data.level;
+	delete data.hours;
 	delete data.course_type;
 	delete data.course_level;
 	data.course_type_id = course_type_id;
@@ -153,7 +154,7 @@ export const UpdateCourse = async (req, res) => {
 			id,
 			name,
 			description,
-			hours,
+			// hours,
 			days,
 			course_type_id,
 			course_level_id,
@@ -163,7 +164,7 @@ export const UpdateCourse = async (req, res) => {
 			id,
 			name,
 			description,
-			hours,
+			// hours,
 			days,
 			course_type_id,
 			course_level_id,

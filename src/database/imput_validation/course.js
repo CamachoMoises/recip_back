@@ -10,7 +10,7 @@ const createCourseSchema = Joi.object({
 		Joi.string().max(500),
 		Joi.number()
 	),
-	hours: Joi.number().required(),
+	// hours: Joi.number().required(),
 	days: Joi.number().required(),
 	course_type_id: Joi.number()
 		.required()
@@ -45,7 +45,7 @@ const updateCourseSchema = Joi.object({
 		Joi.string().max(500),
 		Joi.number()
 	),
-	hours: Joi.number().required(),
+	// hours: Joi.number().required(),
 	days: Joi.number().required(),
 
 	course_type_id: Joi.number()

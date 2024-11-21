@@ -50,7 +50,7 @@ const getCourseLevelById = async (id) =>
 const createCourse = async ({
 	name,
 	description,
-	hours,
+	// hours,
 	days,
 	course_type_id,
 	course_level_id,
@@ -59,7 +59,7 @@ const createCourse = async ({
 	Course.create({
 		name,
 		description,
-		hours,
+		// hours,
 		days,
 		course_type_id,
 		course_level_id,
@@ -70,7 +70,7 @@ const editCourse = async ({
 	id,
 	name,
 	description,
-	hours,
+	// hours,
 	days,
 	course_type_id,
 	course_level_id,
@@ -83,7 +83,7 @@ const editCourse = async ({
 	await course.update({
 		name,
 		description,
-		hours,
+		// hours,
 		days,
 		course_type_id,
 		course_level_id,

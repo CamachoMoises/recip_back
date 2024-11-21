@@ -60,10 +60,11 @@ export const UpdateSubject = async (req, res) => {
 	const data = req.body;
 	try {
 		const new_data = await updateSubjectSchema.validateAsync(data);
-		const { id, name, course_id, order, status } = new_data;
+		const { id, name, hours, course_id, order, status } = new_data;
 		const edited_subject = await editSubject({
 			id,
 			name,
+			hours,
 			course_id,
 			order,
 			status,

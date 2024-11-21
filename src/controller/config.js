@@ -87,9 +87,54 @@ export const createTriggers = async (req, res) => {
 			UPDATE student SET status = NEW.is_active WHERE (user_id = NEW.id);
 			UPDATE instructor SET status = NEW.is_active WHERE (user_id = NEW.id);
 		END;`;
+
+	const trg2 = `CREATE TRIGGER subject_AFTER_INSERT
+		AFTER INSERT ON subject FOR EACH ROW
+		BEGIN
+			UPDATE recip_db.course 
+			SET 
+				hours = (SELECT 
+						SUM(hours) as hours
+					FROM
+						recip_db.subject
+					WHERE
+						course_id = new.course_id
+					GROUP BY course_id)
+			WHERE
+				(id = new.course_id);
+		END;`;
+	const trg3 = `CREATE TRIGGER subject_AFTER_UPDATE
+		AFTER UPDATE ON subject FOR EACH ROW
+		BEGIN
+			UPDATE recip_db.course 
+			SET 
+				hours = (SELECT 
+						SUM(hours) as hours
+					FROM
+						recip_db.subject
+					WHERE
+						course_id = new.course_id
+					GROUP BY course_id)
+			WHERE
+				(id = new.course_id);
+		END;`;
 	try {
 		await sequelize.query(trg);
-		message.push('user trigger creado');
+		message.push('user trigger 1 creado');
+	} catch (error) {
+		message.push(error.parent);
+	}
+
+	try {
+		await sequelize.query(trg2);
+		message.push('user trigger 2 creado');
+	} catch (error) {
+		message.push(error.parent);
+	}
+
+	try {
+		await sequelize.query(trg3);
+		message.push('user trigger 3 creado');
 	} catch (error) {
 		message.push(error.parent);
 	}

@@ -36,6 +36,7 @@ const createSubject = async ({
 const editSubject = async ({
 	id,
 	name,
+	hours,
 	course_id,
 	order,
 	status,
@@ -47,6 +48,7 @@ const editSubject = async ({
 	await subject.update({
 		id,
 		name,
+		hours,
 		course_id,
 		order,
 		status,

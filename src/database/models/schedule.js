@@ -10,7 +10,6 @@ export default (sequelize, DataTypes) => {
 			},
 			instructor_id: {
 				type: DataTypes.INTEGER,
-				allowNull: false,
 				references: {
 					model: 'instructor',
 					key: 'id',
@@ -57,7 +56,7 @@ export default (sequelize, DataTypes) => {
 				allowNull: true,
 			},
 			classTime: {
-				type: DataTypes.INTEGER,
+				type: DataTypes.FLOAT,
 				allowNull: true,
 				defaultValue: 0,
 			},
