@@ -7,6 +7,7 @@ const {
 	CourseStudent,
 	Student,
 	User,
+	Schedule,
 } = models;
 
 const getAllCourses = async () =>
@@ -138,6 +139,59 @@ const editCourseStudent = async (
 	return courseStudent;
 };
 
+const getAllSchedule = async (id) => {
+	const data = await Schedule.findAll({
+		where: {
+			course_student_id: id,
+		},
+	});
+	return data;
+};
+
+const createSchedule = async (
+	instructor_id,
+	course_id,
+	subject_days_id,
+	student_id,
+	subject_days_subject_id,
+	course_student_id,
+	date,
+	hour,
+	classTime
+) => {
+	const newSchedule = await Schedule.create({
+		instructor_id,
+		course_id,
+		subject_days_id,
+		student_id,
+		subject_days_subject_id,
+		course_student_id,
+		date,
+		hour,
+		classTime,
+	});
+	return newSchedule;
+};
+const updateSchedule = async (
+	id,
+	instructor_id,
+	date,
+	hour,
+	classTime
+) => {
+	const editSchedule = await Schedule.findByPk(id);
+	if (!editSchedule) {
+		throw new Error('Course not found');
+	}
+	editSchedule.update({
+		instructor_id,
+		date,
+		hour,
+		classTime,
+	});
+	return editSchedule;
+};
+
 export {
 	getAllCourses,
 	getAllCoursesStudent,
@@ -151,4 +205,7 @@ export {
 	editCourse,
 	editCourseStudent,
 	createCourseStudent,
+	getAllSchedule,
+	createSchedule,
+	updateSchedule,
 };

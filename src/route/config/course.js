@@ -8,12 +8,15 @@ import {
 	CourseStudentDetails,
 	CreateCourse,
 	CreateCourseStudent,
+	CreateSchedule,
 	ListCourses,
 	ListCoursesLevel,
 	ListCoursesStudent,
 	ListCoursesTypes,
+	ListSchedule,
 	UpdateCourse,
 	UpdateCourseStudent,
+	UpdateSchedule,
 } from '../../controller/course.js';
 
 const upload = multer();
@@ -41,5 +44,8 @@ router.put(
 
 router.get('/course/:id', CourseDetails);
 router.get('/courseStudent/:id', CourseStudentDetails);
+router.get('/schedule/:id', ListSchedule);
+router.post('/schedule', upload.none(), convertTypes, CreateSchedule);
+router.put('/schedule', upload.none(), convertTypes, UpdateSchedule);
 
 export default router;
