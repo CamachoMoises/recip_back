@@ -141,6 +141,35 @@ const editCourseStudent = async (
 	});
 	return courseStudent;
 };
+const getScheduleById = async (id) => {
+	const schedule = await Schedule.findOne({
+		where: {
+			id: id,
+		},
+		include: [
+			{
+				model: Student,
+				include: [{ model: User }],
+			},
+			{
+				model: Instructor,
+				include: [{ model: User }],
+			},
+			{
+				model: CourseStudent,
+			},
+			{
+				model: CourseStudent,
+			},
+			{
+				model: SubjectDays,
+				include: [{ model: Subject }],
+			},
+		],
+	});
+
+	return schedule;
+};
 
 const getAllSchedule = async (id) => {
 	const data = await Schedule.findAll({
@@ -233,6 +262,7 @@ export {
 	editCourseStudent,
 	createCourseStudent,
 	getAllSchedule,
+	getScheduleById,
 	createSchedule,
 	updateSchedule,
 };

@@ -15,6 +15,7 @@ import {
 	getAllSchedule,
 	getCourseById,
 	getCourseStudentById,
+	getScheduleById,
 	updateSchedule,
 } from '../database/repositories/course.js';
 
@@ -253,7 +254,8 @@ export const CreateSchedule = async (req, res) => {
 			hour,
 			classTime
 		);
-		res.send(newSchedule);
+		const SC = await getScheduleById(newSchedule.id);
+		res.send(SC);
 	} catch (error) {
 		console.error('Error en la validación:', error.message);
 
@@ -277,7 +279,8 @@ export const UpdateSchedule = async (req, res) => {
 			hour,
 			classTime
 		);
-		res.send(editSchedule);
+		const SC = await getScheduleById(editSchedule.id);
+		res.send(SC);
 	} catch (error) {
 		console.error('Error en la validación:', error.message);
 
