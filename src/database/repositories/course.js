@@ -5,7 +5,10 @@ const {
 	CourseType,
 	CourseLevel,
 	CourseStudent,
+	SubjectDays,
+	Subject,
 	Student,
+	Instructor,
 	User,
 	Schedule,
 } = models;
@@ -144,6 +147,30 @@ const getAllSchedule = async (id) => {
 		where: {
 			course_student_id: id,
 		},
+		include: [
+			{
+				model: Student,
+				include: [{ model: User }],
+			},
+			{
+				model: Instructor,
+				include: [{ model: User }],
+			},
+			{
+				model: CourseStudent,
+			},
+			{
+				model: CourseStudent,
+			},
+			{
+				model: SubjectDays,
+				include: [{ model: Subject }],
+			},
+		],
+		order: [
+			['date', 'ASC'], // Ordenar por fecha en forma ascendente
+			['hour', 'ASC'], // Ordenar por hora en forma ascendente
+		],
 	});
 	return data;
 };
