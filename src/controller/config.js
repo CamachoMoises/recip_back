@@ -4,7 +4,7 @@ import { generateRandomNumber } from './utilities.js';
 export const createTriggers = async (req, res) => {
 	const message = [];
 	// Crear un trigger para una tabla llamada `Users`
-	const insert1 = `INSERT INTO recip_db.course_type (name, created_at, updated_at) VALUES ('Escuela en tierra', '2024-10-27 13:15:06', '2024-10-27 13:15:06');`;
+	const insert1 = `INSERT INTO recip_db.course_type (name, created_at, updated_at) VALUES ('Escuela en Tierra', '2024-10-27 13:15:06', '2024-10-27 13:15:06');`;
 	const insert2 = `INSERT INTO recip_db.course_type (name, created_at, updated_at) VALUES ('Vuelo en FSTD', '2024-10-27 13:15:06', '2024-10-27 13:15:06');`;
 	const insert3 = `INSERT INTO recip_db.course_level (name, created_at, updated_at) VALUES ('Inicial', '2024-10-27 13:15:06', '2024-10-27 13:15:06');`;
 	const insert4 = `INSERT INTO recip_db.course_level (name, created_at, updated_at) VALUES ('Recurente', '2024-10-27 13:15:06', '2024-10-27 13:15:06');`;
