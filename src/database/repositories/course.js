@@ -163,7 +163,9 @@ const getScheduleById = async (id) => {
 			},
 			{
 				model: SubjectDays,
-				include: [{ model: Subject }],
+			},
+			{
+				model: Subject,
 			},
 		],
 	});
@@ -193,7 +195,9 @@ const getAllSchedule = async (id) => {
 			},
 			{
 				model: SubjectDays,
-				include: [{ model: Subject }],
+			},
+			{
+				model: Subject,
 			},
 		],
 		order: [
@@ -209,7 +213,7 @@ const createSchedule = async (
 	course_id,
 	subject_days_id,
 	student_id,
-	subject_days_subject_id,
+	subject_id,
 	course_student_id,
 	date,
 	hour,
@@ -220,7 +224,7 @@ const createSchedule = async (
 		course_id,
 		subject_days_id,
 		student_id,
-		subject_days_subject_id,
+		subject_id,
 		course_student_id,
 		date,
 		hour,

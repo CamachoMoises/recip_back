@@ -168,8 +168,8 @@ Rating.belongsTo(Student, { foreignKey: 'student_id' });
 Rating.belongsTo(Instructor, { foreignKey: 'instructor_id' });
 Rating.belongsTo(CourseStudent, { foreignKey: 'course_student_id' });
 Rating.belongsTo(SubjectDays, { foreignKey: 'subject_days_id' });
-Rating.belongsTo(SubjectDays, {
-	foreignKey: 'subject_days_subject_id',
+Rating.belongsTo(Subject, {
+	foreignKey: 'subject_id',
 });
 
 Schedule.belongsTo(Student, { foreignKey: 'student_id' });
@@ -177,10 +177,8 @@ Schedule.belongsTo(Instructor, { foreignKey: 'instructor_id' });
 Schedule.belongsTo(CourseStudent, {
 	foreignKey: 'course_student_id',
 });
+Schedule.belongsTo(Subject, { foreignKey: 'subject_id' });
 Schedule.belongsTo(SubjectDays, { foreignKey: 'subject_days_id' });
-Schedule.belongsTo(SubjectDays, {
-	foreignKey: 'subject_days_subject_id',
-});
 
 Student.belongsTo(User, { foreignKey: 'user_id' });
 Student.hasMany(Rating, { foreignKey: 'student_id' });
@@ -199,10 +197,10 @@ SubjectDays.belongsTo(Course, { foreignKey: 'course_id' });
 SubjectDays.hasMany(Rating, { foreignKey: 'subject_days_id' });
 SubjectDays.hasMany(Schedule, { foreignKey: 'subject_days_id' });
 SubjectDays.hasMany(Rating, {
-	foreignKey: 'subject_days_subject_id',
+	foreignKey: 'subject_id',
 });
 SubjectDays.hasMany(Schedule, {
-	foreignKey: 'subject_days_subject_id',
+	foreignKey: 'subject_id',
 });
 
 Test.belongsTo(Course, { foreignKey: 'course_id' });

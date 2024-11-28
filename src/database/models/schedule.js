@@ -31,12 +31,12 @@ export default (sequelize, DataTypes) => {
 					key: 'id',
 				},
 			},
-			subject_days_subject_id: {
+			subject_id: {
 				type: DataTypes.INTEGER,
 				allowNull: false,
 				references: {
-					model: 'subject_days',
-					key: 'subject_id',
+					model: 'subject',
+					key: 'id',
 				},
 			},
 			course_student_id: {
@@ -73,22 +73,19 @@ export default (sequelize, DataTypes) => {
 					fields: [{ name: 'id' }],
 				},
 				{
-					name: 'subject_days_subject_id',
+					name: 'fk_schedule_subject_id',
 					using: 'BTREE',
-					fields: [{ name: 'subject_days_subject_id' }],
+					fields: [{ name: 'subject_id' }],
 				},
 				{
-					name: 'fk_schedule_student1_idx',
+					name: 'fk_schedule_student_idx',
 					using: 'BTREE',
 					fields: [{ name: 'student_id' }],
 				},
 				{
-					name: 'fk_schedule_subject_days1_idx',
+					name: 'fk_schedule_subject_days_idx',
 					using: 'BTREE',
-					fields: [
-						{ name: 'subject_days_id' },
-						{ name: 'subject_days_subject_id' },
-					],
+					fields: [{ name: 'subject_days_id' }],
 				},
 				{
 					name: 'fk_schedule_course_student1_idx',
@@ -96,7 +93,7 @@ export default (sequelize, DataTypes) => {
 					fields: [{ name: 'course_student_id' }],
 				},
 				{
-					name: 'schedule_ibfk_1',
+					name: 'fk_schedule_instructor_idx',
 					using: 'BTREE',
 					fields: [{ name: 'instructor_id' }],
 				},
