@@ -206,3 +206,215 @@ export const course_student = (sequelize, DataTypes) => {
 		}
 	);
 };
+
+export const course_student_test = (sequelize, DataTypes) => {
+	return sequelize.define(
+		'course_student_test',
+		{
+			id: {
+				autoIncrement: true,
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				primaryKey: true,
+			},
+			course_id: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				references: {
+					model: 'course',
+					key: 'id',
+				},
+			},
+			score: {
+				type: DataTypes.FLOAT,
+				allowNull: true,
+				defaultValue: 0,
+			},
+			test_id: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				references: {
+					model: 'test',
+					key: 'id',
+				},
+			},
+			attempts: {
+				type: DataTypes.INTEGER,
+				allowNull: true,
+				defaultValue: 1,
+			},
+			course_student_id: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				references: {
+					model: 'course_student',
+					key: 'id',
+				},
+			},
+			date: {
+				type: DataTypes.DATE,
+				allowNull: true,
+			},
+			student_id: {
+				type: DataTypes.INTEGER,
+				allowNull: true,
+				references: {
+					model: 'student',
+					key: 'id',
+				},
+			},
+			code: {
+				type: DataTypes.STRING(50),
+				allowNull: false,
+			},
+			status: {
+				type: DataTypes.BOOLEAN,
+				allowNull: true,
+				defaultValue: 1,
+			},
+		},
+		{
+			sequelize,
+			tableName: 'course_student_test',
+			timestamps: true,
+			indexes: [
+				{
+					name: 'PRIMARY',
+					unique: true,
+					using: 'BTREE',
+					fields: [{ name: 'id' }],
+				},
+				{
+					name: 'fk_course_student_test_course_idx',
+					using: 'BTREE',
+					fields: [{ name: 'course_id' }],
+				},
+				{
+					name: 'fk_course_student_test_test_idx',
+					using: 'BTREE',
+					fields: [{ name: 'test_id' }],
+				},
+				{
+					name: 'fk_course_student_test_course_student_idx',
+					using: 'BTREE',
+					fields: [{ name: 'course_student_id' }],
+				},
+				{
+					name: 'fk_course_student_test_student1_idx',
+					using: 'BTREE',
+					fields: [{ name: 'student_id' }],
+				},
+			],
+		}
+	);
+};
+
+export const course_student_test_question = (
+	sequelize,
+	DataTypes
+) => {
+	return sequelize.define(
+		'course_student_test_question',
+		{
+			id: {
+				autoIncrement: true,
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				primaryKey: true,
+			},
+			course_id: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				references: {
+					model: 'course',
+					key: 'id',
+				},
+			},
+			test_id: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				references: {
+					model: 'test',
+					key: 'id',
+				},
+			},
+			course_student_id: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				references: {
+					model: 'course_student',
+					key: 'id',
+				},
+			},
+			course_student_test_id: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				references: {
+					model: 'course_student_test',
+					key: 'id',
+				},
+			},
+			question_id: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				references: {
+					model: 'question',
+					key: 'id',
+				},
+			},
+			Answered: {
+				type: DataTypes.BOOLEAN,
+				allowNull: true,
+				defaultValue: 0,
+			},
+			status: {
+				type: DataTypes.INTEGER,
+				allowNull: true,
+				defaultValue: 0,
+			},
+		},
+		{
+			sequelize,
+			tableName: 'course_student_test_question',
+			timestamps: true,
+			indexes: [
+				{
+					name: 'PRIMARY',
+					unique: true,
+					using: 'BTREE',
+					fields: [{ name: 'id' }],
+				},
+				{
+					name: 'fk_course_student_test_question_course_idx',
+					using: 'BTREE',
+					fields: [{ name: 'course_id' }],
+				},
+				{
+					name: 'fk_course_student_test_question_test_idx',
+					using: 'BTREE',
+					fields: [{ name: 'test_id' }],
+				},
+				{
+					name: 'fk_course_student_test_question_course_student_idx',
+					using: 'BTREE',
+					fields: [{ name: 'course_student_id' }],
+				},
+				{
+					name: 'fk_course_student_test_question_course_student_test_idx',
+					using: 'BTREE',
+					fields: [{ name: 'course_student_test_id' }],
+				},
+				{
+					name: 'fk_course_student_test_question_question_idx',
+					using: 'BTREE',
+					fields: [{ name: 'question_id' }],
+				},
+				{
+					name: 'fk_course_student_test_question_student1_idx',
+					using: 'BTREE',
+					fields: [{ name: 'student_id' }],
+				},
+			],
+		}
+	);
+};
