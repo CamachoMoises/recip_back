@@ -6,3 +6,15 @@ export const generateRandomNumber = (digits) => {
 
 	return Math.floor(min + Math.random() * (max - min + 1));
 };
+
+export function getRandomSubset(array, minLength, newLength) {
+	if (array.length <= minLength || newLength > minLength) {
+		console.log(`El array debe tener más de ${minLength} elementos.`);
+		throw new Error(
+			`El array debe tener más de ${minLength} elementos.`
+		);
+	}
+
+	const shuffled = [...array].sort(() => Math.random() - 0.5); // Mezclar el array
+	return shuffled.slice(0, newLength); // Tomar los primeros 10 elementos
+}

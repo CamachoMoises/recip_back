@@ -15,6 +15,7 @@ import groupPermission from './route/config/permission.js';
 import courseRoutes from './route/config/course.js';
 import subjectRoutes from './route/config/subject.js';
 import configRoutes from './route/config/config.js';
+import testRoutes from './route/config/test.js';
 const app = express();
 // const upload = multer();
 app.use(morgan('dev'));
@@ -30,6 +31,7 @@ app.use('/api/module', moduleRoutes);
 app.use('/api/group', groupRoutes);
 app.use('/api/permission', groupPermission);
 app.use('/api/config', configRoutes);
+app.use('/api/test', testRoutes);
 
 // app.get('/participants', async (req, res) => {
 // 	try {

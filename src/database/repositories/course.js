@@ -5,6 +5,8 @@ const {
 	CourseType,
 	CourseLevel,
 	CourseStudent,
+	CourseStudentTest,
+	CourseStudentTestQuestion,
 	SubjectDays,
 	Subject,
 	Student,
@@ -28,6 +30,10 @@ const getAllCoursesStudent = async () =>
 			{
 				model: Course,
 				include: [CourseType, CourseLevel],
+			},
+			{
+				model: CourseStudentTest,
+				include: [CourseStudentTestQuestion],
 			},
 		],
 		order: [['createdAt', 'DESC']],

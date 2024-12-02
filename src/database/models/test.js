@@ -193,6 +193,11 @@ export const answer = (sequelize, DataTypes) => {
 					key: 'id',
 				},
 			},
+			is_correct: {
+				type: DataTypes.BOOLEAN,
+				allowNull: true,
+				defaultValue: 0,
+			},
 			status: {
 				type: DataTypes.BOOLEAN,
 				allowNull: true,
