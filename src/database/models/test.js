@@ -57,6 +57,11 @@ export const question_type = (sequelize, DataTypes) => {
 				allowNull: false,
 				primaryKey: true,
 			},
+			value: {
+				type: DataTypes.FLOAT,
+				allowNull: true,
+				defaultValue: 0,
+			},
 			name: {
 				type: DataTypes.STRING(500),
 				allowNull: false,

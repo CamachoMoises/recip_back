@@ -1,3 +1,4 @@
+import moment from 'moment';
 import {
 	getAllTest,
 	getAllTestCourse,
@@ -27,9 +28,9 @@ export const ListTestCourse = async (req, res) => {
 	}
 };
 export const ListQuestionTest = async (req, res) => {
-	const id = req.params.id;
+	const test_id = req.params.test_id;
 	try {
-		const question = await getQuestionTest(id);
+		const question = await getQuestionTest(test_id);
 		res.send(question);
 	} catch (error) {
 		console.log(error);
@@ -49,27 +50,41 @@ export const ListAnswerQuestion = async (req, res) => {
 };
 
 export const CreateCourseStudentTest = async (req, res) => {
+	const currentDate = moment();
+	let exist = false;
 	const course_student_id = req.params.course_student_id;
-	const test_id = req.params.test_id;
-	const detalis = await getCourseStudentTestByCourseStudent(
+	// const test_id = req.params.test_id;
+	const details = await getCourseStudentTestByCourseStudent(
 		course_student_id
 	);
-	console.log(course_student_id, test_id, 'ojo', detalis);
-	// try {
-	// 	const courseStudentTest = await createCourseStudentTest(
-	// 		course_student_id,
-	// 		test_id
-	// 	);
-	// 	res.send(courseStudentTest);
-	// } catch (error) {
-	// console.error('Error en la creacion:', error.message);
-	// console.log(error.message);
+	if (details.length > 0) {
+		const data = details.pop();
+		const dateTest = moment(data.date).add(4, 'hours');
+		const horas = currentDate.diff(dateTest, 'hours', true);
+		if (horas < 2 && horas > 0) {
+			exist = true;
+		}
+	}
+	try {
+		if (!exist) {
+			// const courseStudentTest = await createCourseStudentTest(
+			// 	course_student_id,
+			// 	test_id
+			// );
+			// res.send(courseStudentTest);
+			res.status(400);
+		} else {
+			const courseStudentTest =
+				await getCourseStudentTestByCourseStudent(course_student_id);
+			res.send(courseStudentTest.pop());
+		}
+	} catch (error) {
+		console.error('Error en la creacion:', error.message);
+		console.log(error.message);
 
-	return (
-		res
+		return res
 			.status(400)
-			// .send(`Input Validation Error ${error.message}`);
-			.send(`Input Validation Error ${course_student_id}`)
-	);
-	// }
+			.send(`Input Validation Error ${error.message}`);
+		// .send(`Input Validation Error ${course_student_id}`)
+	}
 };

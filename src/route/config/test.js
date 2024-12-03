@@ -14,7 +14,7 @@ const router = express.Router();
 
 router.get('/', ListTest);
 router.get('/tests/:id', ListTestCourse);
-router.get('/questions/:id', ListQuestionTest);
+router.get('/questions/:test_id', ListQuestionTest);
 router.get('/answers/:id', ListAnswerQuestion);
 router.post(
 	'/courseStudentTest/:course_student_id/:test_id',

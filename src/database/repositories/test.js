@@ -1,13 +1,13 @@
 import { models } from '../initDB.js';
 
 const {
-	Subject,
-	SubjectDays,
+	// Subject,
+	// SubjectDays,
 	Test,
 	QuestionType,
 	Question,
 	Answer,
-	CourseStudent,
+	// CourseStudent,
 	CourseStudentTest,
 } = models;
 
@@ -22,11 +22,12 @@ const getAllTestCourse = async (id) => {
 	return data;
 };
 
-const getQuestionTest = async (id) => {
+const getQuestionTest = async (test_id) => {
 	const data = await Question.findAll({
 		where: {
-			test_id: id,
+			test_id: test_id,
 		},
+		order: [['question_type_id', 'ASC']],
 		include: [
 			{
 				model: Answer,
