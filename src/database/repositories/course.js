@@ -1,3 +1,4 @@
+import { Op } from 'sequelize';
 import { models } from '../initDB.js';
 
 const {
@@ -6,7 +7,6 @@ const {
 	CourseLevel,
 	CourseStudent,
 	CourseStudentTest,
-	CourseStudentTestQuestion,
 	SubjectDays,
 	Subject,
 	Student,
@@ -33,7 +33,19 @@ const getAllCoursesStudent = async () =>
 			},
 			{
 				model: CourseStudentTest,
-				include: [CourseStudentTestQuestion],
+			},
+			{
+				model: Schedule,
+				include: [
+					{
+						model: Subject,
+						where: {
+							name: {
+								[Op.like]: `%examen%`, // Buscar valores que contengan "valo"
+							},
+						},
+					},
+				],
 			},
 		],
 		order: [['createdAt', 'DESC']],
@@ -43,7 +55,34 @@ const getAllCoursesTypes = async () => CourseType.findAll();
 const getAllCoursesLevel = async () => CourseLevel.findAll();
 
 const getCourseStudentById = async (id) =>
-	CourseStudent.findOne({ where: { id: id }, include: [Student] });
+	CourseStudent.findOne({
+		where: { id: id },
+		include: [
+			{
+				model: Student,
+			},
+			{
+				model: Course,
+				include: [CourseType, CourseLevel],
+			},
+			{
+				model: CourseStudentTest,
+			},
+			{
+				model: Schedule,
+				include: [
+					{
+						model: Subject,
+						where: {
+							name: {
+								[Op.like]: `%examen%`,
+							},
+						},
+					},
+				],
+			},
+		],
+	});
 
 const getCourseById = async (id) =>
 	Course.findOne({

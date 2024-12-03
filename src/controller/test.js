@@ -46,3 +46,24 @@ export const ListAnswerQuestion = async (req, res) => {
 		res.status(500).send('Internal Server Error');
 	}
 };
+
+export const CreateCourseStudentTest = async (req, res) => {
+	const course_student_id = req.params.course_student_id;
+	console.log(course_student_id, 'ojo');
+	// try {
+	// 	const courseStudentTest = await createCourseStudent(
+	// 		course_student_id
+	// 	);
+	// 	res.send(courseStudentTest);
+	// } catch (error) {
+	// 	console.error('Error en la creacion:', error.message);
+	// 	console.log(error.message);
+
+	return (
+		res
+			.status(400)
+			// .send(`Input Validation Error ${error.message}`);
+			.send(`Input Validation Error ${course_student_id}`)
+	);
+	// }
+};

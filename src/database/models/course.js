@@ -272,6 +272,11 @@ export const course_student_test = (sequelize, DataTypes) => {
 				allowNull: true,
 				defaultValue: 1,
 			},
+			finished: {
+				type: DataTypes.BOOLEAN,
+				allowNull: true,
+				defaultValue: 0,
+			},
 		},
 		{
 			sequelize,
