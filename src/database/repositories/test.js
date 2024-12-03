@@ -1,7 +1,15 @@
 import { models } from '../initDB.js';
 
-const { Subject, SubjectDays, Test, QuestionType, Question, Answer } =
-	models;
+const {
+	Subject,
+	SubjectDays,
+	Test,
+	QuestionType,
+	Question,
+	Answer,
+	CourseStudent,
+	CourseStudentTest,
+} = models;
 
 const getAllTest = async () => await Test.findAll();
 
@@ -39,10 +47,20 @@ const getAnswerQuestion = async (id) => {
 	});
 	return data;
 };
+const getCourseStudentTestByCourseStudent = async (id) => {
+	const data = await CourseStudentTest.findAll({
+		where: {
+			course_student_id: id,
+		},
+	});
+
+	return data;
+};
 
 export {
 	getAllTest,
 	getAllTestCourse,
 	getQuestionTest,
 	getAnswerQuestion,
+	getCourseStudentTestByCourseStudent,
 };

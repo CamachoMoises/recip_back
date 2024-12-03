@@ -2,6 +2,7 @@ import {
 	getAllTest,
 	getAllTestCourse,
 	getAnswerQuestion,
+	getCourseStudentTestByCourseStudent,
 	getQuestionTest,
 } from '../database/repositories/test.js';
 
@@ -49,15 +50,20 @@ export const ListAnswerQuestion = async (req, res) => {
 
 export const CreateCourseStudentTest = async (req, res) => {
 	const course_student_id = req.params.course_student_id;
-	console.log(course_student_id, 'ojo');
+	const test_id = req.params.test_id;
+	const detalis = await getCourseStudentTestByCourseStudent(
+		course_student_id
+	);
+	console.log(course_student_id, test_id, 'ojo', detalis);
 	// try {
-	// 	const courseStudentTest = await createCourseStudent(
-	// 		course_student_id
+	// 	const courseStudentTest = await createCourseStudentTest(
+	// 		course_student_id,
+	// 		test_id
 	// 	);
 	// 	res.send(courseStudentTest);
 	// } catch (error) {
-	// 	console.error('Error en la creacion:', error.message);
-	// 	console.log(error.message);
+	// console.error('Error en la creacion:', error.message);
+	// console.log(error.message);
 
 	return (
 		res

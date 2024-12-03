@@ -17,7 +17,7 @@ router.get('/tests/:id', ListTestCourse);
 router.get('/questions/:id', ListQuestionTest);
 router.get('/answers/:id', ListAnswerQuestion);
 router.post(
-	'/courseStudentTest/:course_student_id',
+	'/courseStudentTest/:course_student_id/:test_id',
 	upload.none(),
 	convertTypes,
 	CreateCourseStudentTest
