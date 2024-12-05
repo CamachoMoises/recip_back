@@ -138,6 +138,5 @@ export const createTriggers = async (req, res) => {
 	} catch (error) {
 		message.push(error.parent);
 	}
-
 	res.status(200).json({ message: message });
 };

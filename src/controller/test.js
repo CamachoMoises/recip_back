@@ -1,9 +1,10 @@
 import moment from 'moment';
 import {
+	createCourseStudentTest,
 	getAllTest,
 	getAllTestCourse,
 	getAnswerQuestion,
-	getCourseStudentTestByCourseStudent,
+	getCourseStudentTest,
 	getQuestionTest,
 } from '../database/repositories/test.js';
 
@@ -18,9 +19,11 @@ export const ListTest = async (req, res) => {
 };
 
 export const ListTestCourse = async (req, res) => {
-	const id = req.params.id;
+	const filters = {
+		course_id: req.params.course_id,
+	};
 	try {
-		const test = await getAllTestCourse(id);
+		const test = await getAllTestCourse(filters);
 		res.send(test);
 	} catch (error) {
 		console.log(error);
@@ -49,14 +52,14 @@ export const ListAnswerQuestion = async (req, res) => {
 	}
 };
 
-export const CreateCourseStudentTest = async (req, res) => {
+export const CourseStudentTest = async (req, res) => {
 	const currentDate = moment();
 	let exist = false;
-	const course_student_id = req.params.course_student_id;
-	// const test_id = req.params.test_id;
-	const details = await getCourseStudentTestByCourseStudent(
-		course_student_id
-	);
+	const filters = {
+		course_student_id: req.params.course_student_id,
+		test_id: req.params.test_id,
+	};
+	const details = await getCourseStudentTest(filters);
 	if (details.length > 0) {
 		const data = details.pop();
 		const dateTest = moment(data.date).add(4, 'hours');
@@ -67,15 +70,14 @@ export const CreateCourseStudentTest = async (req, res) => {
 	}
 	try {
 		if (!exist) {
-			// const courseStudentTest = await createCourseStudentTest(
-			// 	course_student_id,
-			// 	test_id
-			// );
-			// res.send(courseStudentTest);
-			res.status(400);
+			const courseStudentTest = await createCourseStudentTest(
+				filters.course_student_id,
+				filters.test_id
+			);
+
+			res.send(courseStudentTest);
 		} else {
-			const courseStudentTest =
-				await getCourseStudentTestByCourseStudent(course_student_id);
+			const courseStudentTest = await getCourseStudentTest(filters);
 			res.send(courseStudentTest.pop());
 		}
 	} catch (error) {

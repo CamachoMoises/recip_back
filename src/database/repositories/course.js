@@ -15,10 +15,28 @@ const {
 	Schedule,
 } = models;
 
-const getAllCourses = async () =>
-	Course.findAll({
+const getAllCourses = async (filters) => {
+	const whereClause = {};
+	if (filters.name) {
+		whereClause.name = { [Op.like]: `%${filters.name}%` };
+	}
+	if (filters.description) {
+		whereClause.description = {
+			[Op.like]: `%${filters.description}%`,
+		};
+	}
+	if (filters.course_type_id) {
+		whereClause.course_type_id = filters.course_type_id;
+	}
+	if (filters.course_level_id) {
+		whereClause.course_level_id = filters.course_level_id;
+	}
+	const data = Course.findAll({
 		include: [CourseType, CourseLevel],
+		where: whereClause,
 	});
+	return data;
+};
 
 const getAllCoursesStudent = async () =>
 	CourseStudent.findAll({
@@ -142,7 +160,7 @@ const editCourse = async ({
 };
 
 const createCourseStudent = async (course_id) => {
-	let numberCode = 0;
+	let numberCode = 1;
 	const prevCourseStudent = await CourseStudent.findOne({
 		order: [['createdAt', 'DESC']],
 	});

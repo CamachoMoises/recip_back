@@ -21,7 +21,13 @@ import {
 
 export const ListCourses = async (req, res) => {
 	try {
-		const courses = await getAllCourses();
+		const filters = {
+			course_type_id: req.query.course_type_id,
+			course_level_id: req.query.course_level_id,
+			name: req.query.name,
+			description: req.query.description,
+		};
+		const courses = await getAllCourses(filters);
 		res.send(courses);
 	} catch (error) {
 		console.log(error);
