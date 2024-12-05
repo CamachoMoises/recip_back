@@ -81,7 +81,9 @@ const createCourseStudentTest = async (
 	const course_id = CS.course_id;
 	const student_id = CS.student_id;
 	const schedule = CS.schedules.pop();
-	const date = `${schedule.date} ${schedule.hour}`;
+	const date = moment(`${schedule.date} ${schedule.hour}`)
+		.subtract(4, 'hours')
+		.format('YYYY-MM-DD HH:mm');
 	console.log(date, moment().format('HH:mm'));
 	const newCourseStudentTest = CourseStudentTest.create({
 		course_id,
