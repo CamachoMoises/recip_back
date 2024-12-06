@@ -7,11 +7,11 @@ export const generateRandomNumber = (digits) => {
 	return Math.floor(min + Math.random() * (max - min + 1));
 };
 
-export function getRandomSubset(array, minLength, newLength) {
-	if (array.length <= minLength || newLength > minLength) {
-		console.log(`El array debe tener más de ${minLength} elementos.`);
+export function getRandomSubset(array, newLength) {
+	if (array.length < newLength) {
+		console.log(`El array debe tener más de ${newLength} elementos.`);
 		throw new Error(
-			`El array debe tener más de ${minLength} elementos.`
+			`El array debe tener más de ${newLength} elementos.`
 		);
 	}
 

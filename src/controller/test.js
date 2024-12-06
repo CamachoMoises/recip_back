@@ -1,12 +1,14 @@
 import moment from 'moment';
 import {
 	createCourseStudentTest,
+	createCourseStudentTestQuestion,
 	getAllTest,
 	getAllTestCourse,
 	getAnswerQuestion,
 	getCourseStudentTest,
 	getQuestionTest,
 } from '../database/repositories/test.js';
+import { getRandomSubset } from './utilities.js';
 
 export const ListTest = async (req, res) => {
 	try {
@@ -31,9 +33,11 @@ export const ListTestCourse = async (req, res) => {
 	}
 };
 export const ListQuestionTest = async (req, res) => {
-	const test_id = req.params.test_id;
+	const filters = {
+		test_id: req.params.test_id,
+	};
 	try {
-		const question = await getQuestionTest(test_id);
+		const question = await getQuestionTest(filters);
 		res.send(question);
 	} catch (error) {
 		console.log(error);
@@ -58,10 +62,13 @@ export const CourseStudentTest = async (req, res) => {
 	const filters = {
 		course_student_id: req.params.course_student_id,
 		test_id: req.params.test_id,
+		finished: false,
+		date: req.body.date,
 	};
 	const details = await getCourseStudentTest(filters);
 	if (details.length > 0) {
 		const data = details.pop();
+		//TIMEZONE
 		const dateTest = moment(data.date).add(4, 'hours');
 		const horas = currentDate.diff(dateTest, 'hours', true);
 		if (horas < 2 && horas > 0) {
@@ -74,11 +81,13 @@ export const CourseStudentTest = async (req, res) => {
 				filters.course_student_id,
 				filters.test_id
 			);
-
 			res.send(courseStudentTest);
 		} else {
 			const courseStudentTest = await getCourseStudentTest(filters);
-			res.send(courseStudentTest.pop());
+			const courseStudentTestSelected = courseStudentTest.pop();
+			CourseStudentTestQuestions(courseStudentTestSelected, 1, 2);
+
+			res.send(courseStudentTestSelected);
 		}
 	} catch (error) {
 		console.error('Error en la creacion:', error.message);
@@ -88,5 +97,35 @@ export const CourseStudentTest = async (req, res) => {
 			.status(400)
 			.send(`Input Validation Error ${error.message}`);
 		// .send(`Input Validation Error ${course_student_id}`)
+	}
+};
+
+const CourseStudentTestQuestions = async (
+	courseStudentTest,
+	question_type_id,
+	questionQuantity
+) => {
+	const filters = {
+		test_id: courseStudentTest.test_id,
+		question_type_id: question_type_id,
+	};
+	const questions = await getQuestionTest(filters);
+	const id = questions.map((question) => {
+		return question.id;
+	});
+	try {
+		const random_id = getRandomSubset(id, questionQuantity);
+		random_id.forEach(async (new_id) => {
+			await createCourseStudentTestQuestion(
+				courseStudentTest.course_id,
+				courseStudentTest.student_id,
+				courseStudentTest.test_id,
+				courseStudentTest.course_student_id,
+				courseStudentTest.id,
+				new_id
+			);
+		});
+	} catch (error) {
+		console.log(error);
 	}
 };
