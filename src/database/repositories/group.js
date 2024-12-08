@@ -3,6 +3,6 @@ import { models } from '../initDB.js';
 const { Group } = models;
 
 // const publicAttributes = { exclude: ['id'] };
-const getAllGroups = async () => Group.findAll();
+const getAllGroups = async () => await Group.findAll();
 
 export { getAllGroups };

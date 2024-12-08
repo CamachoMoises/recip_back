@@ -213,7 +213,7 @@ export const student = (sequelize, DataTypes) => {
 				},
 			},
 			status: {
-				type: DataTypes.TINYINT,
+				type: DataTypes.BOOLEAN,
 				allowNull: true,
 				defaultValue: 1,
 			},

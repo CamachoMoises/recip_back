@@ -148,6 +148,16 @@ export const course_student = (sequelize, DataTypes) => {
 				type: DataTypes.DATEONLY,
 				allowNull: true,
 			},
+			score: {
+				type: DataTypes.FLOAT,
+				allowNull: true,
+				defaultValue: 0,
+			},
+			score_2: {
+				type: DataTypes.FLOAT,
+				allowNull: true,
+				defaultValue: 0,
+			},
 			student_id: {
 				type: DataTypes.INTEGER,
 				allowNull: true,
@@ -228,7 +238,6 @@ export const course_student_test = (sequelize, DataTypes) => {
 			score: {
 				type: DataTypes.FLOAT,
 				allowNull: true,
-				defaultValue: 0,
 			},
 			test_id: {
 				type: DataTypes.INTEGER,
@@ -375,7 +384,7 @@ export const course_student_test_question = (
 			status: {
 				type: DataTypes.INTEGER,
 				allowNull: true,
-				defaultValue: 0,
+				defaultValue: 1,
 			},
 		},
 		{
@@ -416,6 +425,130 @@ export const course_student_test_question = (
 				},
 				{
 					name: 'fk_course_student_test_question_student1_idx',
+					using: 'BTREE',
+					fields: [{ name: 'student_id' }],
+				},
+			],
+		}
+	);
+};
+
+export const course_student_test_answer = (sequelize, DataTypes) => {
+	return sequelize.define(
+		'course_student_test_answer',
+		{
+			id: {
+				autoIncrement: true,
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				primaryKey: true,
+			},
+			course_id: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				references: {
+					model: 'course',
+					key: 'id',
+				},
+			},
+			test_id: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				references: {
+					model: 'test',
+					key: 'id',
+				},
+			},
+			course_student_id: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				references: {
+					model: 'course_student',
+					key: 'id',
+				},
+			},
+			resp: {
+				type: DataTypes.TEXT,
+				allowNull: false,
+			},
+			course_student_test_id: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				references: {
+					model: 'course_student_test',
+					key: 'id',
+				},
+			},
+			course_student_test_question_id: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				references: {
+					model: 'course_student_test_question',
+					key: 'id',
+				},
+			},
+			question_id: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				references: {
+					model: 'question',
+					key: 'id',
+				},
+			},
+			score: {
+				type: DataTypes.FLOAT,
+				allowNull: true,
+			},
+			status: {
+				type: DataTypes.INTEGER,
+				allowNull: true,
+				defaultValue: 1,
+			},
+		},
+		{
+			sequelize,
+			tableName: 'course_student_test_answer',
+			timestamps: true,
+			indexes: [
+				{
+					name: 'PRIMARY',
+					unique: true,
+					using: 'BTREE',
+					fields: [{ name: 'id' }],
+				},
+				{
+					name: 'fk_course_student_test_answer_course_idx',
+					using: 'BTREE',
+					fields: [{ name: 'course_id' }],
+				},
+				{
+					name: 'fk_course_student_test_answer_test_idx',
+					using: 'BTREE',
+					fields: [{ name: 'test_id' }],
+				},
+				{
+					name: 'fk_course_student_test_answer_course_student_idx',
+					using: 'BTREE',
+					fields: [{ name: 'course_student_id' }],
+				},
+				{
+					name: 'fk_course_student_test_answer_course_student_test_idx',
+					using: 'BTREE',
+					fields: [{ name: 'course_student_test_id' }],
+				},
+				{
+					name: 'fk_course_student_test_answer_course_student_test_question_idx',
+					using: 'BTREE',
+					fields: [{ name: 'course_student_test_question_id' }],
+				},
+				{
+					name: 'fk_course_student_test_answer_question_idx',
+					using: 'BTREE',
+					fields: [{ name: 'question_id' }],
+				},
+
+				{
+					name: 'fk_course_student_test_answer_student1_idx',
 					using: 'BTREE',
 					fields: [{ name: 'student_id' }],
 				},

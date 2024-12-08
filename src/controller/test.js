@@ -1,12 +1,18 @@
 import moment from 'moment';
 import {
 	createCourseStudentTest,
+	createCourseStudentTestAnswer,
 	createCourseStudentTestQuestion,
+	getAllCourseStudentTestAnswer,
 	getAllTest,
 	getAllTestCourse,
 	getAnswerQuestion,
 	getCourseStudentTest,
+	getCourseStudentTestAnswerByQuestion,
+	getCourseStudentTestById,
 	getQuestionTest,
+	resolveCourseStudentTestAnswer,
+	updateCourseStudentTestAnswer,
 } from '../database/repositories/test.js';
 import { getRandomSubset } from './utilities.js';
 
@@ -59,6 +65,7 @@ export const ListAnswerQuestion = async (req, res) => {
 export const CourseStudentTest = async (req, res) => {
 	const currentDate = moment();
 	let exist = false;
+	let course_student_id = -1;
 	const filters = {
 		course_student_id: req.params.course_student_id,
 		test_id: req.params.test_id,
@@ -73,6 +80,7 @@ export const CourseStudentTest = async (req, res) => {
 		const horas = currentDate.diff(dateTest, 'hours', true);
 		if (horas < 2 && horas > 0) {
 			exist = true;
+			course_student_id = data.id;
 		}
 	}
 	try {
@@ -81,22 +89,23 @@ export const CourseStudentTest = async (req, res) => {
 				filters.course_student_id,
 				filters.test_id
 			);
-			res.send(courseStudentTest);
-		} else {
-			const courseStudentTest = await getCourseStudentTest(filters);
-			const courseStudentTestSelected = courseStudentTest.pop();
-			CourseStudentTestQuestions(courseStudentTestSelected, 1, 2);
-
-			res.send(courseStudentTestSelected);
+			await CourseStudentTestQuestions(courseStudentTest, 1, 2);
+			await CourseStudentTestQuestions(courseStudentTest, 2, 2);
+			await CourseStudentTestQuestions(courseStudentTest, 3, 2);
+			await CourseStudentTestQuestions(courseStudentTest, 5, 2);
+			course_student_id = courseStudentTest.id;
 		}
+
+		const courseStudentTestSelected = await getCourseStudentTestById(
+			course_student_id
+		);
+		res.send(courseStudentTestSelected);
 	} catch (error) {
 		console.error('Error en la creacion:', error.message);
 		console.log(error.message);
 
-		return res
-			.status(400)
-			.send(`Input Validation Error ${error.message}`);
-		// .send(`Input Validation Error ${course_student_id}`)
+		return res.status(400).send(`Error ${error.message}`);
+		// .send(`Error ${course_student_id}`)
 	}
 };
 
@@ -115,7 +124,7 @@ const CourseStudentTestQuestions = async (
 	});
 	try {
 		const random_id = getRandomSubset(id, questionQuantity);
-		random_id.forEach(async (new_id) => {
+		for (const new_id of random_id) {
 			await createCourseStudentTestQuestion(
 				courseStudentTest.course_id,
 				courseStudentTest.student_id,
@@ -124,8 +133,118 @@ const CourseStudentTestQuestions = async (
 				courseStudentTest.id,
 				new_id
 			);
-		});
+		}
 	} catch (error) {
 		console.log(error);
+	}
+	return id;
+};
+
+export const CourseStudentTestAnswer = async (req, res) => {
+	try {
+		const CSTA = req.body.courseStudentTestAnswer;
+		const exist = await getCourseStudentTestAnswerByQuestion(
+			CSTA.course_student_test_question_id
+		);
+		if (exist) {
+			const data = await updateCourseStudentTestAnswer(
+				CSTA.course_student_test_question_id,
+				CSTA.resp
+			);
+			return res.send(data);
+		} else {
+			const data = await createCourseStudentTestAnswer({
+				course_student_test_id: CSTA.course_student_test_id,
+				course_student_test_question_id:
+					CSTA.course_student_test_question_id,
+				course_student_id: CSTA.course_student_id,
+				question_id: CSTA.question_id,
+				student_id: CSTA.student_id,
+				resp: CSTA.resp,
+				test_id: CSTA.test_id,
+				course_id: CSTA.course_id,
+			});
+			return res.send(data);
+		}
+	} catch (error) {
+		console.error('Error en la creacion:', error.message);
+		console.log(error.message);
+
+		return res.status(400).send(`Error ${error.message}`);
+	}
+};
+
+export const CourseStudentTestEnd = async (req, res) => {
+	try {
+		const course_student_test_id = req.body.course_student_test_id;
+		console.log(course_student_test_id);
+		const filters = {
+			course_student_test_id: course_student_test_id,
+		};
+		const courseStudentTestAnswers =
+			await getAllCourseStudentTestAnswer(filters);
+		await evaluateAnswers(courseStudentTestAnswers);
+
+		return res.send(courseStudentTestAnswers);
+	} catch (error) {
+		console.error('Error en la creacion:', error.message);
+		console.log(error.message);
+
+		return res.status(400).send(`Error ${error.message}`);
+	}
+};
+
+export const evaluateAnswers = async (courseStudentTestAnswers) => {
+	for (const answer of courseStudentTestAnswers) {
+		const resp = JSON.parse(answer.resp);
+		const scoreValue = answer.question.question_type.value;
+
+		const correct_answers = answer.question.answers.map((CorAnsw) => {
+			return {
+				id: CorAnsw.id,
+				is_correct: CorAnsw.is_correct,
+				value: CorAnsw.value,
+			};
+		});
+
+		switch (answer.question.question_type_id) {
+			case 1:
+				if (resp === correct_answers[0].id) {
+					console.log(`LA RESPUESTA DE LA ${answer.id} es correcta`);
+					await resolveCourseStudentTestAnswer(answer.id, scoreValue);
+				} else {
+					console.log(
+						`LA RESPUESTA DE LA ${answer.id} es incorrecta`
+					);
+					await resolveCourseStudentTestAnswer(answer.id, 0);
+				}
+				break;
+
+			case 2:
+				console.log(resp);
+				console.log('OJO Case 2');
+				break;
+
+			case 3:
+				if (resp === correct_answers[0].id) {
+					console.log(`LA RESPUESTA DE LA ${answer.id} es correcta`);
+					await resolveCourseStudentTestAnswer(answer.id, scoreValue);
+				} else {
+					console.log(
+						`LA RESPUESTA DE LA ${answer.id} es incorrecta`
+					);
+					await resolveCourseStudentTestAnswer(answer.id, 0);
+				}
+				break;
+
+			case 5:
+				console.log(resp);
+				console.log('OJO Case 5');
+				break;
+
+			default:
+				console.log('unknown case');
+				break;
+		}
 	}
 };

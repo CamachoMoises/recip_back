@@ -25,7 +25,7 @@ const createSubject = async ({
 	order,
 	status,
 }) =>
-	Subject.create({
+	await Subject.create({
 		name,
 		hours,
 		course_id,

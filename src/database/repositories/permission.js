@@ -2,6 +2,6 @@ import { models } from '../initDB.js';
 
 const { Permission } = models;
 
-const getAllPermissions = async () => Permission.findAll();
+const getAllPermissions = async () => await Permission.findAll();
 
 export { getAllPermissions };

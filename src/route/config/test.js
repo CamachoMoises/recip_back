@@ -2,6 +2,8 @@ import express from 'express';
 import multer from 'multer';
 import {
 	CourseStudentTest,
+	CourseStudentTestAnswer,
+	CourseStudentTestEnd,
 	ListAnswerQuestion,
 	ListQuestionTest,
 	ListTest,
@@ -22,5 +24,16 @@ router.post(
 	convertTypes,
 	CourseStudentTest
 );
-
+router.post(
+	'/courseStudentTestAnswer',
+	upload.none(),
+	convertTypes,
+	CourseStudentTestAnswer
+);
+router.post(
+	'/courseStudentTestEnd',
+	upload.none(),
+	convertTypes,
+	CourseStudentTestEnd
+);
 export default router;

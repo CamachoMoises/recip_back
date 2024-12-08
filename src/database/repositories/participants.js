@@ -3,7 +3,7 @@ import { models } from '../initDB.js';
 const { Participant } = models;
 const publicAttributes = { exclude: ['id'] };
 const getAllParticipants = async () =>
-	Participant.findAll({ attributes: publicAttributes });
+	await Participant.findAll({ attributes: publicAttributes });
 
 const createParticipant = async ({
 	firstName,
@@ -12,7 +12,7 @@ const createParticipant = async ({
 	email,
 	phone,
 }) =>
-	Participant.create({
+	await Participant.create({
 		firstName,
 		lastName,
 		docNumber,
@@ -20,7 +20,7 @@ const createParticipant = async ({
 		phone,
 	});
 const getParticipantByUUID = async ({ uuid }) =>
-	Participant.findOne({
+	await Participant.findOne({
 		where: { uuid },
 		attributes: publicAttributes,
 	});

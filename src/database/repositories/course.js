@@ -73,7 +73,7 @@ const getAllCoursesTypes = async () => CourseType.findAll();
 const getAllCoursesLevel = async () => CourseLevel.findAll();
 
 const getCourseStudentById = async (id) =>
-	CourseStudent.findOne({
+	await CourseStudent.findOne({
 		where: { id: id },
 		include: [
 			{
@@ -103,16 +103,16 @@ const getCourseStudentById = async (id) =>
 	});
 
 const getCourseById = async (id) =>
-	Course.findOne({
+	await Course.findOne({
 		where: { id: id },
 		include: [CourseType, CourseLevel],
 	});
 
 const getCourseTypeById = async (id) =>
-	CourseType.findOne({ where: { id: id } });
+	await CourseType.findOne({ where: { id: id } });
 
 const getCourseLevelById = async (id) =>
-	CourseType.findOne({ where: { id: id } });
+	await CourseType.findOne({ where: { id: id } });
 
 const createCourse = async ({
 	name,
@@ -123,7 +123,7 @@ const createCourse = async ({
 	course_level_id,
 	status,
 }) =>
-	Course.create({
+	await Course.create({
 		name,
 		description,
 		// hours,
@@ -170,7 +170,7 @@ const createCourseStudent = async (course_id) => {
 	}
 	const stringCode = String(numberCode).padStart(8, '0');
 	const code = `CS-${stringCode}`;
-	const newCourseStudent = CourseStudent.create({
+	const newCourseStudent = await CourseStudent.create({
 		course_id,
 		code,
 	});
@@ -306,7 +306,7 @@ const updateSchedule = async (
 	if (!editSchedule) {
 		throw new Error('Course not found');
 	}
-	editSchedule.update({
+	await editSchedule.update({
 		instructor_id,
 		date,
 		hour,

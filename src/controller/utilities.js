@@ -13,8 +13,8 @@ export function getRandomSubset(array, newLength) {
 		throw new Error(
 			`El array debe tener más de ${newLength} elementos.`
 		);
+	} else {
+		const shuffled = [...array].sort(() => Math.random() - 0.5); // Mezclar el array
+		return shuffled.slice(0, newLength); // Tomar los primeros 10 elementos
 	}
-
-	const shuffled = [...array].sort(() => Math.random() - 0.5); // Mezclar el array
-	return shuffled.slice(0, newLength); // Tomar los primeros 10 elementos
 }

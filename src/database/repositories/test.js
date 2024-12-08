@@ -10,10 +10,10 @@ const {
 	Answer,
 	CourseStudentTest,
 	CourseStudentTestQuestion,
+	CourseStudentTestAnswer,
 } = models;
 
 const getAllTest = async () => await Test.findAll();
-
 const getAllTestCourse = async (filters) => {
 	const whereClause = {};
 	if (filters.course_id) {
@@ -21,6 +21,26 @@ const getAllTestCourse = async (filters) => {
 	}
 	const data = await Test.findAll({
 		where: whereClause,
+	});
+	return data;
+};
+const getCourseStudentTestById = async (id) => {
+	const data = await CourseStudentTest.findOne({
+		where: { id: id },
+		include: [
+			{
+				model: CourseStudentTestQuestion,
+				include: [
+					{
+						model: Question,
+						include: [QuestionType, Answer],
+					},
+					{
+						model: CourseStudentTestAnswer,
+					},
+				],
+			},
+		],
 	});
 	return data;
 };
@@ -128,7 +148,7 @@ const createCourseStudentTestQuestion = async (
 	question_id
 ) => {
 	const newCourseStudentTestQuestion =
-		CourseStudentTestQuestion.create({
+		await CourseStudentTestQuestion.create({
 			course_id,
 			student_id,
 			test_id,
@@ -138,12 +158,121 @@ const createCourseStudentTestQuestion = async (
 		});
 	return newCourseStudentTestQuestion;
 };
+const createCourseStudentTestAnswer = async ({
+	course_student_test_id,
+	course_student_test_question_id,
+	course_student_id,
+	question_id,
+	student_id,
+	resp,
+	test_id,
+	course_id,
+}) => {
+	const selectedCourseStudentTestQuestion =
+		await CourseStudentTestQuestion.findOne({
+			where: { id: course_student_test_question_id },
+		});
+	selectedCourseStudentTestQuestion.Answered = true;
+	selectedCourseStudentTestQuestion.save();
+	const newCourseStudentTestAnswer =
+		await CourseStudentTestAnswer.create({
+			course_student_test_id,
+			course_student_test_question_id,
+			course_student_id,
+			question_id,
+			student_id,
+			resp,
+			test_id,
+			course_id,
+		});
+	return newCourseStudentTestAnswer;
+};
+const updateCourseStudentTestAnswer = async (
+	course_student_test_question_id,
+	resp
+) => {
+	const selectedCourseStudentTestAnswer =
+		await CourseStudentTestAnswer.findOne({
+			where: {
+				course_student_test_question_id:
+					course_student_test_question_id,
+			},
+		});
+	selectedCourseStudentTestAnswer.resp = resp;
+	selectedCourseStudentTestAnswer.save();
+	return selectedCourseStudentTestAnswer;
+};
+
+const getCourseStudentTestAnswerByQuestion = async (
+	course_student_test_question_id
+) => {
+	const data = await CourseStudentTestAnswer.findOne({
+		where: {
+			course_student_test_question_id:
+				course_student_test_question_id,
+		},
+	});
+	return data;
+};
+
+const getAllCourseStudentTestAnswer = async (filters) => {
+	const whereClause = {};
+	if (filters.course_student_test_id) {
+		whereClause.course_student_test_id =
+			filters.course_student_test_id;
+	}
+	if (filters.course_student_id) {
+		whereClause.course_student_id = filters.course_student_id;
+	}
+	if (filters.question_id) {
+		whereClause.question_id = filters.question_id;
+	}
+	const data = await CourseStudentTestAnswer.findAll({
+		where: whereClause,
+		include: [
+			{
+				model: Question,
+				include: [
+					{
+						model: Answer,
+						where: {
+							is_correct: true,
+						},
+					},
+					{
+						model: QuestionType,
+					},
+				],
+			},
+		],
+	});
+	return data;
+};
+const resolveCourseStudentTestAnswer = async (
+	course_student_test_answer_id,
+	scoreValue
+) => {
+	console.log(course_student_test_answer_id, scoreValue);
+	const selectedCourseStudentTestAnswer =
+		await CourseStudentTestAnswer.findOne({
+			where: { id: course_student_test_answer_id },
+		});
+	selectedCourseStudentTestAnswer.score = scoreValue;
+	selectedCourseStudentTestAnswer.save();
+};
+
 export {
 	getAllTest,
 	getAllTestCourse,
+	getAllCourseStudentTestAnswer,
+	getCourseStudentTestById,
+	getCourseStudentTestAnswerByQuestion,
+	resolveCourseStudentTestAnswer,
+	updateCourseStudentTestAnswer,
 	getQuestionTest,
 	getAnswerQuestion,
 	getCourseStudentTest,
 	createCourseStudentTest,
 	createCourseStudentTestQuestion,
+	createCourseStudentTestAnswer,
 };
