@@ -151,13 +151,8 @@ export const course_student = (sequelize, DataTypes) => {
 			score: {
 				type: DataTypes.FLOAT,
 				allowNull: true,
-				defaultValue: 0,
 			},
-			score_2: {
-				type: DataTypes.FLOAT,
-				allowNull: true,
-				defaultValue: 0,
-			},
+
 			student_id: {
 				type: DataTypes.INTEGER,
 				allowNull: true,

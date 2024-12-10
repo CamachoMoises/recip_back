@@ -11,10 +11,11 @@ import {
 	getCourseStudentTestAnswerByQuestion,
 	getCourseStudentTestById,
 	getQuestionTest,
+	resolveCourseStudentTest,
 	resolveCourseStudentTestAnswer,
 	updateCourseStudentTestAnswer,
 } from '../database/repositories/test.js';
-import { getRandomSubset } from './utilities.js';
+import { cleanString, getRandomSubset } from './utilities.js';
 
 export const ListTest = async (req, res) => {
 	try {
@@ -183,9 +184,17 @@ export const CourseStudentTestEnd = async (req, res) => {
 		};
 		const courseStudentTestAnswers =
 			await getAllCourseStudentTestAnswer(filters);
-		await evaluateAnswers(courseStudentTestAnswers);
-
-		return res.send(courseStudentTestAnswers);
+		const score = await evaluateAnswers(courseStudentTestAnswers);
+		console.log('The score is', score);
+		await resolveCourseStudentTest(
+			filters.course_student_test_id,
+			score
+		);
+		const dataResponse = {
+			answers: courseStudentTestAnswers,
+			score: score,
+		};
+		return res.send(dataResponse);
 	} catch (error) {
 		console.error('Error en la creacion:', error.message);
 		console.log(error.message);
@@ -195,23 +204,28 @@ export const CourseStudentTestEnd = async (req, res) => {
 };
 
 export const evaluateAnswers = async (courseStudentTestAnswers) => {
+	let score = 0;
+
 	for (const answer of courseStudentTestAnswers) {
 		const resp = JSON.parse(answer.resp);
 		const scoreValue = answer.question.question_type.value;
-
+		let correctas = 0;
+		let incorrectas = 0;
+		let rspCheck = [];
 		const correct_answers = answer.question.answers.map((CorAnsw) => {
 			return {
 				id: CorAnsw.id,
 				is_correct: CorAnsw.is_correct,
-				value: CorAnsw.value,
+				value: cleanString(CorAnsw.value),
 			};
 		});
-
+		const countResp = correct_answers.length;
 		switch (answer.question.question_type_id) {
 			case 1:
 				if (resp === correct_answers[0].id) {
 					console.log(`LA RESPUESTA DE LA ${answer.id} es correcta`);
 					await resolveCourseStudentTestAnswer(answer.id, scoreValue);
+					score = score + scoreValue;
 				} else {
 					console.log(
 						`LA RESPUESTA DE LA ${answer.id} es incorrecta`
@@ -221,14 +235,40 @@ export const evaluateAnswers = async (courseStudentTestAnswers) => {
 				break;
 
 			case 2:
-				console.log(resp);
-				console.log('OJO Case 2');
+				rspCheck = resp.filter((respAll) => respAll.check);
+
+				for (const RSC of rspCheck) {
+					if (
+						correct_answers.find((CorAnsw) => CorAnsw.id === RSC.id)
+					) {
+						correctas++;
+					} else {
+						incorrectas++;
+					}
+				}
+				console.log(
+					'el puntaje del id ',
+					answer.id,
+					'es',
+					(correctas * scoreValue) / countResp -
+						(incorrectas * scoreValue) / countResp
+				);
+				score =
+					score +
+					(correctas * scoreValue) / countResp -
+					(incorrectas * scoreValue) / countResp;
+				await resolveCourseStudentTestAnswer(
+					answer.id,
+					(correctas * scoreValue) / countResp -
+						(incorrectas * scoreValue) / countResp
+				);
 				break;
 
 			case 3:
 				if (resp === correct_answers[0].id) {
 					console.log(`LA RESPUESTA DE LA ${answer.id} es correcta`);
 					await resolveCourseStudentTestAnswer(answer.id, scoreValue);
+					score = score + scoreValue;
 				} else {
 					console.log(
 						`LA RESPUESTA DE LA ${answer.id} es incorrecta`
@@ -237,9 +277,49 @@ export const evaluateAnswers = async (courseStudentTestAnswers) => {
 				}
 				break;
 
+			case 4:
+				for (const detalisRes of resp) {
+					if (
+						correct_answers.find(
+							(val) => val.value === cleanString(detalisRes)
+						)
+					) {
+						correctas++;
+					}
+				}
+				console.log(
+					'el puntaje del id ',
+					answer.id,
+					'es',
+					(correctas * scoreValue) / countResp
+				);
+				score = score + (correctas * scoreValue) / countResp;
+				await resolveCourseStudentTestAnswer(
+					answer.id,
+					(correctas * scoreValue) / countResp
+				);
+				break;
 			case 5:
-				console.log(resp);
-				console.log('OJO Case 5');
+				for (const detalisRes of resp) {
+					if (
+						correct_answers.find(
+							(val) => val.value === cleanString(detalisRes)
+						)
+					) {
+						correctas++;
+					}
+				}
+				console.log(
+					'el puntaje del id ',
+					answer.id,
+					'es',
+					(correctas * scoreValue) / countResp
+				);
+				score = score + (correctas * scoreValue) / countResp;
+				await resolveCourseStudentTestAnswer(
+					answer.id,
+					(correctas * scoreValue) / countResp
+				);
 				break;
 
 			default:
@@ -247,4 +327,5 @@ export const evaluateAnswers = async (courseStudentTestAnswers) => {
 				break;
 		}
 	}
+	return score;
 };

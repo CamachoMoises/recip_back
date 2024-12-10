@@ -8,6 +8,7 @@ const {
 	QuestionType,
 	Question,
 	Answer,
+	CourseStudent,
 	CourseStudentTest,
 	CourseStudentTestQuestion,
 	CourseStudentTestAnswer,
@@ -252,13 +253,30 @@ const resolveCourseStudentTestAnswer = async (
 	course_student_test_answer_id,
 	scoreValue
 ) => {
-	console.log(course_student_test_answer_id, scoreValue);
 	const selectedCourseStudentTestAnswer =
 		await CourseStudentTestAnswer.findOne({
 			where: { id: course_student_test_answer_id },
 		});
 	selectedCourseStudentTestAnswer.score = scoreValue;
-	selectedCourseStudentTestAnswer.save();
+	await selectedCourseStudentTestAnswer.save();
+};
+
+const resolveCourseStudentTest = async (
+	course_student_test_answer_id,
+	score
+) => {
+	const courseStudentTest = await CourseStudentTest.findOne({
+		where: { id: course_student_test_answer_id },
+	});
+	const courseStudent = await CourseStudent.findOne({
+		where: { id: courseStudentTest.course_student_id },
+	});
+	courseStudent.score = score;
+	await courseStudent.save();
+	courseStudentTest.score = score;
+	courseStudentTest.finished = true;
+	await courseStudentTest.save();
+	return true;
 };
 
 export {
@@ -268,6 +286,7 @@ export {
 	getCourseStudentTestById,
 	getCourseStudentTestAnswerByQuestion,
 	resolveCourseStudentTestAnswer,
+	resolveCourseStudentTest,
 	updateCourseStudentTestAnswer,
 	getQuestionTest,
 	getAnswerQuestion,

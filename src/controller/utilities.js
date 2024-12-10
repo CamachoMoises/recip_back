@@ -18,3 +18,7 @@ export function getRandomSubset(array, newLength) {
 		return shuffled.slice(0, newLength); // Tomar los primeros 10 elementos
 	}
 }
+
+export const cleanString = (input) => {
+	return input.trim().toLowerCase().replace(/\s+/g, '');
+};
