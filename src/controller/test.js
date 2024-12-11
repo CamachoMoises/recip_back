@@ -125,6 +125,7 @@ const CourseStudentTestQuestions = async (
 	});
 	try {
 		const random_id = getRandomSubset(id, questionQuantity);
+		console.log(random_id);
 		for (const new_id of random_id) {
 			await createCourseStudentTestQuestion(
 				courseStudentTest.course_id,
