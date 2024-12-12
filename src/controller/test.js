@@ -62,7 +62,21 @@ export const ListAnswerQuestion = async (req, res) => {
 		res.status(500).send('Internal Server Error');
 	}
 };
+export const CourseStudentTestDetails = async (req, res) => {
+	const id = req.params.id;
+	try {
+		const courseStudentTestSelected = await getCourseStudentTestById(
+			id
+		);
+		res.send(courseStudentTestSelected);
+	} catch (error) {
+		console.error('Error en la creacion:', error.message);
+		console.log(error.message);
 
+		return res.status(400).send(`Error ${error.message}`);
+		// .send(`Error ${course_student_id}`)
+	}
+};
 export const CourseStudentTest = async (req, res) => {
 	const currentDate = moment();
 	let exist = false;
@@ -301,13 +315,18 @@ export const evaluateAnswers = async (courseStudentTestAnswers) => {
 						)
 					) {
 						correctas++;
+					} else {
+						incorrectas++;
 					}
 				}
 				console.log(
 					'el puntaje del id ',
 					answer.id,
 					'es',
-					(correctas * scoreValue) / countResp
+					(correctas * scoreValue) / countResp,
+					' con ',
+					correctas,
+					' correctas'
 				);
 				score = score + (correctas * scoreValue) / countResp;
 				await resolveCourseStudentTestAnswer(
@@ -323,13 +342,21 @@ export const evaluateAnswers = async (courseStudentTestAnswers) => {
 						)
 					) {
 						correctas++;
+					} else {
+						incorrectas++;
 					}
 				}
 				console.log(
 					'el puntaje del id ',
 					answer.id,
 					'es',
-					(correctas * scoreValue) / countResp
+					(correctas * scoreValue) / countResp,
+					' con ',
+					correctas,
+					' correctas',
+					' y ',
+					incorrectas,
+					' incorrectas'
 				);
 				score = score + (correctas * scoreValue) / countResp;
 				await resolveCourseStudentTestAnswer(

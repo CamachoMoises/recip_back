@@ -3,6 +3,7 @@ import multer from 'multer';
 import {
 	CourseStudentTest,
 	CourseStudentTestAnswer,
+	CourseStudentTestDetails,
 	CourseStudentTestEnd,
 	ListAnswerQuestion,
 	ListQuestionTest,
@@ -18,6 +19,7 @@ router.get('/', ListTest);
 router.get('/tests/:course_id', ListTestCourse);
 router.get('/questions/:test_id', ListQuestionTest);
 router.get('/answers/:id', ListAnswerQuestion);
+router.get('/courseStudentTest/:id', CourseStudentTestDetails);
 router.post(
 	'/courseStudentTest/:course_student_id/:test_id',
 	upload.none(),
