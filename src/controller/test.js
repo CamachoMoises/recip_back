@@ -93,6 +93,21 @@ export const CourseStudentTest = async (req, res) => {
 			await CourseStudentTestQuestions(courseStudentTest, 1, 2);
 			await CourseStudentTestQuestions(courseStudentTest, 2, 2);
 			await CourseStudentTestQuestions(courseStudentTest, 3, 2);
+			const questionFilters = {
+				test_id: filters.test_id,
+				question_type_id: 4,
+			};
+			const questionsType_4 = await getQuestionTest(questionFilters);
+			for (const questionType_4 of questionsType_4) {
+				await createCourseStudentTestQuestion(
+					courseStudentTest.course_id,
+					courseStudentTest.student_id,
+					courseStudentTest.test_id,
+					courseStudentTest.course_student_id,
+					courseStudentTest.id,
+					questionType_4.id
+				);
+			}
 			await CourseStudentTestQuestions(courseStudentTest, 5, 2);
 			course_student_id = courseStudentTest.id;
 		}
