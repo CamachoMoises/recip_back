@@ -9,6 +9,7 @@ import {
 	ListStudents,
 	ListInstructors,
 	ListUserDocType,
+	UserData,
 } from '../../controller/user.js';
 import convertTypes from '../../middleware/convertTypes.js';
 const upload = multer();
@@ -16,6 +17,7 @@ const router = express.Router();
 
 // Rutas para usuarios
 router.get('/', ListUsers);
+router.get('/user/:user_id', UserData);
 router.get('/userDocType', ListUserDocType);
 
 router.get('/student', ListStudents);

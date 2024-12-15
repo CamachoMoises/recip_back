@@ -16,14 +16,26 @@ import {
 } from '../database/repositories/user.js';
 export const ListUsers = async (req, res) => {
 	try {
-		const user = await getAllUsers();
+		const users = await getAllUsers();
 
+		res.send(users);
+	} catch (error) {
+		console.log(error);
+		res.status(500).send('Internal Server Error');
+	}
+};
+
+export const UserData = async (req, res) => {
+	const user_id = req.params.user_id;
+	try {
+		const user = await getUserById(user_id);
 		res.send(user);
 	} catch (error) {
 		console.log(error);
 		res.status(500).send('Internal Server Error');
 	}
 };
+
 export const ListUserDocType = async (req, res) => {
 	try {
 		const courses = await getAllUserDocType();
