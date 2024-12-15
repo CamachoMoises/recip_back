@@ -79,6 +79,8 @@ const getUserById = async (id) => {
 };
 const createUser = async ({
 	name,
+	country_name,
+	flag,
 	doc_number,
 	user_doc_type_id,
 	last_name,
@@ -91,6 +93,8 @@ const createUser = async ({
 }) =>
 	User.create({
 		name,
+		country_name,
+		flag,
 		doc_number,
 		user_doc_type_id,
 		last_name,
@@ -105,6 +109,8 @@ const editUser = async ({
 	id,
 	uuid,
 	name,
+	country_name,
+	flag,
 	doc_number,
 	user_doc_type_id,
 	last_name,
@@ -120,6 +126,8 @@ const editUser = async ({
 	});
 	if (user && id) {
 		user.name = name;
+		user.country_name = country_name;
+		user.flag = flag;
 		user.doc_number = doc_number;
 		user.last_name = last_name;
 		user.user_doc_type_id = user_doc_type_id;

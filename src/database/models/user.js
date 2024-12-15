@@ -30,6 +30,14 @@ export default (sequelize, DataTypes) => {
 					key: 'id',
 				},
 			},
+			flag: {
+				type: DataTypes.STRING(500),
+				allowNull: true,
+			},
+			country_name: {
+				type: DataTypes.STRING(500),
+				allowNull: true,
+			},
 			phone: {
 				type: DataTypes.STRING(255),
 				allowNull: true,

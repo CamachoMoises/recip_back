@@ -81,6 +81,8 @@ export const CreateUser = async (req, res) => {
 	}
 	const {
 		name,
+		country_name,
+		flag,
 		doc_number,
 		user_doc_type_id,
 		last_name,
@@ -95,6 +97,8 @@ export const CreateUser = async (req, res) => {
 	try {
 		const user = await createUser({
 			name,
+			country_name,
+			flag,
 			doc_number,
 			user_doc_type_id,
 			last_name,
@@ -115,6 +119,7 @@ export const UpdateUser = async (req, res) => {
 	const data = req.body;
 	delete data.student;
 	delete data.instructor;
+	console.log(data);
 	const { error, value } = updateUserSchema.validate(data);
 	if (error) {
 		console.log(error.message);
@@ -126,6 +131,8 @@ export const UpdateUser = async (req, res) => {
 		id,
 		uuid,
 		name,
+		country_name,
+		flag,
 		doc_number,
 		user_doc_type_id,
 		last_name,
@@ -141,6 +148,8 @@ export const UpdateUser = async (req, res) => {
 			id,
 			uuid,
 			name,
+			country_name,
+			flag,
 			doc_number,
 			user_doc_type_id,
 			last_name,

@@ -2,6 +2,11 @@ import Joi from 'joi';
 
 const createUserSchema = Joi.object({
 	name: Joi.alternatives().try(Joi.string().max(500), Joi.number()),
+	country_name: Joi.alternatives().try(
+		Joi.string().max(500),
+		Joi.number()
+	),
+	flag: Joi.alternatives().try(Joi.string().max(500), Joi.number()),
 	last_name: Joi.alternatives().try(
 		Joi.string().max(500),
 		Joi.number()
@@ -24,6 +29,11 @@ const updateUserSchema = Joi.object({
 	uuid: Joi.string().max(200).allow(null, ''),
 	id: Joi.number().required(),
 	name: Joi.alternatives().try(Joi.string().max(500), Joi.number()),
+	country_name: Joi.alternatives().try(
+		Joi.string().max(500),
+		Joi.number()
+	),
+	flag: Joi.alternatives().try(Joi.string().max(500), Joi.number()),
 	last_name: Joi.alternatives().try(
 		Joi.string().max(500),
 		Joi.number()
