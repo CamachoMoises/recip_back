@@ -14,6 +14,10 @@ import {
 	getUsersInstructors,
 	getUsersStudents,
 } from '../database/repositories/user.js';
+import bcrypt from 'bcrypt';
+
+const saltRounds = 10;
+
 export const ListUsers = async (req, res) => {
 	try {
 		const users = await getAllUsers();
@@ -79,6 +83,7 @@ export const CreateUser = async (req, res) => {
 			.status(400)
 			.send(`Input Validation Error ${error.message}`);
 	}
+
 	const {
 		name,
 		country_name,
@@ -93,23 +98,28 @@ export const CreateUser = async (req, res) => {
 		is_superuser,
 		password,
 	} = value;
-
 	try {
-		const user = await createUser({
-			name,
-			country_name,
-			flag,
-			doc_number,
-			user_doc_type_id,
-			last_name,
-			phone,
-			email,
-			is_active,
-			is_staff,
-			is_superuser,
-			password,
+		bcrypt.hash(`${password}`, saltRounds, async (err, hash) => {
+			if (!err) {
+				const user = await createUser({
+					name,
+					country_name,
+					flag,
+					doc_number,
+					user_doc_type_id,
+					last_name,
+					phone,
+					email,
+					is_active,
+					is_staff,
+					is_superuser,
+					hash,
+				});
+				res.status(201).send(user);
+			} else {
+				res.status(500).send('Internal Server Error2');
+			}
 		});
-		res.status(201).send(user);
 	} catch (error) {
 		console.log(error);
 		res.status(500).send('Internal Server Error');
