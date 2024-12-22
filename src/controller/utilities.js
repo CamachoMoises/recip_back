@@ -1,3 +1,5 @@
+const saltRounds = 10;
+import bcrypt from 'bcrypt';
 export const generateRandomNumber = (digits) => {
 	if (digits <= 0) return 0;
 
@@ -21,4 +23,8 @@ export function getRandomSubset(array, newLength) {
 
 export const cleanString = (input) => {
 	return input.trim().toLowerCase().replace(/\s+/g, '');
+};
+
+export const hashPassword = async (password) => {
+	return await bcrypt.hash(password, saltRounds);
 };

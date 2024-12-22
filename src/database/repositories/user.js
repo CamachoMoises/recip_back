@@ -1,3 +1,4 @@
+import { hashPassword } from '../../controller/utilities.js';
 import { models } from '../initDB.js';
 
 const { User, Student, Instructor, UserDocType } = models;
@@ -89,9 +90,10 @@ const createUser = async ({
 	is_active,
 	is_staff,
 	is_superuser,
-	password,
-}) =>
-	User.create({
+	passwordUnHash,
+}) => {
+	const password = await hashPassword(`${passwordUnHash}`);
+	const user = User.create({
 		name,
 		country_name,
 		flag,
@@ -105,6 +107,8 @@ const createUser = async ({
 		is_superuser,
 		password,
 	});
+	return user;
+};
 const editUser = async ({
 	id,
 	uuid,
@@ -136,7 +140,9 @@ const editUser = async ({
 		user.is_active = is_active;
 		user.is_staff = is_staff;
 		user.is_superuser = is_superuser;
-		if (password) user.password = password;
+		if (password) {
+			user.password = await hashPassword(`${password}`);
+		}
 		await user.save();
 		return user;
 	} else {

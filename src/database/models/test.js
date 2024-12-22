@@ -16,6 +16,10 @@ export default (sequelize, DataTypes) => {
 					key: 'id',
 				},
 			},
+			min_score: {
+				type: DataTypes.FLOAT,
+				allowNull: false,
+			},
 			code: {
 				type: DataTypes.STRING(50),
 				allowNull: false,

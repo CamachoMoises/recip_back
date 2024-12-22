@@ -11,9 +11,11 @@ import {
 	getCourseStudentTestAnswerByQuestion,
 	getCourseStudentTestById,
 	getQuestionTest,
+	getQuestionTypes,
 	resolveCourseStudentTest,
 	resolveCourseStudentTestAnswer,
 	updateCourseStudentTestAnswer,
+	updateQuestionType,
 } from '../database/repositories/test.js';
 import { cleanString, getRandomSubset } from './utilities.js';
 
@@ -46,6 +48,31 @@ export const ListQuestionTest = async (req, res) => {
 	try {
 		const question = await getQuestionTest(filters);
 		res.send(question);
+	} catch (error) {
+		console.log(error);
+		res.status(500).send('Internal Server Error');
+	}
+};
+
+export const ListQuestionTypes = async (req, res) => {
+	try {
+		const questionTypes = await getQuestionTypes();
+		res.send(questionTypes);
+	} catch (error) {
+		console.log(error);
+		res.status(500).send('Internal Server Error');
+	}
+};
+
+export const UpdateQuestionType = async (req, res) => {
+	try {
+		const data = req.body;
+		const { id, value } = data;
+		const editedQuestionSubject = await updateQuestionType({
+			id,
+			value,
+		});
+		res.status(201).send(editedQuestionSubject);
 	} catch (error) {
 		console.log(error);
 		res.status(500).send('Internal Server Error');
@@ -104,9 +131,9 @@ export const CourseStudentTest = async (req, res) => {
 				filters.course_student_id,
 				filters.test_id
 			);
-			await CourseStudentTestQuestions(courseStudentTest, 1, 2);
-			await CourseStudentTestQuestions(courseStudentTest, 2, 2);
-			await CourseStudentTestQuestions(courseStudentTest, 3, 2);
+			await CourseStudentTestQuestions(courseStudentTest, 1, 30);
+			await CourseStudentTestQuestions(courseStudentTest, 2, 15);
+			await CourseStudentTestQuestions(courseStudentTest, 3, 10);
 			const questionFilters = {
 				test_id: filters.test_id,
 				question_type_id: 4,
@@ -122,7 +149,7 @@ export const CourseStudentTest = async (req, res) => {
 					questionType_4.id
 				);
 			}
-			await CourseStudentTestQuestions(courseStudentTest, 5, 2);
+			await CourseStudentTestQuestions(courseStudentTest, 5, 4);
 			course_student_id = courseStudentTest.id;
 		}
 

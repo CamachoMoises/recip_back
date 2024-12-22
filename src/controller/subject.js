@@ -61,7 +61,7 @@ export const UpdateSubject = async (req, res) => {
 	try {
 		const new_data = await updateSubjectSchema.validateAsync(data);
 		const { id, name, hours, course_id, order, status } = new_data;
-		const edited_subject = await editSubject({
+		const editedSubject = await editSubject({
 			id,
 			name,
 			hours,
@@ -69,7 +69,7 @@ export const UpdateSubject = async (req, res) => {
 			order,
 			status,
 		});
-		res.status(201).send(edited_subject);
+		res.status(201).send(editedSubject);
 	} catch (error) {
 		console.error('Error en la validación:', error.message);
 

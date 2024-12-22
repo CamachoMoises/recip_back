@@ -72,6 +72,18 @@ const getQuestionTest = async (filters) => {
 	return data;
 };
 
+const getQuestionTypes = async () => {
+	const data = await QuestionType.findAll();
+	return data;
+};
+const updateQuestionType = async ({ id, value }) => {
+	const questionType = await QuestionType.findByPk(id);
+	if (!questionType) {
+		throw new Error('Course not found');
+	}
+	await questionType.update({ value });
+	return questionType;
+};
 const getAnswerQuestion = async (id) => {
 	const data = await Answer.findAll({
 		where: {
@@ -282,6 +294,8 @@ const resolveCourseStudentTest = async (
 export {
 	getAllTest,
 	getAllTestCourse,
+	getQuestionTypes,
+	updateQuestionType,
 	getAllCourseStudentTestAnswer,
 	getCourseStudentTestById,
 	getCourseStudentTestAnswerByQuestion,
