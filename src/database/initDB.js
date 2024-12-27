@@ -26,6 +26,7 @@ import loadSubject, {
 import loadPermission from './models/permission.js';
 import loadTest, {
 	question_type as loadQuestionType,
+	test_question_type as loadTestQuestionType,
 	question as loadQuestion,
 	answer as loadAnswer,
 } from './models/test.js';
@@ -63,6 +64,7 @@ const Permission = loadPermission(sequelize, DataTypes);
 const Test = loadTest(sequelize, DataTypes);
 const QuestionType = loadQuestionType(sequelize, DataTypes);
 const Question = loadQuestion(sequelize, DataTypes);
+const TestQuestionType = loadTestQuestionType(sequelize, DataTypes);
 const Answer = loadAnswer(sequelize, DataTypes);
 const Rating = loadRating(sequelize, DataTypes);
 const Schedule = loadSchedule(sequelize, DataTypes);
@@ -103,6 +105,7 @@ Course.hasMany(CourseStudentTestQuestion, {
 });
 Course.hasMany(CourseStudentTestAnswer, { foreignKey: 'course_id' });
 Course.hasMany(Question, { foreignKey: 'course_id' });
+Course.hasMany(TestQuestionType, { foreignKey: 'course_id' });
 Course.hasMany(Answer, { foreignKey: 'course_id' });
 
 CourseLevel.hasMany(Course, { foreignKey: 'course_level_id' });
@@ -211,6 +214,9 @@ Question.hasMany(CourseStudentTestAnswer, {
 });
 
 QuestionType.hasMany(Question, { foreignKey: 'question_type_id' });
+QuestionType.hasMany(TestQuestionType, {
+	foreignKey: 'question_type_id',
+});
 
 Rating.belongsTo(Student, { foreignKey: 'student_id' });
 Rating.belongsTo(Instructor, { foreignKey: 'instructor_id' });
@@ -256,10 +262,17 @@ SubjectDays.hasMany(Schedule, {
 
 Test.belongsTo(Course, { foreignKey: 'course_id' });
 Test.hasMany(Question, { foreignKey: 'test_id' });
+Test.hasMany(TestQuestionType, { foreignKey: 'test_id' });
 Test.hasMany(Answer, { foreignKey: 'test_id' });
 Test.hasMany(CourseStudentTest, { foreignKey: 'test_id' });
 Test.hasMany(CourseStudentTestQuestion, { foreignKey: 'test_id' });
 Test.hasMany(CourseStudentTestAnswer, { foreignKey: 'test_id' });
+
+TestQuestionType.belongsTo(Course, { foreignKey: 'course_id' });
+TestQuestionType.belongsTo(Test, { foreignKey: 'test_id' });
+TestQuestionType.belongsTo(QuestionType, {
+	foreignKey: 'question_type_id',
+});
 
 User.belongsTo(UserDocType, { foreignKey: 'user_doc_type_id' });
 User.belongsToMany(Group, {
@@ -293,6 +306,7 @@ const models = {
 	CourseStudentTest,
 	CourseStudentTestQuestion,
 	CourseStudentTestAnswer,
+	TestQuestionType,
 	Group,
 	GroupPermission,
 	Instructor,

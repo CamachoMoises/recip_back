@@ -6,6 +6,7 @@ import { Op } from 'sequelize';
 const {
 	Test,
 	QuestionType,
+	TestQuestionType,
 	Question,
 	Answer,
 	CourseStudent,
@@ -15,6 +16,22 @@ const {
 } = models;
 
 const getAllTest = async () => await Test.findAll();
+const getTestById = async (id) => {
+	const test = await Test.findOne({
+		where: id,
+		include: [
+			{
+				model: TestQuestionType,
+				include: [QuestionType],
+			},
+		],
+	});
+	if (!test) {
+		throw new Error('Question Type not found');
+	} else {
+		return test;
+	}
+};
 const getAllTestCourse = async (filters) => {
 	const whereClause = {};
 	if (filters.course_id) {
@@ -22,6 +39,12 @@ const getAllTestCourse = async (filters) => {
 	}
 	const data = await Test.findAll({
 		where: whereClause,
+		include: [
+			{
+				model: TestQuestionType,
+				include: [QuestionType],
+			},
+		],
 	});
 	return data;
 };
@@ -51,7 +74,7 @@ const getQuestionTest = async (filters) => {
 	if (filters.test_id) {
 		whereClause.test_id = filters.test_id;
 	}
-	if (filters.question_type_id) {
+	if (filters.question_type_id > 0) {
 		whereClause.question_type_id = filters.question_type_id;
 	}
 	if (filters.course_id) {
@@ -59,7 +82,7 @@ const getQuestionTest = async (filters) => {
 	}
 	const data = await Question.findAll({
 		where: whereClause,
-		order: [['question_type_id', 'ASC']],
+		order: [['updated_at', 'DESC']],
 		include: [
 			{
 				model: Answer,
@@ -76,13 +99,39 @@ const getQuestionTypes = async () => {
 	const data = await QuestionType.findAll();
 	return data;
 };
+
+const createTestQuestionType = async ({
+	course_id,
+	amount,
+	question_type_id,
+	status,
+	test_id,
+}) => {
+	const newTestQuestionType = await TestQuestionType.create({
+		course_id,
+		amount,
+		question_type_id,
+		status,
+		test_id,
+	});
+	return newTestQuestionType;
+};
 const updateQuestionType = async ({ id, value }) => {
 	const questionType = await QuestionType.findByPk(id);
 	if (!questionType) {
-		throw new Error('Course not found');
+		throw new Error('Question Type not found');
 	}
 	await questionType.update({ value });
 	return questionType;
+};
+
+const updateTestQuestionType = async ({ id, amount, status }) => {
+	const testQuestionType = await TestQuestionType.findByPk(id);
+	if (!testQuestionType) {
+		throw new Error('Test question Type not found');
+	}
+	await testQuestionType.update({ amount, status });
+	return testQuestionType;
 };
 const getAnswerQuestion = async (id) => {
 	const data = await Answer.findAll({
@@ -140,7 +189,6 @@ const createCourseStudentTest = async (
 	const date = moment(`${schedule.date} ${schedule.hour}`)
 		.subtract(4, 'hours')
 		.format('YYYY-MM-DD HH:mm');
-	console.log(date, moment().format('HH:mm'));
 	const newCourseStudentTest = CourseStudentTest.create({
 		course_id,
 		test_id,
@@ -293,9 +341,12 @@ const resolveCourseStudentTest = async (
 
 export {
 	getAllTest,
+	getTestById,
 	getAllTestCourse,
 	getQuestionTypes,
+	createTestQuestionType,
 	updateQuestionType,
+	updateTestQuestionType,
 	getAllCourseStudentTestAnswer,
 	getCourseStudentTestById,
 	getCourseStudentTestAnswerByQuestion,

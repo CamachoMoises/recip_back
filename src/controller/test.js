@@ -3,6 +3,7 @@ import {
 	createCourseStudentTest,
 	createCourseStudentTestAnswer,
 	createCourseStudentTestQuestion,
+	createTestQuestionType,
 	getAllCourseStudentTestAnswer,
 	getAllTest,
 	getAllTestCourse,
@@ -12,10 +13,12 @@ import {
 	getCourseStudentTestById,
 	getQuestionTest,
 	getQuestionTypes,
+	getTestById,
 	resolveCourseStudentTest,
 	resolveCourseStudentTestAnswer,
 	updateCourseStudentTestAnswer,
 	updateQuestionType,
+	updateTestQuestionType,
 } from '../database/repositories/test.js';
 import { cleanString, getRandomSubset } from './utilities.js';
 
@@ -30,20 +33,37 @@ export const ListTest = async (req, res) => {
 };
 
 export const ListTestCourse = async (req, res) => {
-	const filters = {
-		course_id: req.params.course_id,
-	};
 	try {
-		const test = await getAllTestCourse(filters);
-		res.send(test);
+		const filters = {
+			course_id: req.params.course_id,
+		};
+		const tests = await getAllTestCourse(filters);
+		res.send(tests);
 	} catch (error) {
 		console.log(error);
 		res.status(500).send('Internal Server Error');
 	}
 };
+
+export const TestCourseDetail = async (req, res) => {
+	const test_id = parseInt(req.params.test_id);
+	try {
+		if (test_id > 0) {
+			const test = await getTestById(test_id);
+			res.send(test);
+		} else {
+			res.status(500).send('Internal Server Error Test_not_fund');
+		}
+	} catch (error) {
+		console.log(error);
+		res.status(500).send('Internal Server Error');
+	}
+};
+
 export const ListQuestionTest = async (req, res) => {
 	const filters = {
-		test_id: req.params.test_id,
+		test_id: parseInt(req.params.test_id),
+		question_type_id: parseInt(req.query.question_type_id),
 	};
 	try {
 		const question = await getQuestionTest(filters);
@@ -73,6 +93,48 @@ export const UpdateQuestionType = async (req, res) => {
 			value,
 		});
 		res.status(201).send(editedQuestionSubject);
+	} catch (error) {
+		console.log(error);
+		res.status(500).send('Internal Server Error');
+	}
+};
+
+export const UpdateTestQuestionType = async (req, res) => {
+	try {
+		const data = req.body;
+		const {
+			id,
+			course_id,
+			amount,
+			question_type_id,
+			status,
+			test_id,
+		} = data;
+		if (id > 0) {
+			const updateTQT = await updateTestQuestionType({
+				id,
+				amount,
+				status,
+			});
+			// console.log(updateTQT, 'OJO');
+			if (updateTQT) {
+				const test = await getTestById(test_id);
+				res.status(201).send(test);
+			}
+		} else {
+			const createTQT = await createTestQuestionType({
+				course_id,
+				amount,
+				question_type_id,
+				status,
+				test_id,
+			});
+
+			if (createTQT) {
+				const test = await getTestById(test_id);
+				res.status(201).send(test);
+			}
+		}
 	} catch (error) {
 		console.log(error);
 		res.status(500).send('Internal Server Error');

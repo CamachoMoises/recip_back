@@ -87,6 +87,81 @@ export const question_type = (sequelize, DataTypes) => {
 	);
 };
 
+export const test_question_type = (sequelize, DataTypes) => {
+	return sequelize.define(
+		'test_question_type',
+		{
+			id: {
+				autoIncrement: true,
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				primaryKey: true,
+			},
+			amount: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+			},
+			course_id: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				references: {
+					model: 'course',
+					key: 'id',
+				},
+			},
+			question_type_id: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				references: {
+					model: 'question_type',
+					key: 'id',
+				},
+			},
+			test_id: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				references: {
+					model: 'test',
+					key: 'id',
+				},
+			},
+			status: {
+				type: DataTypes.BOOLEAN,
+				allowNull: true,
+				defaultValue: 1,
+			},
+		},
+		{
+			sequelize,
+			tableName: 'test_question_type',
+			timestamps: true,
+			indexes: [
+				{
+					name: 'PRIMARY',
+					unique: true,
+					using: 'BTREE',
+					fields: [{ name: 'id' }],
+				},
+				{
+					name: 'fk_test_question_type_course_idx',
+					using: 'BTREE',
+					fields: [{ name: 'course_id' }],
+				},
+				{
+					name: 'fk_test_question_type_question_type_idx',
+					using: 'BTREE',
+					fields: [{ name: 'question_type_id' }],
+				},
+				{
+					name: 'fk_test_question_type_test_idx',
+					using: 'BTREE',
+					fields: [{ name: 'test_id' }],
+				},
+			],
+		}
+	);
+};
+
 export const question = (sequelize, DataTypes) => {
 	return sequelize.define(
 		'question',
