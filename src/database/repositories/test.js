@@ -68,7 +68,21 @@ const getCourseStudentTestById = async (id) => {
 	});
 	return data;
 };
+const getQuestionById = async ({ id }) => {
+	const question = await Question.findOne({
+		where: { id: id },
+		include: [
+			{
+				model: Answer,
+			},
+			{
+				model: QuestionType,
+			},
+		],
+	});
 
+	return question;
+};
 const getQuestionTest = async (filters) => {
 	const whereClause = {};
 	if (filters.test_id) {
@@ -82,7 +96,7 @@ const getQuestionTest = async (filters) => {
 	}
 	const data = await Question.findAll({
 		where: whereClause,
-		order: [['updated_at', 'DESC']],
+		// order: [['created_at', 'DESC']],
 		include: [
 			{
 				model: Answer,
@@ -123,6 +137,29 @@ const updateQuestionType = async ({ id, value }) => {
 	}
 	await questionType.update({ value });
 	return questionType;
+};
+
+const updateQuestionTest = async ({ id, header, status }) => {
+	const question = await Question.findByPk(id);
+	if (!question) {
+		throw new Error('Question not found');
+	}
+	await question.update({ header, status });
+	return question;
+};
+
+const updateAnswerQuestionTest = async ({
+	id,
+	value,
+	is_correct,
+	status,
+}) => {
+	const answer = await Answer.findByPk(id);
+	if (!answer) {
+		throw new Error('Answer not found');
+	}
+	await answer.update({ value, is_correct, status });
+	return answer;
 };
 
 const updateTestQuestionType = async ({ id, amount, status }) => {
@@ -342,10 +379,13 @@ const resolveCourseStudentTest = async (
 export {
 	getAllTest,
 	getTestById,
+	getQuestionById,
 	getAllTestCourse,
 	getQuestionTypes,
 	createTestQuestionType,
 	updateQuestionType,
+	updateQuestionTest,
+	updateAnswerQuestionTest,
 	updateTestQuestionType,
 	getAllCourseStudentTestAnswer,
 	getCourseStudentTestById,

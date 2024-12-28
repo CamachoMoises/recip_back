@@ -11,6 +11,8 @@ import {
 	ListTest,
 	ListTestCourse,
 	TestCourseDetail,
+	UpdateAnswerQuestionTest,
+	UpdateQuestionTest,
 	UpdateQuestionType,
 	UpdateTestQuestionType,
 } from '../../controller/test.js';
@@ -30,6 +32,20 @@ router.put(
 	upload.none(),
 	convertTypes,
 	UpdateQuestionType
+);
+
+router.put(
+	'/questionTest',
+	upload.none(),
+	convertTypes,
+	UpdateQuestionTest
+);
+
+router.put(
+	'/answerQuestionTest/:question_id',
+	upload.none(),
+	convertTypes,
+	UpdateAnswerQuestionTest
 );
 
 router.put(

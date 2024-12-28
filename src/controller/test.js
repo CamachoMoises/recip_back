@@ -11,12 +11,15 @@ import {
 	getCourseStudentTest,
 	getCourseStudentTestAnswerByQuestion,
 	getCourseStudentTestById,
+	getQuestionById,
 	getQuestionTest,
 	getQuestionTypes,
 	getTestById,
 	resolveCourseStudentTest,
 	resolveCourseStudentTestAnswer,
+	updateAnswerQuestionTest,
 	updateCourseStudentTestAnswer,
+	updateQuestionTest,
 	updateQuestionType,
 	updateTestQuestionType,
 } from '../database/repositories/test.js';
@@ -93,6 +96,41 @@ export const UpdateQuestionType = async (req, res) => {
 			value,
 		});
 		res.status(201).send(editedQuestionSubject);
+	} catch (error) {
+		console.log(error);
+		res.status(500).send('Internal Server Error');
+	}
+};
+export const UpdateQuestionTest = async (req, res) => {
+	try {
+		const data = req.body;
+		const { id, header, status } = data;
+		await updateQuestionTest({
+			id,
+			header,
+			status,
+		});
+		const newQuestion = await getQuestionById({ id });
+		res.status(201).send(newQuestion);
+	} catch (error) {
+		console.log(error);
+		res.status(500).send('Internal Server Error');
+	}
+};
+
+export const UpdateAnswerQuestionTest = async (req, res) => {
+	try {
+		const data = req.body;
+		const { id, value, is_correct, status } = data;
+		const question_id = parseInt(req.params.question_id);
+		await updateAnswerQuestionTest({
+			id,
+			value,
+			is_correct,
+			status,
+		});
+		const newQuestion = await getQuestionById({ id: question_id });
+		res.status(201).send(newQuestion);
 	} catch (error) {
 		console.log(error);
 		res.status(500).send('Internal Server Error');

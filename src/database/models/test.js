@@ -20,6 +20,10 @@ export default (sequelize, DataTypes) => {
 				type: DataTypes.FLOAT,
 				allowNull: false,
 			},
+			duration: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+			},
 			code: {
 				type: DataTypes.STRING(50),
 				allowNull: false,
@@ -65,6 +69,10 @@ export const question_type = (sequelize, DataTypes) => {
 				type: DataTypes.FLOAT,
 				allowNull: true,
 				defaultValue: 0,
+			},
+			max_answer: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
 			},
 			name: {
 				type: DataTypes.STRING(500),
