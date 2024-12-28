@@ -3,6 +3,7 @@ import {
 	createCourseStudentTest,
 	createCourseStudentTestAnswer,
 	createCourseStudentTestQuestion,
+	createTest,
 	createTestQuestionType,
 	getAllCourseStudentTestAnswer,
 	getAllTest,
@@ -21,6 +22,7 @@ import {
 	updateCourseStudentTestAnswer,
 	updateQuestionTest,
 	updateQuestionType,
+	updateTest,
 	updateTestQuestionType,
 } from '../database/repositories/test.js';
 import { cleanString, getRandomSubset } from './utilities.js';
@@ -96,6 +98,39 @@ export const UpdateQuestionType = async (req, res) => {
 			value,
 		});
 		res.status(201).send(editedQuestionSubject);
+	} catch (error) {
+		console.log(error);
+		res.status(500).send('Internal Server Error');
+	}
+};
+export const CreateTest = async (req, res) => {
+	try {
+		const data = req.body;
+		const { course_id, duration, min_score } = data;
+		const testCreate = await createTest({
+			course_id,
+			duration,
+			min_score,
+		});
+		const newTest = await getTestById({ id: testCreate.id });
+		res.status(201).send(newTest);
+	} catch (error) {
+		console.log(error);
+		res.status(500).send('Internal Server Error');
+	}
+};
+export const UpdateTest = async (req, res) => {
+	try {
+		const data = req.body;
+		const { id, duration, min_score, status } = data;
+		await updateTest({
+			id,
+			duration,
+			min_score,
+			status,
+		});
+		const newTest = await getTestById({ id });
+		res.status(201).send(newTest);
 	} catch (error) {
 		console.log(error);
 		res.status(500).send('Internal Server Error');

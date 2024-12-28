@@ -5,6 +5,7 @@ import {
 	CourseStudentTestAnswer,
 	CourseStudentTestDetails,
 	CourseStudentTestEnd,
+	CreateTest,
 	ListAnswerQuestion,
 	ListQuestionTest,
 	ListQuestionTypes,
@@ -14,6 +15,7 @@ import {
 	UpdateAnswerQuestionTest,
 	UpdateQuestionTest,
 	UpdateQuestionType,
+	UpdateTest,
 	UpdateTestQuestionType,
 } from '../../controller/test.js';
 import convertTypes from '../../middleware/convertTypes.js';
@@ -33,6 +35,8 @@ router.put(
 	convertTypes,
 	UpdateQuestionType
 );
+router.post('/test', upload.none(), convertTypes, CreateTest);
+router.put('/test', upload.none(), convertTypes, UpdateTest);
 
 router.put(
 	'/questionTest',

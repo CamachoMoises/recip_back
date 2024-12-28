@@ -9,6 +9,7 @@ const {
 	TestQuestionType,
 	Question,
 	Answer,
+	Course,
 	CourseStudent,
 	CourseStudentTest,
 	CourseStudentTestQuestion,
@@ -138,6 +139,37 @@ const updateQuestionType = async ({ id, value }) => {
 	await questionType.update({ value });
 	return questionType;
 };
+const createTest = async ({ course_id, duration, min_score }) => {
+	let numberCode = 1;
+	const course = await Course.findByPk(course_id);
+	if (!course) {
+		throw new Error('Course not found');
+	}
+	const prevTest = await Test.findOne({
+		order: [['id', 'DESC']],
+	});
+	if (prevTest) {
+		numberCode = prevTest.id + 1;
+	}
+	const stringCode = String(numberCode).padStart(4, '0');
+	const code = `T-${stringCode}`;
+	const test = await Test.create({
+		course_id,
+		code,
+		duration,
+		min_score,
+		status: false,
+	});
+	return test;
+};
+const updateTest = async ({ id, duration, min_score, status }) => {
+	const test = await Test.findByPk(id);
+	if (!test) {
+		throw new Error('Test not found');
+	}
+	await test.update({ duration, min_score, status });
+	return test;
+};
 
 const updateQuestionTest = async ({ id, header, status }) => {
 	const question = await Question.findByPk(id);
@@ -226,7 +258,7 @@ const createCourseStudentTest = async (
 	const date = moment(`${schedule.date} ${schedule.hour}`)
 		.subtract(4, 'hours')
 		.format('YYYY-MM-DD HH:mm');
-	const newCourseStudentTest = CourseStudentTest.create({
+	const newCourseStudentTest = await CourseStudentTest.create({
 		course_id,
 		test_id,
 		attempts,
@@ -384,6 +416,8 @@ export {
 	getQuestionTypes,
 	createTestQuestionType,
 	updateQuestionType,
+	createTest,
+	updateTest,
 	updateQuestionTest,
 	updateAnswerQuestionTest,
 	updateTestQuestionType,
