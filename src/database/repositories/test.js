@@ -277,11 +277,12 @@ const getCourseStudentTest = async (filters) => {
 		whereClause.test_id = filters.test_id;
 	}
 	if (filters.date) {
-		//TIMEZONE
+		//TIMEZONE TO DO
 		whereClause.date = { [Op.lte]: `${filters.date} 19:59:59` };
 	}
 	const data = await CourseStudentTest.findAll({
 		where: whereClause,
+		include: [{ model: Test }],
 	});
 
 	return data;

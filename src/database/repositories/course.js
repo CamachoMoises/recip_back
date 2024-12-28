@@ -10,6 +10,7 @@ const {
 	SubjectDays,
 	Subject,
 	Student,
+	Test,
 	Instructor,
 	User,
 	Schedule,
@@ -81,7 +82,7 @@ const getCourseStudentById = async (id) =>
 			},
 			{
 				model: Course,
-				include: [CourseType, CourseLevel],
+				include: [CourseType, CourseLevel, Test],
 			},
 			{
 				model: CourseStudentTest,

@@ -28,6 +28,7 @@ import {
 	updateTestQuestionType,
 } from '../database/repositories/test.js';
 import { cleanString, getRandomSubset } from './utilities.js';
+import { getCourseStudentById } from '../database/repositories/course.js';
 
 export const ListTest = async (req, res) => {
 	try {
@@ -290,51 +291,75 @@ export const CourseStudentTestDetails = async (req, res) => {
 	}
 };
 export const CourseStudentTest = async (req, res) => {
-	const currentDate = moment();
-	let exist = false;
-	let course_student_id = -1;
-	const filters = {
-		course_student_id: req.params.course_student_id,
-		test_id: req.params.test_id,
-		finished: false,
-		date: req.body.date,
-	};
-	const details = await getCourseStudentTest(filters);
-	if (details.length > 0) {
-		const data = details.pop();
-		//TIMEZONE
-		const dateTest = moment(data.date).add(4, 'hours');
-		const horas = currentDate.diff(dateTest, 'hours', true);
-		if (horas < 2 && horas > 0) {
-			exist = true;
-			course_student_id = data.id;
-		}
-	}
 	try {
+		const currentDate = moment();
+		const courseStudent = await getCourseStudentById(
+			req.params.course_student_id
+		);
+		const test = courseStudent.course.tests.find(
+			(dataTest) => dataTest.status
+		);
+		if (!test.id) {
+			throw new Error('Question Type not found');
+		}
+		const testData = await getTestById(test.id);
+		let exist = false;
+		let course_student_id = -1;
+		const filters = {
+			course_student_id: req.params.course_student_id,
+			test_id: test.id,
+			finished: false,
+			date: req.body.date,
+		};
+		const details = await getCourseStudentTest(filters);
+		if (details.length > 0) {
+			const data = details.pop();
+			//TIMEZONE TO DO
+			const dateTest = moment(data.date).add(4, 'hours');
+			const horas = currentDate.diff(dateTest, 'hours', true);
+			if (horas < 2 && horas > 0) {
+				exist = true;
+				course_student_id = data.id;
+			}
+		}
 		if (!exist) {
 			const courseStudentTest = await createCourseStudentTest(
 				filters.course_student_id,
 				filters.test_id
 			);
-			await CourseStudentTestQuestions(courseStudentTest, 1, 30);
-			await CourseStudentTestQuestions(courseStudentTest, 2, 15);
-			await CourseStudentTestQuestions(courseStudentTest, 3, 10);
-			const questionFilters = {
-				test_id: filters.test_id,
-				question_type_id: 4,
-			};
-			const questionsType_4 = await getQuestionTest(questionFilters);
-			for (const questionType_4 of questionsType_4) {
-				await createCourseStudentTestQuestion(
-					courseStudentTest.course_id,
-					courseStudentTest.student_id,
-					courseStudentTest.test_id,
-					courseStudentTest.course_student_id,
-					courseStudentTest.id,
-					questionType_4.id
-				);
+
+			for (
+				let index = 0;
+				index < testData.test_question_types.length;
+				index++
+			) {
+				const TQT = testData.test_question_types[index];
+				if (TQT.question_type_id != 4 && TQT.amount > 0) {
+					await CourseStudentTestQuestions(
+						courseStudentTest,
+						TQT.question_type_id,
+						TQT.amount
+					);
+				} else if (TQT.question_type_id === 4 && TQT.amount > 0) {
+					const questionFilters = {
+						test_id: filters.test_id,
+						question_type_id: 4,
+					};
+					const questionsType_4 = await getQuestionTest(
+						questionFilters
+					);
+					for (const questionType_4 of questionsType_4) {
+						await createCourseStudentTestQuestion(
+							courseStudentTest.course_id,
+							courseStudentTest.student_id,
+							courseStudentTest.test_id,
+							courseStudentTest.course_student_id,
+							courseStudentTest.id,
+							questionType_4.id
+						);
+					}
+				}
 			}
-			await CourseStudentTestQuestions(courseStudentTest, 5, 4);
 			course_student_id = courseStudentTest.id;
 		}
 
@@ -347,14 +372,13 @@ export const CourseStudentTest = async (req, res) => {
 		console.log(error.message);
 
 		return res.status(400).send(`Error ${error.message}`);
-		// .send(`Error ${course_student_id}`)
 	}
 };
 
 const CourseStudentTestQuestions = async (
 	courseStudentTest,
 	question_type_id,
-	questionQuantity
+	question_Amount
 ) => {
 	const filters = {
 		test_id: courseStudentTest.test_id,
@@ -365,7 +389,7 @@ const CourseStudentTestQuestions = async (
 		return question.id;
 	});
 	try {
-		const random_id = getRandomSubset(id, questionQuantity);
+		const random_id = getRandomSubset(id, question_Amount);
 		console.log(random_id);
 		for (const new_id of random_id) {
 			await createCourseStudentTestQuestion(

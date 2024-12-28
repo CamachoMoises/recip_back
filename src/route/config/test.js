@@ -74,7 +74,7 @@ router.put(
 
 router.get('/courseStudentTest/:id', CourseStudentTestDetails);
 router.post(
-	'/courseStudentTest/:course_student_id/:test_id',
+	'/courseStudentTest/:course_student_id',
 	upload.none(),
 	convertTypes,
 	CourseStudentTest
