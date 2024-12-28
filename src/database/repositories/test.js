@@ -171,6 +171,30 @@ const updateTest = async ({ id, duration, min_score, status }) => {
 	return test;
 };
 
+const createQuestionTest = async ({
+	course_id,
+	test_id,
+	question_type_id,
+	header,
+}) => {
+	const course = await Course.findByPk(course_id);
+	if (!course) {
+		throw new Error('Course not found');
+	}
+	const test = await Test.findByPk(test_id);
+	if (!test) {
+		throw new Error('Test not found');
+	}
+	const question = await Question.create({
+		course_id,
+		test_id,
+		question_type_id,
+		header,
+		value: 1,
+		status: true,
+	});
+	return question;
+};
 const updateQuestionTest = async ({ id, header, status }) => {
 	const question = await Question.findByPk(id);
 	if (!question) {
@@ -178,6 +202,37 @@ const updateQuestionTest = async ({ id, header, status }) => {
 	}
 	await question.update({ header, status });
 	return question;
+};
+
+const createAnswerQuestionTest = async ({
+	course_id,
+	test_id,
+	question_type_id,
+	question_id,
+	value,
+}) => {
+	const course = await Course.findByPk(course_id);
+	if (!course) {
+		throw new Error('Course not found');
+	}
+	const test = await Test.findByPk(test_id);
+	if (!test) {
+		throw new Error('Test not found');
+	}
+	const question = await Question.findByPk(test_id);
+	if (!question) {
+		throw new Error('Question not found');
+	}
+	const answer = await Answer.create({
+		course_id,
+		test_id,
+		question_type_id,
+		question_id,
+		value,
+		is_correct: false,
+		status: true,
+	});
+	return answer;
 };
 
 const updateAnswerQuestionTest = async ({
@@ -418,7 +473,9 @@ export {
 	updateQuestionType,
 	createTest,
 	updateTest,
+	createQuestionTest,
 	updateQuestionTest,
+	createAnswerQuestionTest,
 	updateAnswerQuestionTest,
 	updateTestQuestionType,
 	getAllCourseStudentTestAnswer,

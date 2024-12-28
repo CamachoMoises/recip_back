@@ -5,6 +5,8 @@ import {
 	CourseStudentTestAnswer,
 	CourseStudentTestDetails,
 	CourseStudentTestEnd,
+	CreateAnswerQuestionTest,
+	CreateQuestionTest,
 	CreateTest,
 	ListAnswerQuestion,
 	ListQuestionTest,
@@ -37,12 +39,23 @@ router.put(
 );
 router.post('/test', upload.none(), convertTypes, CreateTest);
 router.put('/test', upload.none(), convertTypes, UpdateTest);
-
+router.post(
+	'/questionTest',
+	upload.none(),
+	convertTypes,
+	CreateQuestionTest
+);
 router.put(
 	'/questionTest',
 	upload.none(),
 	convertTypes,
 	UpdateQuestionTest
+);
+router.post(
+	'/answerQuestionTest',
+	upload.none(),
+	convertTypes,
+	CreateAnswerQuestionTest
 );
 
 router.put(

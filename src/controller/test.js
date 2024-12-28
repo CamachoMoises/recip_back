@@ -1,8 +1,10 @@
 import moment from 'moment';
 import {
+	createAnswerQuestionTest,
 	createCourseStudentTest,
 	createCourseStudentTestAnswer,
 	createCourseStudentTestQuestion,
+	createQuestionTest,
 	createTest,
 	createTestQuestionType,
 	getAllCourseStudentTestAnswer,
@@ -136,6 +138,25 @@ export const UpdateTest = async (req, res) => {
 		res.status(500).send('Internal Server Error');
 	}
 };
+export const CreateQuestionTest = async (req, res) => {
+	try {
+		const data = req.body;
+		const { course_id, test_id, question_type_id, header } = data;
+		const questionCreate = await createQuestionTest({
+			course_id,
+			test_id,
+			question_type_id,
+			header,
+		});
+		const newQuestion = await getQuestionById({
+			id: questionCreate.id,
+		});
+		res.status(201).send(newQuestion);
+	} catch (error) {
+		console.log(error);
+		res.status(500).send('Internal Server Error');
+	}
+};
 export const UpdateQuestionTest = async (req, res) => {
 	try {
 		const data = req.body;
@@ -147,6 +168,35 @@ export const UpdateQuestionTest = async (req, res) => {
 		});
 		const newQuestion = await getQuestionById({ id });
 		res.status(201).send(newQuestion);
+	} catch (error) {
+		console.log(error);
+		res.status(500).send('Internal Server Error');
+	}
+};
+
+export const CreateAnswerQuestionTest = async (req, res) => {
+	try {
+		const data = req.body;
+		const {
+			course_id,
+			test_id,
+			question_type_id,
+			question_id,
+			value,
+		} = data;
+		const answer = await createAnswerQuestionTest({
+			course_id,
+			test_id,
+			question_type_id,
+			question_id,
+			value,
+		});
+		if (answer) {
+			const newQuestion = await getQuestionById({ id: question_id });
+			res.status(201).send(newQuestion);
+		} else {
+			throw new Error('Answer not created');
+		}
 	} catch (error) {
 		console.log(error);
 		res.status(500).send('Internal Server Error');
