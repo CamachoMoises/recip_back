@@ -237,6 +237,10 @@ export const course_student_test = (sequelize, DataTypes) => {
 				type: DataTypes.FLOAT,
 				allowNull: true,
 			},
+			approve: {
+				type: DataTypes.BOOLEAN,
+				allowNull: true,
+			},
 			test_id: {
 				type: DataTypes.INTEGER,
 				allowNull: false,

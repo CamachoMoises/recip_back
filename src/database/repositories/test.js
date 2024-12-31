@@ -456,9 +456,32 @@ const resolveCourseStudentTest = async (
 	const courseStudent = await CourseStudent.findOne({
 		where: { id: courseStudentTest.course_student_id },
 	});
-	courseStudent.score = score;
-	await courseStudent.save();
+
+	const test = await Test.findOne({
+		where: { id: courseStudentTest.test_id },
+	});
+
+	if (!courseStudentTest || !courseStudent || !test) {
+		throw new Error(
+			'courseStudent or courseStudentTest or Test Type not found'
+		);
+	}
+
+	const approve = score >= test.min_score;
+	let changeCS = false;
+	if (score > courseStudent.score) {
+		courseStudent.score = score;
+		changeCS = true;
+	}
+	if (!courseStudent.approve) {
+		courseStudent.approve = approve;
+		changeCS = true;
+	}
+	if (changeCS) {
+		await courseStudent.save();
+	}
 	courseStudentTest.score = score;
+	courseStudentTest.approve = approve;
 	courseStudentTest.finished = true;
 	await courseStudentTest.save();
 	return true;
