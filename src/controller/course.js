@@ -16,8 +16,10 @@ import {
 	getCourseById,
 	getCourseStudentById,
 	getScheduleById,
+	updateCourseHours,
 	updateSchedule,
 } from '../database/repositories/course.js';
+import { getSubjectByCourseId } from '../database/repositories/subject.js';
 
 export const ListCourses = async (req, res) => {
 	try {
@@ -295,4 +297,17 @@ export const UpdateSchedule = async (req, res) => {
 			.status(400)
 			.send(`Input Validation Error ${error.message}`);
 	}
+};
+
+export const calculateCourseTotalHours = async (course_id) => {
+	const subjects = await getSubjectByCourseId(course_id);
+	let totalHours = 0;
+	for (let index = 0; index < subjects.length; index++) {
+		const subject = subjects[index];
+		const course_type_id = subject.course.course_type_id;
+		const hours = course_type_id === 2 ? 8 : subject.hours;
+		const days = subject.subject_days.length;
+		totalHours = totalHours + hours * days;
+	}
+	await updateCourseHours(course_id, totalHours);
 };

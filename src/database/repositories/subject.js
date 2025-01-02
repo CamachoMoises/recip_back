@@ -1,9 +1,50 @@
 import { models } from '../initDB.js';
+import { Op } from 'sequelize';
 
-const { Subject, SubjectDays } = models;
+const {
+	Course,
+	Subject,
+	SubjectDays,
+	SubjectLesson,
+	SubjectLessonDays,
+} = models;
 
 const getAllSubjects = async () => await Subject.findAll();
 
+const getSubjectById = async (id) => {
+	const subject = await Subject.findOne({
+		where: { id: id },
+		include: [
+			{
+				model: Course,
+			},
+			{
+				model: SubjectLesson,
+				include: [SubjectLessonDays],
+			},
+			{
+				model: SubjectDays,
+			},
+		],
+	});
+	return subject;
+};
+const getSubjectByCourseId = async (course_id) => {
+	const subjects = await Subject.findAll({
+		where: { course_id },
+		include: [
+			{
+				model: SubjectDays,
+				where: { status: true },
+			},
+			{
+				model: Course,
+			},
+		],
+	});
+
+	return subjects;
+};
 const getAllCourseSubjects = async (id) => {
 	const data = await Subject.findAll({
 		where: {
@@ -33,6 +74,22 @@ const createSubject = async ({
 		status,
 	});
 
+const createSubjectLesson = async ({
+	course_id,
+	subject_id,
+	name,
+	order,
+	status,
+}) =>
+	await SubjectLesson.create({
+		course_id,
+		subject_id,
+		name,
+		order,
+		hours: 1,
+		status,
+	});
+
 const editSubject = async ({
 	id,
 	name,
@@ -43,7 +100,7 @@ const editSubject = async ({
 }) => {
 	const subject = await Subject.findByPk(id);
 	if (!subject) {
-		throw new Error('Course not found');
+		throw new Error('subject not found');
 	}
 	await subject.update({
 		id,
@@ -54,6 +111,19 @@ const editSubject = async ({
 		status,
 	});
 	return subject;
+};
+const editSubjectLesson = async ({ id, name, order, status }) => {
+	const subjectLesson = await SubjectLesson.findByPk(id);
+	if (!subjectLesson) {
+		throw new Error('subjectLesson not found');
+	}
+	await subjectLesson.update({
+		id,
+		name,
+		order,
+		status,
+	});
+	return subjectLesson;
 };
 
 const getSubjectsDaysByFull = async (subject_id, course_id, day) => {
@@ -72,6 +142,46 @@ const getSubjectsDaysByFull = async (subject_id, course_id, day) => {
 	return data;
 };
 
+const getSubjectsLessonDaysByFull = async (
+	course_id,
+	subject_id,
+	subject_days_id,
+	subject_lesson_id,
+	day
+) => {
+	const data = await SubjectLessonDays.findAll({
+		where: {
+			course_id,
+			subject_id,
+			subject_days_id,
+			subject_lesson_id,
+			day,
+		},
+	});
+	return data;
+};
+
+const checkStatusDay = async (
+	subject_id,
+	subject_lesson_days_id,
+	day
+) => {
+	const excludeID = [subject_lesson_days_id];
+	const subject_lesson_days = await SubjectLessonDays.findAll({
+		where: {
+			id: { [Op.notIn]: excludeID },
+			status: true,
+			day: day,
+			subject_id: subject_id,
+		},
+	});
+	if (subject_lesson_days.length > 0) {
+		return true;
+	} else {
+		return false;
+	}
+};
+
 const createSubjectDay = async ({
 	subject_id,
 	course_id,
@@ -85,33 +195,59 @@ const createSubjectDay = async ({
 		status,
 	});
 };
-const updateSubjectDay = async ({
-	id,
-	subject_id,
+const createSubjectLessonDay = async ({
 	course_id,
+	subject_id,
+	subject_days_id,
+	subject_lesson_id,
 	day,
 	status,
 }) => {
+	return await SubjectLessonDays.create({
+		course_id,
+		subject_id,
+		subject_days_id,
+		subject_lesson_id,
+		day,
+		status,
+	});
+};
+const updateSubjectDay = async ({ id, status }) => {
 	const subjectDay = await SubjectDays.findByPk(id);
 	if (!subjectDay) {
 		throw new Error('Subject Day not found');
 	}
 	await subjectDay.update({
-		id,
-		subject_id,
-		course_id,
-		day,
 		status,
 	});
 	return subjectDay;
 };
 
+const updateSubjectLessonDay = async ({ id, status }) => {
+	const subjectLessonDays = await SubjectLessonDays.findByPk(id);
+	if (!subjectLessonDays) {
+		throw new Error('Subject Day not found');
+	}
+	await subjectLessonDays.update({
+		status,
+	});
+	return subjectLessonDays;
+};
+
 export {
 	getAllSubjects,
+	getSubjectById,
+	getSubjectByCourseId,
 	getAllCourseSubjects,
 	createSubject,
+	createSubjectLesson,
 	editSubject,
+	editSubjectLesson,
 	getSubjectsDaysByFull,
+	getSubjectsLessonDaysByFull,
 	createSubjectDay,
+	createSubjectLessonDay,
 	updateSubjectDay,
+	updateSubjectLessonDay,
+	checkStatusDay,
 };

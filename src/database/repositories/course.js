@@ -159,6 +159,16 @@ const editCourse = async ({
 	});
 	return course;
 };
+const updateCourseHours = async (id, hours) => {
+	const course = await Course.findByPk(id);
+	if (!course) {
+		throw new Error('Course not found');
+	}
+	await course.update({
+		id,
+		hours,
+	});
+};
 
 const createCourseStudent = async (course_id) => {
 	let numberCode = 1;
@@ -327,6 +337,7 @@ export {
 	getCourseStudentById,
 	createCourse,
 	editCourse,
+	updateCourseHours,
 	editCourseStudent,
 	createCourseStudent,
 	getAllSchedule,

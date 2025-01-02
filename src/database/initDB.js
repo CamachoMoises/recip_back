@@ -22,6 +22,8 @@ import loadCourse, {
 } from './models/course.js';
 import loadSubject, {
 	subject_days as loadSubjectDays,
+	subject_lesson as loadSubjectLesson,
+	subject_lesson_days as loadSubjectLessonDays,
 } from './models/subject.js';
 import loadPermission from './models/permission.js';
 import loadTest, {
@@ -87,6 +89,8 @@ const CourseStudentTestAnswer = loadCourseStudentTestAnswer(
 	DataTypes
 );
 const SubjectDays = loadSubjectDays(sequelize, DataTypes);
+const SubjectLesson = loadSubjectLesson(sequelize, DataTypes);
+const SubjectLessonDays = loadSubjectLessonDays(sequelize, DataTypes);
 
 //Associations table!
 Answer.belongsTo(Test, { foreignKey: 'test_id' });
@@ -97,6 +101,8 @@ Course.belongsTo(CourseLevel, { foreignKey: 'course_level_id' });
 Course.belongsTo(CourseType, { foreignKey: 'course_type_id' });
 Course.hasMany(Subject, { foreignKey: 'course_id' });
 Course.hasMany(SubjectDays, { foreignKey: 'course_id' });
+Course.hasMany(SubjectLesson, { foreignKey: 'course_id' });
+Course.hasMany(SubjectLessonDays, { foreignKey: 'course_id' });
 Course.hasMany(CourseStudent, { foreignKey: 'course_id' });
 Course.hasMany(Test, { foreignKey: 'course_id' });
 Course.hasMany(CourseStudentTest, { foreignKey: 'course_id' });
@@ -248,6 +254,8 @@ Student.hasMany(CourseStudentTestAnswer, {
 
 Subject.belongsTo(Course, { foreignKey: 'course_id' });
 Subject.hasMany(SubjectDays, { foreignKey: 'subject_id' });
+Subject.hasMany(SubjectLesson, { foreignKey: 'subject_id' });
+Subject.hasMany(SubjectLessonDays, { foreignKey: 'subject_id' });
 
 SubjectDays.belongsTo(Subject, { foreignKey: 'subject_id' });
 SubjectDays.belongsTo(Course, { foreignKey: 'course_id' });
@@ -258,6 +266,24 @@ SubjectDays.hasMany(Rating, {
 });
 SubjectDays.hasMany(Schedule, {
 	foreignKey: 'subject_id',
+});
+SubjectDays.hasMany(SubjectLessonDays, {
+	foreignKey: 'subject_days_id',
+});
+
+SubjectLesson.belongsTo(Course, { foreignKey: 'course_id' });
+SubjectLesson.belongsTo(Subject, { foreignKey: 'subject_id' });
+SubjectLesson.hasMany(SubjectLessonDays, {
+	foreignKey: 'subject_lesson_id',
+});
+
+SubjectLessonDays.belongsTo(Course, { foreignKey: 'course_id' });
+SubjectLessonDays.belongsTo(Subject, { foreignKey: 'subject_id' });
+SubjectLessonDays.belongsTo(SubjectLesson, {
+	foreignKey: 'subject_lesson_id',
+});
+SubjectLessonDays.belongsTo(SubjectDays, {
+	foreignKey: 'subject_days_id',
 });
 
 Test.belongsTo(Course, { foreignKey: 'course_id' });
@@ -317,6 +343,8 @@ const models = {
 	Student,
 	Subject,
 	SubjectDays,
+	SubjectLesson,
+	SubjectLessonDays,
 	User,
 	UserGroup,
 	UserPermission,
