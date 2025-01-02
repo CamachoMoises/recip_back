@@ -23,26 +23,22 @@ import { getSubjectByCourseId } from '../database/repositories/subject.js';
 
 export const ListCourses = async (req, res) => {
 	try {
-		const filters = {
-			course_type_id: req.query.course_type_id,
-			course_level_id: req.query.course_level_id,
-			name: req.query.name,
-			description: req.query.description,
-		};
+		const filters = req.query;
 		const courses = await getAllCourses(filters);
 		res.send(courses);
 	} catch (error) {
 		console.log(error);
-		res.status(500).send('Internal Server Error');
+		res.status(500).send(`Internal Server Error ${error}`);
 	}
 };
 export const ListCoursesStudent = async (req, res) => {
 	try {
-		const coursesStudent = await getAllCoursesStudent();
+		const filters = req.query;
+		const coursesStudent = await getAllCoursesStudent(filters);
 		res.send(coursesStudent);
 	} catch (error) {
 		console.log(error);
-		res.status(500).send('Internal Server Error');
+		res.status(500).send(`Internal Server Error ${error}`);
 	}
 };
 export const ListCoursesTypes = async (req, res) => {
@@ -51,7 +47,7 @@ export const ListCoursesTypes = async (req, res) => {
 		res.send(courses);
 	} catch (error) {
 		console.log(error);
-		res.status(500).send('Internal Server Error');
+		res.status(500).send(`Internal Server Error ${error}`);
 	}
 };
 export const ListCoursesLevel = async (req, res) => {
@@ -60,7 +56,7 @@ export const ListCoursesLevel = async (req, res) => {
 		res.send(courses);
 	} catch (error) {
 		console.log(error);
-		res.status(500).send('Internal Server Error');
+		res.status(500).send(`Internal Server Error ${error}`);
 	}
 };
 
@@ -71,7 +67,7 @@ export const CourseDetails = async (req, res) => {
 		res.send(course);
 	} catch (error) {
 		console.log(error);
-		res.status(500).send('Internal Server Error');
+		res.status(500).send(`Internal Server Error ${error}`);
 	}
 };
 
@@ -82,7 +78,7 @@ export const CourseStudentDetails = async (req, res) => {
 		res.send(courseStudent);
 	} catch (error) {
 		console.log(error);
-		res.status(500).send('Internal Server Error');
+		res.status(500).send(`Internal Server Error ${error}`);
 	}
 };
 
@@ -121,12 +117,8 @@ export const CreateCourse = async (req, res) => {
 		const course = await getCourseById(new_course.id);
 		res.status(201).send(course);
 	} catch (error) {
-		console.error('Error en la validación:', error.message);
-
-		console.log(error.message);
-		return res
-			.status(400)
-			.send(`Input Validation Error ${error.message}`);
+		console.log(error);
+		res.status(500).send(`Internal Server Error ${error}`);
 	}
 };
 
@@ -185,12 +177,8 @@ export const UpdateCourse = async (req, res) => {
 		const course = await getCourseById(id);
 		res.send(course);
 	} catch (error) {
-		console.error('Error en la validación:', error.message);
-
-		console.log(error.message);
-		return res
-			.status(400)
-			.send(`Input Validation Error ${error.message}`);
+		console.log(error);
+		res.status(500).send(`Internal Server Error ${error}`);
 	}
 };
 
@@ -218,11 +206,8 @@ export const UpdateCourseStudent = async (req, res) => {
 		);
 		res.send(courseStudentEdited);
 	} catch (error) {
-		console.error('Error en la actualizacion:', error.message);
-		console.log(error.message);
-		return res
-			.status(400)
-			.send(`Input Validation Error ${error.message}`);
+		console.log(error);
+		res.status(500).send(`Internal Server Error ${error}`);
 	}
 };
 
@@ -233,7 +218,7 @@ export const ListSchedule = async (req, res) => {
 		res.send(schedule);
 	} catch (error) {
 		console.log(error);
-		res.status(500).send('Internal Server Error');
+		res.status(500).send(`Internal Server Error ${error}`);
 	}
 };
 
@@ -265,12 +250,8 @@ export const CreateSchedule = async (req, res) => {
 		const SC = await getScheduleById(newSchedule.id);
 		res.send(SC);
 	} catch (error) {
-		console.error('Error en la validación:', error.message);
-
-		console.log(error.message);
-		return res
-			.status(400)
-			.send(`Input Validation Error ${error.message}`);
+		console.log(error);
+		res.status(500).send(`Internal Server Error ${error}`);
 	}
 };
 
@@ -290,12 +271,8 @@ export const UpdateSchedule = async (req, res) => {
 		const SC = await getScheduleById(editSchedule.id);
 		res.send(SC);
 	} catch (error) {
-		console.error('Error en la validación:', error.message);
-
-		console.log(error.message);
-		return res
-			.status(400)
-			.send(`Input Validation Error ${error.message}`);
+		console.log(error);
+		res.status(500).send(`Internal Server Error ${error}`);
 	}
 };
 

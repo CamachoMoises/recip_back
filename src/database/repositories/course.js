@@ -39,8 +39,12 @@ const getAllCourses = async (filters) => {
 	return data;
 };
 
-const getAllCoursesStudent = async () =>
-	CourseStudent.findAll({
+const getAllCoursesStudent = async (filters) => {
+	const whereClause = {};
+	if (filters.course_type_id) {
+		whereClause.id = filters.course_type_id;
+	}
+	const courseStudent = CourseStudent.findAll({
 		include: [
 			{
 				model: Student,
@@ -48,7 +52,17 @@ const getAllCoursesStudent = async () =>
 			},
 			{
 				model: Course,
-				include: [CourseType, CourseLevel],
+				required: true,
+				include: [
+					{
+						model: CourseType,
+						where: whereClause,
+						required: true,
+					},
+					{
+						model: CourseLevel,
+					},
+				],
 			},
 			{
 				model: CourseStudentTest,
@@ -69,6 +83,9 @@ const getAllCoursesStudent = async () =>
 		],
 		order: [['createdAt', 'DESC']],
 	});
+
+	return courseStudent;
+};
 
 const getAllCoursesTypes = async () => CourseType.findAll();
 const getAllCoursesLevel = async () => CourseLevel.findAll();
@@ -175,7 +192,6 @@ const createCourseStudent = async (course_id) => {
 	const prevCourseStudent = await CourseStudent.findOne({
 		order: [['createdAt', 'DESC']],
 	});
-	console.log(prevCourseStudent);
 	if (prevCourseStudent) {
 		numberCode = prevCourseStudent.id + 1;
 	}
