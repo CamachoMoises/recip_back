@@ -1,6 +1,6 @@
 import express from 'express';
 import multer from 'multer';
-import convertTypes from '../../middleware/convertTypes.js';
+import convertTypes from '../middleware/convertTypes.js';
 
 // import multer from 'multer';
 import {
@@ -17,7 +17,7 @@ import {
 	UpdateCourse,
 	UpdateCourseStudent,
 	UpdateSchedule,
-} from '../../controller/course.js';
+} from '../controller/course.js';
 
 const upload = multer();
 const router = express.Router();

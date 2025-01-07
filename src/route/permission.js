@@ -1,15 +1,15 @@
 import express from 'express';
-import multer from 'multer';
-import { getAllModules } from '../../database/repositories/module.js';
+// import multer from 'multer';
+import { getAllPermissions } from '../database/repositories/permission.js';
 
-const upload = multer();
+// const upload = multer();
 const router = express.Router();
 
 // Rutas para usuarios
 router.get('/', async (req, res) => {
 	try {
-		const module = await getAllModules();
-		res.send(module);
+		const permission = await getAllPermissions();
+		res.send(permission);
 	} catch (error) {
 		console.log(error);
 		res.status(500).send('Internal Server Error');

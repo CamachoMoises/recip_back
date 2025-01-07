@@ -9,6 +9,7 @@ import {
 	getAllUsers,
 	getInstructorByUserId,
 	getStudentByUserId,
+	getUserByEmail,
 	getUserById,
 	getUserByUUID,
 	getUsersInstructors,
@@ -31,6 +32,18 @@ export const UserData = async (req, res) => {
 	try {
 		const user = await getUserById(user_id);
 		res.send(user);
+	} catch (error) {
+		console.log(error);
+		res.status(500).send('Internal Server Error');
+	}
+};
+
+export const UserValidateEmail = async (req, res) => {
+	const email = req.params.email;
+	try {
+		const user = await getUserByEmail(email);
+		const exist = user ? true : false;
+		res.send({ exist });
 	} catch (error) {
 		console.log(error);
 		res.status(500).send('Internal Server Error');

@@ -19,8 +19,8 @@ import {
 	UpdateQuestionType,
 	UpdateTest,
 	UpdateTestQuestionType,
-} from '../../controller/test.js';
-import convertTypes from '../../middleware/convertTypes.js';
+} from '../controller/test.js';
+import convertTypes from '../middleware/convertTypes.js';
 
 const upload = multer();
 const router = express.Router();

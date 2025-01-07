@@ -10,8 +10,8 @@ import {
 	ChangeStatusLessonDay,
 	CreateSubjectLesson,
 	UpdateSubjectLesson,
-} from '../../controller/subject.js';
-import convertTypes from '../../middleware/convertTypes.js';
+} from '../controller/subject.js';
+import convertTypes from '../middleware/convertTypes.js';
 
 const upload = multer();
 const router = express.Router();

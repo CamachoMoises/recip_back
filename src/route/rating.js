@@ -1,6 +1,6 @@
 import express from 'express';
 import multer from 'multer';
-import { getAllRatings } from '../../database/repositories/rating.js';
+import { getAllRatings } from '../database/repositories/rating.js';
 
 const upload = multer();
 const router = express.Router();

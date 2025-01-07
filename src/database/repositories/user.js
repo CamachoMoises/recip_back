@@ -40,7 +40,6 @@ const getStudentByUserId = async (user_id) => {
 	const student = await user.getStudent();
 	console.log(student);
 	if (!student) {
-		console.log('Ojo');
 		const status = user.is_active;
 		return await user.createStudent({ status });
 	} else {
@@ -78,6 +77,13 @@ const getUserById = async (id) => {
 	if (!user) throw new Error('User not found');
 	return user;
 };
+const getUserByEmail = async (email) => {
+	const user = await User.findOne({
+		where: { email },
+	});
+	return user;
+};
+
 const createUser = async ({
 	name,
 	country_name,
@@ -188,6 +194,7 @@ export {
 	createUser,
 	editUser,
 	getUserById,
+	getUserByEmail,
 	getStudentByUserId,
 	getInstructorByUserId,
 };

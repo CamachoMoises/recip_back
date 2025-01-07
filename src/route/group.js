@@ -1,6 +1,6 @@
 import express from 'express';
 import multer from 'multer';
-import { getAllGroups } from '../../database/repositories/group.js';
+import { getAllGroups } from '../database/repositories/group.js';
 
 const upload = multer();
 const router = express.Router();
