@@ -1,8 +1,8 @@
 import express from 'express';
-import multer from 'multer';
+// import multer from 'multer';
 import { getAllRatings } from '../database/repositories/rating.js';
 
-const upload = multer();
+// const upload = multer();
 const router = express.Router();
 
 // Rutas para usuarios

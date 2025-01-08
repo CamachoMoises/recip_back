@@ -18,34 +18,59 @@ import {
 	UpdateCourseStudent,
 	UpdateSchedule,
 } from '../controller/course.js';
+import { authenticateJWT } from '../controller/authentication.js';
 
 const upload = multer();
 const router = express.Router();
 
 // Rutas para usuarios
-router.get('/', ListCourses);
-router.get('/coursesStudents', ListCoursesStudent);
-router.post('/', upload.none(), convertTypes, CreateCourse);
-router.put('/', upload.none(), convertTypes, UpdateCourse);
-router.get('/courseTypes', ListCoursesTypes);
-router.get('/courseLevel', ListCoursesLevel);
+router.get('/', authenticateJWT, ListCourses);
+router.get('/coursesStudents', authenticateJWT, ListCoursesStudent);
+router.post(
+	'/',
+	upload.none(),
+	authenticateJWT,
+	convertTypes,
+	CreateCourse
+);
+router.put(
+	'/',
+	upload.none(),
+	authenticateJWT,
+	convertTypes,
+	UpdateCourse
+);
+router.get('/courseTypes', authenticateJWT, ListCoursesTypes);
+router.get('/courseLevel', authenticateJWT, ListCoursesLevel);
 router.post(
 	'/courseStudent/:course_id',
 	upload.none(),
+	authenticateJWT,
 	convertTypes,
 	CreateCourseStudent
 );
 router.put(
 	'/courseStudent/:course_id',
 	upload.none(),
+	authenticateJWT,
 	convertTypes,
 	UpdateCourseStudent
 );
 
-router.get('/course/:id', CourseDetails);
-router.get('/courseStudent/:id', CourseStudentDetails);
-router.get('/schedule/:id', ListSchedule);
-router.post('/schedule', upload.none(), convertTypes, CreateSchedule);
+router.get('/course/:id', authenticateJWT, CourseDetails);
+router.get(
+	'/courseStudent/:id',
+	authenticateJWT,
+	CourseStudentDetails
+);
+router.get('/schedule/:id', authenticateJWT, ListSchedule);
+router.post(
+	'/schedule',
+	upload.none(),
+	authenticateJWT,
+	convertTypes,
+	CreateSchedule
+);
 router.put('/schedule', upload.none(), convertTypes, UpdateSchedule);
 
 export default router;

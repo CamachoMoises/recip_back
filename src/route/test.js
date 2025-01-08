@@ -21,39 +21,56 @@ import {
 	UpdateTestQuestionType,
 } from '../controller/test.js';
 import convertTypes from '../middleware/convertTypes.js';
+import { authenticateJWT } from '../controller/authentication.js';
 
 const upload = multer();
 const router = express.Router();
 
-router.get('/', ListTest);
-router.get('/tests/:course_id', ListTestCourse);
-router.get('/test/:test_id', TestCourseDetail);
-router.get('/questions/:test_id', ListQuestionTest);
-router.get('/questionTypes', ListQuestionTypes);
-router.get('/answers/:id', ListAnswerQuestion);
+router.get('/', authenticateJWT, ListTest);
+router.get('/tests/:course_id', authenticateJWT, ListTestCourse);
+router.get('/test/:test_id', authenticateJWT, TestCourseDetail);
+router.get('/questions/:test_id', authenticateJWT, ListQuestionTest);
+router.get('/questionTypes', authenticateJWT, ListQuestionTypes);
+router.get('/answers/:id', authenticateJWT, ListAnswerQuestion);
 router.put(
 	'/questionTypes',
 	upload.none(),
+	authenticateJWT,
 	convertTypes,
 	UpdateQuestionType
 );
-router.post('/test', upload.none(), convertTypes, CreateTest);
-router.put('/test', upload.none(), convertTypes, UpdateTest);
+router.post(
+	'/test',
+	upload.none(),
+	authenticateJWT,
+	convertTypes,
+	CreateTest
+);
+router.put(
+	'/test',
+	upload.none(),
+	authenticateJWT,
+	convertTypes,
+	UpdateTest
+);
 router.post(
 	'/questionTest',
 	upload.none(),
+	authenticateJWT,
 	convertTypes,
 	CreateQuestionTest
 );
 router.put(
 	'/questionTest',
 	upload.none(),
+	authenticateJWT,
 	convertTypes,
 	UpdateQuestionTest
 );
 router.post(
 	'/answerQuestionTest',
 	upload.none(),
+	authenticateJWT,
 	convertTypes,
 	CreateAnswerQuestionTest
 );
@@ -61,6 +78,7 @@ router.post(
 router.put(
 	'/answerQuestionTest/:question_id',
 	upload.none(),
+	authenticateJWT,
 	convertTypes,
 	UpdateAnswerQuestionTest
 );
@@ -68,6 +86,7 @@ router.put(
 router.put(
 	'/testQuestionTypes',
 	upload.none(),
+	authenticateJWT,
 	convertTypes,
 	UpdateTestQuestionType
 );
@@ -76,6 +95,7 @@ router.get('/courseStudentTest/:id', CourseStudentTestDetails);
 router.post(
 	'/courseStudentTest/:course_student_id',
 	upload.none(),
+	authenticateJWT,
 	convertTypes,
 	CourseStudentTest
 );
@@ -83,6 +103,7 @@ router.post(
 router.post(
 	'/courseStudentTestAnswer',
 	upload.none(),
+	authenticateJWT,
 	convertTypes,
 	CourseStudentTestAnswer
 );
@@ -90,6 +111,7 @@ router.post(
 router.post(
 	'/courseStudentTestEnd',
 	upload.none(),
+	authenticateJWT,
 	convertTypes,
 	CourseStudentTestEnd
 );

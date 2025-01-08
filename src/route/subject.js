@@ -12,37 +12,54 @@ import {
 	UpdateSubjectLesson,
 } from '../controller/subject.js';
 import convertTypes from '../middleware/convertTypes.js';
+import { authenticateJWT } from '../controller/authentication.js';
 
 const upload = multer();
 const router = express.Router();
 
 // Rutas para asingnaciones
-router.get('/', ListSubjects);
-router.post('/', upload.none(), convertTypes, CreateSubject);
+router.get('/', authenticateJWT, ListSubjects);
+router.post(
+	'/',
+	upload.none(),
+	authenticateJWT,
+	convertTypes,
+	CreateSubject
+);
 router.post(
 	'/lesson',
 	upload.none(),
+	authenticateJWT,
 	convertTypes,
 	CreateSubjectLesson
 );
-router.put('/', upload.none(), convertTypes, UpdateSubject);
+router.put(
+	'/',
+	upload.none(),
+	authenticateJWT,
+	convertTypes,
+	UpdateSubject
+);
 router.put(
 	'/lesson',
 	upload.none(),
+	authenticateJWT,
 	convertTypes,
 	UpdateSubjectLesson
 );
-router.get('/course/:id', ListSubjectsCourse);
-router.get('/subject/:id', SubjectDetails);
+router.get('/course/:id', authenticateJWT, ListSubjectsCourse);
+router.get('/subject/:id', authenticateJWT, SubjectDetails);
 router.post(
 	'/subjects_days',
 	upload.none(),
+	authenticateJWT,
 	convertTypes,
 	ChangeStatusDay
 );
 router.post(
 	'/subjects_lesson_days',
 	upload.none(),
+	authenticateJWT,
 	convertTypes,
 	ChangeStatusLessonDay
 );

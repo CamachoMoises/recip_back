@@ -1,13 +1,8 @@
 import express, { json, urlencoded } from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
-// import {
-// 	createParticipant,
-// 	edictParticipant,
-// 	getAllParticipants,
-// 	getParticipantByUUID,
-// } from './database/repositories/participants.js';
-// import multer from 'multer';
+
+import authRoutes from './route/authentication.js';
 import userRoutes from './route/user.js';
 import moduleRoutes from './route/module.js';
 import groupRoutes from './route/group.js';
@@ -17,14 +12,14 @@ import subjectRoutes from './route/subject.js';
 import configRoutes from './route/config.js';
 import testRoutes from './route/test.js';
 const app = express();
-// const upload = multer();
+
 app.use(morgan('dev'));
 app.use(urlencoded({ extended: true }));
 app.use(json());
 app.use(cors());
 // app.use(raw());
-const authentication = false;
-console.log(authentication);
+
+app.use('/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/subjects', subjectRoutes);
