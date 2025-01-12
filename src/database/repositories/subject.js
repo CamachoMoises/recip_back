@@ -59,6 +59,24 @@ const getAllCourseSubjects = async (id) => {
 	});
 	return data;
 };
+const getAllCourseSubjectsLesson = async (id) => {
+	const data = await Subject.findAll({
+		where: {
+			course_id: id,
+		},
+		order: [['order', 'ASC']],
+		include: [
+			{
+				model: SubjectDays,
+			},
+			{
+				model: SubjectLesson,
+				include: [SubjectLessonDays],
+			},
+		],
+	});
+	return data;
+};
 const createSubject = async ({
 	name,
 	hours,
@@ -239,6 +257,7 @@ export {
 	getSubjectById,
 	getSubjectByCourseId,
 	getAllCourseSubjects,
+	getAllCourseSubjectsLesson,
 	createSubject,
 	createSubjectLesson,
 	editSubject,

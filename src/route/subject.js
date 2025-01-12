@@ -10,6 +10,7 @@ import {
 	ChangeStatusLessonDay,
 	CreateSubjectLesson,
 	UpdateSubjectLesson,
+	ListSubjectsLessonCourse,
 } from '../controller/subject.js';
 import convertTypes from '../middleware/convertTypes.js';
 import { authenticateJWT } from '../controller/authentication.js';
@@ -48,6 +49,11 @@ router.put(
 	UpdateSubjectLesson
 );
 router.get('/course/:id', authenticateJWT, ListSubjectsCourse);
+router.get(
+	'/lesson/course/:id',
+	authenticateJWT,
+	ListSubjectsLessonCourse
+);
 router.get('/subject/:id', authenticateJWT, SubjectDetails);
 router.post(
 	'/subjects_days',

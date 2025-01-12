@@ -109,6 +109,10 @@ export const test_question_type = (sequelize, DataTypes) => {
 				type: DataTypes.INTEGER,
 				allowNull: false,
 			},
+			value: {
+				type: DataTypes.FLOAT,
+				allowNull: false,
+			},
 			course_id: {
 				type: DataTypes.INTEGER,
 				allowNull: false,

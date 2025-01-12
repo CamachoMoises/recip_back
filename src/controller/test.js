@@ -230,6 +230,7 @@ export const UpdateTestQuestionType = async (req, res) => {
 			id,
 			course_id,
 			amount,
+			value,
 			question_type_id,
 			status,
 			test_id,
@@ -238,6 +239,7 @@ export const UpdateTestQuestionType = async (req, res) => {
 			const updateTQT = await updateTestQuestionType({
 				id,
 				amount,
+				value,
 				status,
 			});
 			// console.log(updateTQT, 'OJO');
@@ -249,6 +251,7 @@ export const UpdateTestQuestionType = async (req, res) => {
 			const createTQT = await createTestQuestionType({
 				course_id,
 				amount,
+				value,
 				question_type_id,
 				status,
 				test_id,

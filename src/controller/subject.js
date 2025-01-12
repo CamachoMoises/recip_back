@@ -11,6 +11,7 @@ import {
 	editSubject,
 	editSubjectLesson,
 	getAllCourseSubjects,
+	getAllCourseSubjectsLesson,
 	getAllSubjects,
 	getSubjectById,
 	getSubjectsDaysByFull,
@@ -34,6 +35,17 @@ export const ListSubjectsCourse = async (req, res) => {
 	const id = req.params.id;
 	try {
 		const subjects = await getAllCourseSubjects(id);
+		res.send(subjects);
+	} catch (error) {
+		console.log(error);
+		res.status(500).send('Internal Server Error');
+	}
+};
+
+export const ListSubjectsLessonCourse = async (req, res) => {
+	const id = req.params.id;
+	try {
+		const subjects = await getAllCourseSubjectsLesson(id);
 		res.send(subjects);
 	} catch (error) {
 		console.log(error);

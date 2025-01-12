@@ -118,6 +118,7 @@ const getQuestionTypes = async () => {
 const createTestQuestionType = async ({
 	course_id,
 	amount,
+	value,
 	question_type_id,
 	status,
 	test_id,
@@ -125,6 +126,7 @@ const createTestQuestionType = async ({
 	const newTestQuestionType = await TestQuestionType.create({
 		course_id,
 		amount,
+		value,
 		question_type_id,
 		status,
 		test_id,
@@ -249,12 +251,17 @@ const updateAnswerQuestionTest = async ({
 	return answer;
 };
 
-const updateTestQuestionType = async ({ id, amount, status }) => {
+const updateTestQuestionType = async ({
+	id,
+	amount,
+	value,
+	status,
+}) => {
 	const testQuestionType = await TestQuestionType.findByPk(id);
 	if (!testQuestionType) {
 		throw new Error('Test question Type not found');
 	}
-	await testQuestionType.update({ amount, status });
+	await testQuestionType.update({ amount, value, status });
 	return testQuestionType;
 };
 const getAnswerQuestion = async (id) => {
