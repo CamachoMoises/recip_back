@@ -211,6 +211,9 @@ Permission.hasMany(UserPermission, { foreignKey: 'permission_id' });
 Question.belongsTo(Course, { foreignKey: 'course_id' });
 Question.belongsTo(Test, { foreignKey: 'test_id' });
 Question.belongsTo(QuestionType, { foreignKey: 'question_type_id' });
+Question.belongsTo(TestQuestionType, {
+	foreignKey: 'test_question_type_id',
+});
 Question.hasMany(Answer, { foreignKey: 'question_id' });
 Question.hasMany(CourseStudentTestQuestion, {
 	foreignKey: 'question_id',
@@ -298,6 +301,9 @@ TestQuestionType.belongsTo(Course, { foreignKey: 'course_id' });
 TestQuestionType.belongsTo(Test, { foreignKey: 'test_id' });
 TestQuestionType.belongsTo(QuestionType, {
 	foreignKey: 'question_type_id',
+});
+TestQuestionType.hasMany(Question, {
+	foreignKey: 'test_question_type_id',
 });
 
 User.belongsTo(UserDocType, { foreignKey: 'user_doc_type_id' });

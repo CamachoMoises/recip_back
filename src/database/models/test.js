@@ -205,6 +205,14 @@ export const question = (sequelize, DataTypes) => {
 					key: 'id',
 				},
 			},
+			test_question_type_id: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				references: {
+					model: 'test_question_type',
+					key: 'id',
+				},
+			},
 			test_id: {
 				type: DataTypes.INTEGER,
 				allowNull: false,
@@ -239,6 +247,11 @@ export const question = (sequelize, DataTypes) => {
 					name: 'fk_question_question_type_idx',
 					using: 'BTREE',
 					fields: [{ name: 'question_type_id' }],
+				},
+				{
+					name: 'fk_question_test_question_type_idx',
+					using: 'BTREE',
+					fields: [{ name: 'test_question_type_id' }],
 				},
 				{
 					name: 'fk_question_test_idx',

@@ -72,6 +72,7 @@ export const ListQuestionTest = async (req, res) => {
 	const filters = {
 		test_id: parseInt(req.params.test_id),
 		question_type_id: parseInt(req.query.question_type_id),
+		test_question_type_id: parseInt(req.query.test_question_type_id),
 	};
 	try {
 		const question = await getQuestionTest(filters);
@@ -142,11 +143,18 @@ export const UpdateTest = async (req, res) => {
 export const CreateQuestionTest = async (req, res) => {
 	try {
 		const data = req.body;
-		const { course_id, test_id, question_type_id, header } = data;
+		const {
+			course_id,
+			test_id,
+			question_type_id,
+			test_question_type_id,
+			header,
+		} = data;
 		const questionCreate = await createQuestionTest({
 			course_id,
 			test_id,
 			question_type_id,
+			test_question_type_id,
 			header,
 		});
 		const newQuestion = await getQuestionById({
@@ -477,7 +485,7 @@ export const evaluateAnswers = async (courseStudentTestAnswers) => {
 
 	for (const answer of courseStudentTestAnswers) {
 		const resp = JSON.parse(answer.resp);
-		const scoreValue = answer.question.question_type.value;
+		const scoreValue = answer.question.test_question_type.value;
 		let correctas = 0;
 		let incorrectas = 0;
 		let rspCheck = [];

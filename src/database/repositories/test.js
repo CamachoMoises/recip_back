@@ -92,6 +92,9 @@ const getQuestionTest = async (filters) => {
 	if (filters.question_type_id > 0) {
 		whereClause.question_type_id = filters.question_type_id;
 	}
+	if (filters.test_question_type_id > 0) {
+		whereClause.test_question_type_id = filters.test_question_type_id;
+	}
 	if (filters.course_id) {
 		whereClause.course_id = filters.course_id;
 	}
@@ -177,6 +180,7 @@ const createQuestionTest = async ({
 	course_id,
 	test_id,
 	question_type_id,
+	test_question_type_id,
 	header,
 }) => {
 	const course = await Course.findByPk(course_id);
@@ -191,6 +195,7 @@ const createQuestionTest = async ({
 		course_id,
 		test_id,
 		question_type_id,
+		test_question_type_id,
 		header,
 		value: 1,
 		status: true,
@@ -434,6 +439,9 @@ const getAllCourseStudentTestAnswer = async (filters) => {
 					},
 					{
 						model: QuestionType,
+					},
+					{
+						model: TestQuestionType,
 					},
 				],
 			},
