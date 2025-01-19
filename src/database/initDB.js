@@ -20,12 +20,17 @@ import loadCourse, {
 	course_student_test_question as loadCourseStudentTestQuestion,
 	course_student_test_answer as loadCourseStudentTestAnswer,
 } from './models/course.js';
+import loadCourseStudentAssessment, {
+	course_student_assessment_day as loadCourseStudentAssessmentDay,
+	course_student_assessment_lesson_day as loadCourseStudentAssessmentLessonDetail,
+} from './models/assessment.js';
 import loadSubject, {
 	subject_days as loadSubjectDays,
 	subject_lesson as loadSubjectLesson,
 	subject_lesson_days as loadSubjectLessonDays,
 } from './models/subject.js';
 import loadPermission from './models/permission.js';
+
 import loadTest, {
 	question_type as loadQuestionType,
 	test_question_type as loadTestQuestionType,
@@ -88,6 +93,17 @@ const CourseStudentTestAnswer = loadCourseStudentTestAnswer(
 	sequelize,
 	DataTypes
 );
+const CourseStudentAssessment = loadCourseStudentAssessment(
+	sequelize,
+	DataTypes
+);
+
+const CourseStudentAssessmentDay = loadCourseStudentAssessmentDay(
+	sequelize,
+	DataTypes
+);
+const CourseStudentAssessmentLessonDetail =
+	loadCourseStudentAssessmentLessonDetail(sequelize, DataTypes);
 const SubjectDays = loadSubjectDays(sequelize, DataTypes);
 const SubjectLesson = loadSubjectLesson(sequelize, DataTypes);
 const SubjectLessonDays = loadSubjectLessonDays(sequelize, DataTypes);
@@ -110,6 +126,14 @@ Course.hasMany(CourseStudentTestQuestion, {
 	foreignKey: 'course_id',
 });
 Course.hasMany(CourseStudentTestAnswer, { foreignKey: 'course_id' });
+Course.hasMany(CourseStudentAssessment, { foreignKey: 'course_id' });
+Course.hasMany(CourseStudentAssessmentDay, {
+	foreignKey: 'course_id',
+});
+Course.hasMany(CourseStudentAssessmentLessonDetail, {
+	foreignKey: 'course_id',
+});
+
 Course.hasMany(Question, { foreignKey: 'course_id' });
 Course.hasMany(TestQuestionType, { foreignKey: 'course_id' });
 Course.hasMany(Answer, { foreignKey: 'course_id' });
@@ -129,7 +153,82 @@ CourseStudent.hasMany(CourseStudentTestQuestion, {
 CourseStudent.hasMany(CourseStudentTestAnswer, {
 	foreignKey: 'course_student_id',
 });
+CourseStudent.hasMany(CourseStudentAssessment, {
+	foreignKey: 'course_student_id',
+});
+CourseStudent.hasMany(CourseStudentAssessmentDay, {
+	foreignKey: 'course_student_id',
+});
+CourseStudent.hasMany(CourseStudentAssessmentLessonDetail, {
+	foreignKey: 'course_student_id',
+});
 CourseStudent.hasMany(Rating, { foreignKey: 'course_student_id' });
+
+CourseStudentAssessment.belongsTo(Course, {
+	foreignKey: 'course_id',
+});
+CourseStudentAssessment.belongsTo(Student, {
+	foreignKey: 'student_id',
+});
+CourseStudentAssessment.belongsTo(CourseStudent, {
+	foreignKey: 'course_student_id',
+});
+CourseStudentAssessment.hasMany(CourseStudentAssessmentDay, {
+	foreignKey: 'course_student_assessment_id',
+});
+CourseStudentAssessment.hasMany(CourseStudentAssessmentLessonDetail, {
+	foreignKey: 'course_student_assessment_id',
+});
+
+CourseStudentAssessmentDay.belongsTo(Course, {
+	foreignKey: 'course_id',
+});
+CourseStudentAssessmentDay.belongsTo(Student, {
+	foreignKey: 'student_id',
+});
+CourseStudentAssessmentDay.belongsTo(CourseStudent, {
+	foreignKey: 'course_student_id',
+});
+CourseStudentAssessmentDay.belongsTo(CourseStudentAssessment, {
+	foreignKey: 'course_student_assessment_id',
+});
+CourseStudentAssessmentDay.hasMany(
+	CourseStudentAssessmentLessonDetail,
+	{
+		foreignKey: 'course_student_assessment_day_id',
+	}
+);
+
+CourseStudentAssessmentLessonDetail.belongsTo(Course, {
+	foreignKey: 'course_id',
+});
+CourseStudentAssessmentLessonDetail.belongsTo(Student, {
+	foreignKey: 'student_id',
+});
+CourseStudentAssessmentLessonDetail.belongsTo(CourseStudent, {
+	foreignKey: 'course_student_id',
+});
+CourseStudentAssessmentLessonDetail.belongsTo(
+	CourseStudentAssessment,
+	{
+		foreignKey: 'course_student_assessment_id',
+	}
+);
+CourseStudentAssessmentLessonDetail.belongsTo(
+	CourseStudentAssessmentDay,
+	{
+		foreignKey: 'course_student_assessment_day_id',
+	}
+);
+CourseStudentAssessmentLessonDetail.belongsTo(Subject, {
+	foreignKey: 'subject_id',
+});
+CourseStudentAssessmentLessonDetail.belongsTo(SubjectLesson, {
+	foreignKey: 'subject_lesson_id',
+});
+CourseStudentAssessmentLessonDetail.belongsTo(SubjectDays, {
+	foreignKey: 'subject_days_id',
+});
 
 CourseStudentTest.belongsTo(Course, { foreignKey: 'course_id' });
 CourseStudentTest.belongsTo(Student, { foreignKey: 'student_id' });
@@ -254,29 +353,47 @@ Student.hasMany(CourseStudentTestQuestion, {
 Student.hasMany(CourseStudentTestAnswer, {
 	foreignKey: 'student_id',
 });
+Student.hasMany(CourseStudentAssessment, {
+	foreignKey: 'student_id',
+});
+Student.hasMany(CourseStudentAssessmentDay, {
+	foreignKey: 'student_id',
+});
+Student.hasMany(CourseStudentAssessmentLessonDetail, {
+	foreignKey: 'student_id',
+});
 
 Subject.belongsTo(Course, { foreignKey: 'course_id' });
 Subject.hasMany(SubjectDays, { foreignKey: 'subject_id' });
 Subject.hasMany(SubjectLesson, { foreignKey: 'subject_id' });
 Subject.hasMany(SubjectLessonDays, { foreignKey: 'subject_id' });
+Subject.hasMany(CourseStudentAssessmentLessonDetail, {
+	foreignKey: 'subject_id',
+});
 
 SubjectDays.belongsTo(Subject, { foreignKey: 'subject_id' });
 SubjectDays.belongsTo(Course, { foreignKey: 'course_id' });
 SubjectDays.hasMany(Rating, { foreignKey: 'subject_days_id' });
 SubjectDays.hasMany(Schedule, { foreignKey: 'subject_days_id' });
 SubjectDays.hasMany(Rating, {
-	foreignKey: 'subject_id',
+	foreignKey: 'subject_days_id',
 });
 SubjectDays.hasMany(Schedule, {
-	foreignKey: 'subject_id',
+	foreignKey: 'subject_days_id',
 });
 SubjectDays.hasMany(SubjectLessonDays, {
+	foreignKey: 'subject_days_id',
+});
+SubjectDays.hasMany(CourseStudentAssessmentLessonDetail, {
 	foreignKey: 'subject_days_id',
 });
 
 SubjectLesson.belongsTo(Course, { foreignKey: 'course_id' });
 SubjectLesson.belongsTo(Subject, { foreignKey: 'subject_id' });
 SubjectLesson.hasMany(SubjectLessonDays, {
+	foreignKey: 'subject_lesson_id',
+});
+SubjectLesson.hasMany(CourseStudentAssessmentLessonDetail, {
 	foreignKey: 'subject_lesson_id',
 });
 
@@ -287,6 +404,9 @@ SubjectLessonDays.belongsTo(SubjectLesson, {
 });
 SubjectLessonDays.belongsTo(SubjectDays, {
 	foreignKey: 'subject_days_id',
+});
+SubjectLessonDays.hasMany(CourseStudentAssessmentLessonDetail, {
+	foreignKey: 'subject_lesson_days_id',
 });
 
 Test.belongsTo(Course, { foreignKey: 'course_id' });
@@ -338,6 +458,9 @@ const models = {
 	CourseStudentTest,
 	CourseStudentTestQuestion,
 	CourseStudentTestAnswer,
+	CourseStudentAssessment,
+	CourseStudentAssessmentDay,
+	CourseStudentAssessmentLessonDetail,
 	TestQuestionType,
 	Group,
 	GroupPermission,
