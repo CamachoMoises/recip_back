@@ -80,6 +80,14 @@ const getUserById = async (id) => {
 const getUserByEmail = async (email) => {
 	const user = await User.findOne({
 		where: { email },
+		include: [
+			{
+				model: Student,
+			},
+			{
+				model: Instructor,
+			},
+		],
 	});
 	return user;
 };

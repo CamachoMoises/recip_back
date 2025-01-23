@@ -4,6 +4,7 @@ import morgan from 'morgan';
 
 import authRoutes from './route/authentication.js';
 import userRoutes from './route/user.js';
+import assessmentRoutes from './route/assessment.js';
 import moduleRoutes from './route/module.js';
 import groupRoutes from './route/group.js';
 import groupPermission from './route/permission.js';
@@ -21,6 +22,7 @@ app.use(cors());
 
 app.use('/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/assessment', assessmentRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/subjects', subjectRoutes);
 app.use('/api/module', moduleRoutes);

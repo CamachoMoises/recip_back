@@ -153,7 +153,7 @@ CourseStudent.hasMany(CourseStudentTestQuestion, {
 CourseStudent.hasMany(CourseStudentTestAnswer, {
 	foreignKey: 'course_student_id',
 });
-CourseStudent.hasMany(CourseStudentAssessment, {
+CourseStudent.hasOne(CourseStudentAssessment, {
 	foreignKey: 'course_student_id',
 });
 CourseStudent.hasMany(CourseStudentAssessmentDay, {

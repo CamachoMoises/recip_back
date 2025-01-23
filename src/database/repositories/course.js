@@ -7,6 +7,7 @@ const {
 	CourseLevel,
 	CourseStudent,
 	CourseStudentTest,
+	CourseStudentAssessment,
 	SubjectDays,
 	Subject,
 	Student,
@@ -68,15 +69,22 @@ const getAllCoursesStudent = async (filters) => {
 				model: CourseStudentTest,
 			},
 			{
+				model: CourseStudentAssessment,
+			},
+			{
 				model: Schedule,
 				include: [
 					{
 						model: Subject,
 						where: {
 							name: {
-								[Op.like]: `%examen%`, // Buscar valores que contengan "valo"
+								[Op.like]: `%examen%`, // Buscar valores que contengan "examen"
 							},
 						},
+					},
+					{
+						model: Instructor,
+						include: [{ model: User }],
 					},
 				],
 			},

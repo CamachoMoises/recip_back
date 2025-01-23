@@ -188,6 +188,10 @@ export const course_student_assessment_day = (
 				type: DataTypes.TEXT,
 				allowNull: true,
 			},
+			seat: {
+				type: DataTypes.TEXT,
+				allowNull: true,
+			},
 			comments: {
 				type: DataTypes.TEXT,
 				allowNull: true,
@@ -319,7 +323,7 @@ export const course_student_assessment_lesson_day = (
 				type: DataTypes.TEXT,
 				allowNull: false,
 			},
-			value: {
+			score: {
 				type: DataTypes.INTEGER,
 				allowNull: true,
 			},
