@@ -189,6 +189,92 @@ const getSubjectsByAssessment = async ({
 	return subjects;
 };
 
+const getSubjectBySubjectId = async ({
+	subject_id,
+	day,
+	course_student_assessment_day_id,
+}) => {
+	const subject = await Subject.findOne({
+		where: { id: subject_id },
+		include: [
+			{
+				model: SubjectDays,
+				where: { day },
+				required: true,
+			},
+			{
+				model: SubjectLesson,
+				include: [
+					{
+						model: SubjectLessonDays,
+						where: { day },
+						required: true,
+
+						include: [
+							{
+								model: CourseStudentAssessmentLessonDetail,
+								required: false,
+								where: {
+									course_student_assessment_day_id,
+								},
+							},
+						],
+					},
+				],
+			},
+		],
+	});
+	return subject;
+};
+const createCourseStudentAssessmentLessonDay = async ({
+	course_id,
+	student_id,
+	course_student_id,
+	course_student_assessment_id,
+	course_student_assessment_day_id,
+	subject_id,
+	subject_lesson_id,
+	subject_days_id,
+	subject_lesson_days_id,
+	item,
+	score,
+}) => {
+	const newCourseStudentAssessmentLessonDetail =
+		await CourseStudentAssessmentLessonDetail.create({
+			course_id,
+			student_id,
+			course_student_id,
+			course_student_assessment_id,
+			course_student_assessment_day_id,
+			subject_id,
+			subject_lesson_id,
+			subject_days_id,
+			subject_lesson_days_id,
+			item,
+			score,
+		});
+	return newCourseStudentAssessmentLessonDetail;
+};
+
+const updateCourseStudentAssessmentLessonDay = async ({
+	id,
+	item,
+	score,
+}) => {
+	const courseStudentAssessmentLessonDetail =
+		await CourseStudentAssessmentLessonDetail.findByPk(id);
+	if (!courseStudentAssessmentLessonDetail) {
+		throw new Error(
+			'Course Student Assessment Lesson Detail not found'
+		);
+	}
+	await courseStudentAssessmentLessonDetail.update({
+		item,
+		score,
+	});
+	return courseStudentAssessmentLessonDetail;
+};
+
 export {
 	getAllAssessment,
 	createCourseStudentAssessment,
@@ -198,4 +284,7 @@ export {
 	createCourseStudentAssessmentDay,
 	updateCourseStudentAssessmentDay,
 	getSubjectsByAssessment,
+	getSubjectBySubjectId,
+	createCourseStudentAssessmentLessonDay,
+	updateCourseStudentAssessmentLessonDay,
 };

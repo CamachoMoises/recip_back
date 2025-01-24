@@ -2,11 +2,14 @@ import moment from 'moment';
 import {
 	createCourseStudentAssessment,
 	createCourseStudentAssessmentDay,
+	createCourseStudentAssessmentLessonDay,
 	getCourseStudentAssessmentById,
 	getCourseStudentAssessmentDayByCSA,
 	getCourseStudentAssessmentDayById,
+	getSubjectBySubjectId,
 	getSubjectsByAssessment,
 	updateCourseStudentAssessmentDay,
+	updateCourseStudentAssessmentLessonDay,
 } from '../database/repositories/assessment.js';
 
 export const CourseStudentAssessmentDetails = async (req, res) => {
@@ -129,7 +132,6 @@ export const UpdateCourseStudentAssessmentDay = async (req, res) => {
 
 export const ListSubjectsAssessment = async (req, res) => {
 	const params = req.query;
-	console.log(params);
 	const {
 		day,
 		course_id,
@@ -143,6 +145,60 @@ export const ListSubjectsAssessment = async (req, res) => {
 			course_student_assessment_day_id,
 		});
 		res.send(subjects);
+	} catch (error) {
+		console.log(error);
+		res.status(500).send('Internal Server Error');
+	}
+};
+
+export const ChangeCourseStudentAssessmentLessonDay = async (
+	req,
+	res
+) => {
+	try {
+		const data = req.body;
+		const {
+			id,
+			course_id,
+			student_id,
+			course_student_id,
+			course_student_assessment_id,
+			course_student_assessment_day_id,
+			subject_id,
+			subject_lesson_id,
+			subject_days_id,
+			subject_lesson_days_id,
+			item,
+			score,
+			day,
+		} = data;
+		if (id) {
+			await updateCourseStudentAssessmentLessonDay({
+				id,
+				item,
+				score,
+			});
+		} else {
+			await createCourseStudentAssessmentLessonDay({
+				course_id,
+				student_id,
+				course_student_id,
+				course_student_assessment_id,
+				course_student_assessment_day_id,
+				subject_id,
+				subject_lesson_id,
+				subject_days_id,
+				subject_lesson_days_id,
+				item,
+				score,
+			});
+		}
+		const subject = await getSubjectBySubjectId({
+			day,
+			subject_id,
+			course_student_assessment_day_id,
+		});
+		res.send(subject);
 	} catch (error) {
 		console.log(error);
 		res.status(500).send('Internal Server Error');
