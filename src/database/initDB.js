@@ -39,27 +39,32 @@ import loadTest, {
 } from './models/test.js';
 import loadRating from './models/rating.js';
 import loadSchedule from './models/schedule.js';
-// const DB_NAME_CLEVER = 'b0dl2ortjhzfr9coi0x5';
-// const DB_USER_CLEVER = 'uyfly4jduhoqkepm';
-// const DB_HOST_CLEVER =
-// 	'b0dl2ortjhzfr9coi0x5-mysql.services.clever-cloud.com';
-// const DB_PASSWORD_CLEVER = 'tWuFaiI5puvpVBMuqLPo';
-// const DB_PORT_CLEVER = 3306;
+const DB_NAME_CLEVER = 'b0dl2ortjhzfr9coi0x5';
+const DB_USER_CLEVER = 'uyfly4jduhoqkepm';
+const DB_HOST_CLEVER =
+	'b0dl2ortjhzfr9coi0x5-mysql.services.clever-cloud.com';
+const DB_PASSWORD_CLEVER = 'tWuFaiI5puvpVBMuqLPo';
+const DB_PORT_CLEVER = 3306;
 
-const DB_NAME = 'recip_db';
-const DB_USER = 'moises';
-const DB_HOST = 'localhost';
-const DB_PASSWORD = '0000';
-const DB_PORT = 3306;
+// const DB_NAME = 'recip_db';
+// const DB_USER = 'moises';
+// const DB_HOST = 'localhost';
+// const DB_PASSWORD = '0000';
+// const DB_PORT = 3306;
 
-const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
-	host: DB_HOST,
-	dialect: 'mysql',
-	port: DB_PORT,
-	define: {
-		underscored: true, // Esto hará que Sequelize use snake_case por defecto
-	},
-});
+const sequelize = new Sequelize(
+	DB_NAME_CLEVER,
+	DB_USER_CLEVER,
+	DB_PASSWORD_CLEVER,
+	{
+		host: DB_HOST_CLEVER,
+		dialect: 'mysql',
+		port: DB_PORT_CLEVER,
+		define: {
+			underscored: true, // Esto hará que Sequelize use snake_case por defecto
+		},
+	}
+);
 
 const Participant = loadParticipant(sequelize, DataTypes);
 const Group = loadGroup(sequelize, DataTypes);
