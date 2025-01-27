@@ -36,7 +36,7 @@ export default (sequelize, DataTypes) => {
 				type: DataTypes.INTEGER,
 				allowNull: false,
 				references: {
-					model: 'subject_days',
+					model: 'subject',
 					key: 'id',
 				},
 			},

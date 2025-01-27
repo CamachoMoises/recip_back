@@ -37,7 +37,7 @@ import loadTest, {
 	question as loadQuestion,
 	answer as loadAnswer,
 } from './models/test.js';
-import loadRating from './models/rating.js';
+// import loadRating from './models/rating.js';
 import loadSchedule from './models/schedule.js';
 const DB_NAME_CLEVER = 'b0dl2ortjhzfr9coi0x5';
 const DB_USER_CLEVER = 'uyfly4jduhoqkepm';
@@ -78,7 +78,7 @@ const QuestionType = loadQuestionType(sequelize, DataTypes);
 const Question = loadQuestion(sequelize, DataTypes);
 const TestQuestionType = loadTestQuestionType(sequelize, DataTypes);
 const Answer = loadAnswer(sequelize, DataTypes);
-const Rating = loadRating(sequelize, DataTypes);
+// const Rating = loadRating(sequelize, DataTypes);
 const Schedule = loadSchedule(sequelize, DataTypes);
 const UserGroup = loadUserGroup(sequelize, DataTypes);
 const UserPermission = loadUserPermission(sequelize, DataTypes);
@@ -167,7 +167,7 @@ CourseStudent.hasMany(CourseStudentAssessmentDay, {
 CourseStudent.hasMany(CourseStudentAssessmentLessonDetail, {
 	foreignKey: 'course_student_id',
 });
-CourseStudent.hasMany(Rating, { foreignKey: 'course_student_id' });
+// CourseStudent.hasMany(Rating, { foreignKey: 'course_student_id' });
 
 CourseStudentAssessment.belongsTo(Course, {
 	foreignKey: 'course_id',
@@ -291,7 +291,7 @@ CourseStudentTestQuestion.belongsTo(Question, {
 
 Instructor.belongsTo(User, { foreignKey: 'user_id' });
 Instructor.hasMany(Schedule, { foreignKey: 'instructor_id' });
-Instructor.hasMany(Rating, { foreignKey: 'instructor_id' });
+// Instructor.hasMany(Rating, { foreignKey: 'instructor_id' });
 
 Group.belongsToMany(User, {
 	through: UserGroup,
@@ -331,13 +331,13 @@ QuestionType.hasMany(TestQuestionType, {
 	foreignKey: 'question_type_id',
 });
 
-Rating.belongsTo(Student, { foreignKey: 'student_id' });
-Rating.belongsTo(Instructor, { foreignKey: 'instructor_id' });
-Rating.belongsTo(CourseStudent, { foreignKey: 'course_student_id' });
-Rating.belongsTo(SubjectDays, { foreignKey: 'subject_days_id' });
-Rating.belongsTo(Subject, {
-	foreignKey: 'subject_id',
-});
+// Rating.belongsTo(Student, { foreignKey: 'student_id' });
+// Rating.belongsTo(Instructor, { foreignKey: 'instructor_id' });
+// Rating.belongsTo(CourseStudent, { foreignKey: 'course_student_id' });
+// Rating.belongsTo(SubjectDays, { foreignKey: 'subject_days_id' });
+// Rating.belongsTo(Subject, {
+// 	foreignKey: 'subject_id',
+// });
 
 Schedule.belongsTo(Student, { foreignKey: 'student_id' });
 Schedule.belongsTo(Instructor, { foreignKey: 'instructor_id' });
@@ -348,7 +348,7 @@ Schedule.belongsTo(Subject, { foreignKey: 'subject_id' });
 Schedule.belongsTo(SubjectDays, { foreignKey: 'subject_days_id' });
 
 Student.belongsTo(User, { foreignKey: 'user_id' });
-Student.hasMany(Rating, { foreignKey: 'student_id' });
+// Student.hasMany(Rating, { foreignKey: 'student_id' });
 Student.hasMany(Schedule, { foreignKey: 'student_id' });
 Student.hasMany(CourseStudent, { foreignKey: 'student_id' });
 Student.hasMany(CourseStudentTest, { foreignKey: 'student_id' });
@@ -378,11 +378,11 @@ Subject.hasMany(CourseStudentAssessmentLessonDetail, {
 
 SubjectDays.belongsTo(Subject, { foreignKey: 'subject_id' });
 SubjectDays.belongsTo(Course, { foreignKey: 'course_id' });
-SubjectDays.hasMany(Rating, { foreignKey: 'subject_days_id' });
+// SubjectDays.hasMany(Rating, { foreignKey: 'subject_days_id' });
 SubjectDays.hasMany(Schedule, { foreignKey: 'subject_days_id' });
-SubjectDays.hasMany(Rating, {
-	foreignKey: 'subject_days_id',
-});
+// SubjectDays.hasMany(Rating, {
+// 	foreignKey: 'subject_days_id',
+// });
 SubjectDays.hasMany(Schedule, {
 	foreignKey: 'subject_days_id',
 });
@@ -472,7 +472,7 @@ const models = {
 	Instructor,
 	Module,
 	Permission,
-	Rating,
+	// Rating,
 	Schedule,
 	Student,
 	Subject,
