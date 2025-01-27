@@ -1,6 +1,11 @@
 import app from './src/app.js';
 import { sequelize } from './src/database/initDB.js';
-const PORT = 3000;
+import dotenv from 'dotenv';
+// Configurar dotenv
+dotenv.config();
+
+// eslint-disable-next-line no-undef
+const PORT = process.env.PORT || 3000;
 
 async function assertDbConnection() {
 	try {
