@@ -1,5 +1,6 @@
 import { Sequelize, DataTypes } from 'sequelize';
 // import loadUser from './models/user.js';
+import dotenv from 'dotenv';
 import loadParticipant from './models/participant.js';
 import loadGroup, {
 	group_permission as loadGroupPermission,
@@ -39,30 +40,20 @@ import loadTest, {
 } from './models/test.js';
 // import loadRating from './models/rating.js';
 import loadSchedule from './models/schedule.js';
-const DB_NAME_CLEVER = 'b0dl2ortjhzfr9coi0x5';
-const DB_USER_CLEVER = 'uyfly4jduhoqkepm';
-const DB_HOST_CLEVER =
-	'b0dl2ortjhzfr9coi0x5-mysql.services.clever-cloud.com';
-const DB_PASSWORD_CLEVER = 'tWuFaiI5puvpVBMuqLPo';
-const DB_PORT_CLEVER = 3306;
-
-// const DB_NAME = 'recip_db';
-// const DB_USER = 'moises';
-// const DB_HOST = 'localhost';
-// const DB_PASSWORD = '0000';
-// const DB_PORT = 3306;
+dotenv.config();
 
 const sequelize = new Sequelize(
-	DB_NAME_CLEVER,
-	DB_USER_CLEVER,
-	DB_PASSWORD_CLEVER,
+	process.env.DB_NAME_CLEVER,
+	process.env.DB_USER_CLEVER,
+	process.env.DB_PASSWORD_CLEVER,
 	{
-		host: DB_HOST_CLEVER,
+		host: process.env.DB_HOST_CLEVER,
 		dialect: 'mysql',
-		port: DB_PORT_CLEVER,
+		port: process.env.DB_PORT_CLEVER,
 		define: {
 			underscored: true, // Esto hará que Sequelize use snake_case por defecto
 		},
+		logging: console.log,
 	}
 );
 

@@ -1,13 +1,19 @@
 import { getUserByEmail } from '../database/repositories/user.js';
 import bcrypt from 'bcrypt';
-
+import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
+// import { sequelize } from '../database/initDB.js';
+dotenv.config();
+
 //TODO: pass the secret key to env
 const SECRET_KEY = 'your_secret_key';
 
 export const Login = async (req, res) => {
 	try {
 		const { email, password } = req.body;
+		// RAW QUERY SEQUELIZE !!!!!!!!!!!!!!!!!!!!
+		// const result = await sequelize.query(`SELECT * FROM user`);
+		// console.log(result);
 		const user = await getUserByEmail(email);
 		if (!user) {
 			throw new Error('invalid_user');
