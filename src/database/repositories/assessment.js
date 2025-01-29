@@ -260,6 +260,8 @@ const updateCourseStudentAssessmentLessonDay = async ({
 	id,
 	item,
 	score,
+	score_2,
+	score_3,
 }) => {
 	const courseStudentAssessmentLessonDetail =
 		await CourseStudentAssessmentLessonDetail.findByPk(id);
@@ -271,6 +273,8 @@ const updateCourseStudentAssessmentLessonDay = async ({
 	await courseStudentAssessmentLessonDetail.update({
 		item,
 		score,
+		score_2,
+		score_3,
 	});
 	return courseStudentAssessmentLessonDetail;
 };

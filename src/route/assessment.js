@@ -9,6 +9,7 @@ import {
 	UpdateCourseStudentAssessmentDay,
 	ListSubjectsAssessment,
 	ChangeCourseStudentAssessmentLessonDay,
+	CourseStudentAssessmentData,
 } from '../controller/assessment.js';
 
 const upload = multer();
@@ -24,6 +25,12 @@ router.get(
 	'/fetchSubjectAssessment',
 	authenticateJWT,
 	ListSubjectsAssessment
+);
+
+router.get(
+	'/fetchAssessmentData',
+	// authenticateJWT,
+	CourseStudentAssessmentData
 );
 
 router.get(

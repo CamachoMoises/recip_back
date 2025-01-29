@@ -53,7 +53,7 @@ const sequelize = new Sequelize(
 		define: {
 			underscored: true, // Esto hará que Sequelize use snake_case por defecto
 		},
-		logging: console.log,
+		// logging: console.log,
 	}
 );
 

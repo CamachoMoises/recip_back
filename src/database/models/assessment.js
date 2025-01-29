@@ -321,9 +321,17 @@ export const course_student_assessment_lesson_day = (
 
 			item: {
 				type: DataTypes.TEXT,
-				allowNull: false,
+				allowNull: true,
 			},
 			score: {
+				type: DataTypes.INTEGER,
+				allowNull: true,
+			},
+			score_2: {
+				type: DataTypes.INTEGER,
+				allowNull: true,
+			},
+			score_3: {
 				type: DataTypes.INTEGER,
 				allowNull: true,
 			},

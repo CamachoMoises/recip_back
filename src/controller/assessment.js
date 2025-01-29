@@ -170,6 +170,8 @@ export const ChangeCourseStudentAssessmentLessonDay = async (
 			subject_lesson_days_id,
 			item,
 			score,
+			score_2,
+			score_3,
 			day,
 		} = data;
 		if (id) {
@@ -177,6 +179,8 @@ export const ChangeCourseStudentAssessmentLessonDay = async (
 				id,
 				item,
 				score,
+				score_2,
+				score_3,
 			});
 		} else {
 			await createCourseStudentAssessmentLessonDay({
@@ -199,6 +203,46 @@ export const ChangeCourseStudentAssessmentLessonDay = async (
 			course_student_assessment_day_id,
 		});
 		res.send(subject);
+	} catch (error) {
+		console.log(error);
+		res.status(500).send('Internal Server Error');
+	}
+};
+export const CourseStudentAssessmentData = async (req, res) => {
+	try {
+		let CASD = [];
+		const CSA_id = req.query.CSA_id;
+		const courseStudentAssessment =
+			await getCourseStudentAssessmentById({
+				id: CSA_id,
+			});
+		if (courseStudentAssessment) {
+			console.log(
+				courseStudentAssessment.course_student_assessment_days.length
+			);
+			for (
+				let index = 0;
+				index <
+				courseStudentAssessment.course_student_assessment_days.length;
+				index++
+			) {
+				const subjects = await getSubjectsByAssessment({
+					day: courseStudentAssessment.course_student_assessment_days[
+						index
+					].day,
+					course_id:
+						courseStudentAssessment.course_student_assessment_days[
+							index
+						].course_id,
+					course_student_assessment_day_id:
+						courseStudentAssessment.course_student_assessment_days[
+							index
+						].id,
+				});
+				CASD.push(subjects);
+			}
+		}
+		res.send({ CSA: courseStudentAssessment, CASD });
 	} catch (error) {
 		console.log(error);
 		res.status(500).send('Internal Server Error');
