@@ -6,6 +6,7 @@ import {
 	getCourseStudentAssessmentById,
 	getCourseStudentAssessmentDayByCSA,
 	getCourseStudentAssessmentDayById,
+	getSubjectBySubjectByCSA,
 	getSubjectBySubjectId,
 	getSubjectsByAssessment,
 	updateCourseStudentAssessmentDay,
@@ -210,37 +211,21 @@ export const ChangeCourseStudentAssessmentLessonDay = async (
 };
 export const CourseStudentAssessmentData = async (req, res) => {
 	try {
-		let CASD = [];
+		let CASD = null;
 		const CSA_id = req.query.CSA_id;
 		const courseStudentAssessment =
 			await getCourseStudentAssessmentById({
 				id: CSA_id,
 			});
-		if (courseStudentAssessment) {
-			console.log(
-				courseStudentAssessment.course_student_assessment_days.length
+		if (courseStudentAssessment.course_id) {
+			CASD = await getSubjectBySubjectByCSA({
+				CSA_id,
+				course_id: courseStudentAssessment.course_id,
+			});
+		} else {
+			throw new Error(
+				'Cannot find Course Student Assessment Day for this Course Student Assessment'
 			);
-			for (
-				let index = 0;
-				index <
-				courseStudentAssessment.course_student_assessment_days.length;
-				index++
-			) {
-				const subjects = await getSubjectsByAssessment({
-					day: courseStudentAssessment.course_student_assessment_days[
-						index
-					].day,
-					course_id:
-						courseStudentAssessment.course_student_assessment_days[
-							index
-						].course_id,
-					course_student_assessment_day_id:
-						courseStudentAssessment.course_student_assessment_days[
-							index
-						].id,
-				});
-				CASD.push(subjects);
-			}
 		}
 		res.send({ CSA: courseStudentAssessment, CASD });
 	} catch (error) {

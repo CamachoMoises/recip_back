@@ -278,7 +278,36 @@ const updateCourseStudentAssessmentLessonDay = async ({
 	});
 	return courseStudentAssessmentLessonDetail;
 };
-
+const getSubjectBySubjectByCSA = async ({ CSA_id, course_id }) => {
+	const CSAD = await Subject.findAll({
+		where: { course_id },
+		include: [
+			{
+				model: SubjectDays,
+				required: true,
+			},
+			{
+				model: SubjectLesson,
+				include: [
+					{
+						model: SubjectLessonDays,
+						required: true,
+						include: [
+							{
+								model: CourseStudentAssessmentLessonDetail,
+								required: false,
+								where: {
+									course_student_assessment_id: CSA_id,
+								},
+							},
+						],
+					},
+				],
+			},
+		],
+	});
+	return CSAD;
+};
 export {
 	getAllAssessment,
 	createCourseStudentAssessment,
@@ -291,4 +320,5 @@ export {
 	getSubjectBySubjectId,
 	createCourseStudentAssessmentLessonDay,
 	updateCourseStudentAssessmentLessonDay,
+	getSubjectBySubjectByCSA,
 };
