@@ -49,6 +49,8 @@ const getAllCoursesStudent = async (filters) => {
 		include: [
 			{
 				model: Student,
+				required: 'id' in whereClause ? true : false,
+
 				include: [{ model: User }],
 			},
 			{
