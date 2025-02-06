@@ -114,6 +114,18 @@ const createCourseStudentAssessmentDay = async ({
 		});
 	return newCourseStudentAssessmentDay;
 };
+
+const updateCourseStudentAssessmentApprove = async ({
+	id,
+	approve,
+}) => {
+	const courseStudentAssessment =
+		await CourseStudentAssessment.findByPk(id);
+	if (!courseStudentAssessment) {
+		throw new Error('Course Student Assessment not found');
+	}
+	await courseStudentAssessment.update({ approve });
+};
 const updateCourseStudentAssessmentDay = async ({
 	id,
 	airport,
@@ -127,6 +139,8 @@ const updateCourseStudentAssessmentDay = async ({
 	flaps,
 	power,
 	seat,
+	takeoff,
+	landing,
 	comments,
 }) => {
 	const courseStudentAssessmentDay =
@@ -146,6 +160,8 @@ const updateCourseStudentAssessmentDay = async ({
 		flaps,
 		power,
 		seat,
+		takeoff,
+		landing,
 		comments,
 	});
 	return courseStudentAssessmentDay;
@@ -315,6 +331,7 @@ export {
 	getCourseStudentAssessmentDayByCSA,
 	getCourseStudentAssessmentDayById,
 	createCourseStudentAssessmentDay,
+	updateCourseStudentAssessmentApprove,
 	updateCourseStudentAssessmentDay,
 	getSubjectsByAssessment,
 	getSubjectBySubjectId,

@@ -147,6 +147,7 @@ const createCourse = async ({
 	days,
 	course_type_id,
 	course_level_id,
+	plane_model,
 	status,
 }) =>
 	await Course.create({
@@ -154,6 +155,7 @@ const createCourse = async ({
 		description,
 		// hours,
 		days,
+		plane_model,
 		course_type_id,
 		course_level_id,
 		status,
@@ -165,6 +167,7 @@ const editCourse = async ({
 	description,
 	// hours,
 	days,
+	plane_model,
 	course_type_id,
 	course_level_id,
 	status,
@@ -180,6 +183,7 @@ const editCourse = async ({
 		days,
 		course_type_id,
 		course_level_id,
+		plane_model,
 		status,
 	});
 	return course;

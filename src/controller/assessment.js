@@ -9,6 +9,7 @@ import {
 	getSubjectBySubjectByCSA,
 	getSubjectBySubjectId,
 	getSubjectsByAssessment,
+	updateCourseStudentAssessmentApprove,
 	updateCourseStudentAssessmentDay,
 	updateCourseStudentAssessmentLessonDay,
 } from '../database/repositories/assessment.js';
@@ -86,6 +87,22 @@ export const CreateCourseStudentAssessment = async (req, res) => {
 		res.status(500).send('Internal Server Error');
 	}
 };
+export const CourseStudentAssessmentApprove = async (req, res) => {
+	try {
+		const data = req.body;
+		const { course_student_assessment_id, approve } = data;
+		console.log(course_student_assessment_id, approve);
+		const courseStudentAssessment =
+			await updateCourseStudentAssessmentApprove({
+				id: course_student_assessment_id,
+				approve,
+			});
+		res.send(courseStudentAssessment);
+	} catch (error) {
+		console.log(error);
+		res.status(500).send('Internal Server Error');
+	}
+};
 
 export const UpdateCourseStudentAssessmentDay = async (req, res) => {
 	try {
@@ -103,6 +120,8 @@ export const UpdateCourseStudentAssessmentDay = async (req, res) => {
 			flaps,
 			power,
 			seat,
+			takeoff,
+			landing,
 			comments,
 		} = data;
 		const CSAD_update = await updateCourseStudentAssessmentDay({
@@ -118,6 +137,8 @@ export const UpdateCourseStudentAssessmentDay = async (req, res) => {
 			flaps,
 			power,
 			seat,
+			takeoff,
+			landing,
 			comments,
 		});
 

@@ -181,7 +181,7 @@ export const course_student_assessment_day = (
 			},
 
 			flaps: {
-				type: DataTypes.FLOAT,
+				type: DataTypes.TEXT,
 				allowNull: true,
 			},
 			power: {
@@ -190,6 +190,14 @@ export const course_student_assessment_day = (
 			},
 			seat: {
 				type: DataTypes.TEXT,
+				allowNull: true,
+			},
+			takeoff: {
+				type: DataTypes.INTEGER,
+				allowNull: true,
+			},
+			landing: {
+				type: DataTypes.INTEGER,
 				allowNull: true,
 			},
 			comments: {

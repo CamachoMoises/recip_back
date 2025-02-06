@@ -21,6 +21,10 @@ export default (sequelize, DataTypes) => {
 				allowNull: true,
 				defaultValue: 0,
 			},
+			plane_model: {
+				type: DataTypes.TEXT,
+				allowNull: true,
+			},
 			days: {
 				type: DataTypes.INTEGER,
 				allowNull: true,

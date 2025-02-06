@@ -10,6 +10,7 @@ import {
 	ListSubjectsAssessment,
 	ChangeCourseStudentAssessmentLessonDay,
 	CourseStudentAssessmentData,
+	CourseStudentAssessmentApprove,
 } from '../controller/assessment.js';
 
 const upload = multer();
@@ -47,6 +48,13 @@ router.post(
 	CreateCourseStudentAssessment
 );
 
+router.post(
+	'/courseStudentAssessmentApprove',
+	upload.none(),
+	authenticateJWT,
+	convertTypes,
+	CourseStudentAssessmentApprove
+);
 router.put(
 	'/updateCourseStudentAssessmentDay',
 	upload.none(),
