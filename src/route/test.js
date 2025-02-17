@@ -15,6 +15,7 @@ import {
 	ListTestCourse,
 	TestCourseDetail,
 	UpdateAnswerQuestionTest,
+	UpdateCourseStudentTestScore,
 	UpdateQuestionTest,
 	UpdateQuestionType,
 	UpdateTest,
@@ -114,5 +115,12 @@ router.post(
 	authenticateJWT,
 	convertTypes,
 	CourseStudentTestEnd
+);
+router.put(
+	'/updateCourseStudentTestScore',
+	upload.none(),
+	authenticateJWT,
+	convertTypes,
+	UpdateCourseStudentTestScore
 );
 export default router;

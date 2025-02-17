@@ -28,3 +28,9 @@ export const cleanString = (input) => {
 export const hashPassword = async (password) => {
 	return await bcrypt.hash(password, saltRounds);
 };
+
+export function redondear(monto, decimales) {
+	const montoPotencia = Math.round(monto * 100) / 100;
+	const nuevoValor = parseFloat(montoPotencia.toFixed(decimales));
+	return nuevoValor;
+}

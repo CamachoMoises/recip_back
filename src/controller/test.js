@@ -18,6 +18,7 @@ import {
 	getQuestionTest,
 	getQuestionTypes,
 	getTestById,
+	getTotalScore,
 	resolveCourseStudentTest,
 	resolveCourseStudentTestAnswer,
 	updateAnswerQuestionTest,
@@ -27,7 +28,11 @@ import {
 	updateTest,
 	updateTestQuestionType,
 } from '../database/repositories/test.js';
-import { cleanString, getRandomSubset } from './utilities.js';
+import {
+	cleanString,
+	getRandomSubset,
+	redondear,
+} from './utilities.js';
 import { getCourseStudentById } from '../database/repositories/course.js';
 
 export const ListTest = async (req, res) => {
@@ -455,7 +460,6 @@ export const CourseStudentTestAnswer = async (req, res) => {
 export const CourseStudentTestEnd = async (req, res) => {
 	try {
 		const course_student_test_id = req.body.course_student_test_id;
-		console.log(course_student_test_id);
 		const filters = {
 			course_student_test_id: course_student_test_id,
 		};
@@ -465,7 +469,8 @@ export const CourseStudentTestEnd = async (req, res) => {
 		console.log('The score is', score);
 		await resolveCourseStudentTest(
 			filters.course_student_test_id,
-			score
+			score,
+			false
 		);
 		const dataResponse = {
 			answers: courseStudentTestAnswers,
@@ -527,17 +532,26 @@ export const evaluateAnswers = async (courseStudentTestAnswers) => {
 					'el puntaje del id ',
 					answer.id,
 					'es',
-					(correctas * scoreValue) / countResp -
-						(incorrectas * scoreValue) / countResp
+					redondear(
+						(correctas * scoreValue) / countResp -
+							(incorrectas * scoreValue) / countResp,
+						4
+					)
 				);
 				score =
 					score +
-					(correctas * scoreValue) / countResp -
-					(incorrectas * scoreValue) / countResp;
+					redondear(
+						(correctas * scoreValue) / countResp -
+							(incorrectas * scoreValue) / countResp,
+						4
+					);
 				await resolveCourseStudentTestAnswer(
 					answer.id,
-					(correctas * scoreValue) / countResp -
-						(incorrectas * scoreValue) / countResp
+					redondear(
+						(correctas * scoreValue) / countResp -
+							(incorrectas * scoreValue) / countResp,
+						4
+					)
 				);
 				break;
 
@@ -570,15 +584,16 @@ export const evaluateAnswers = async (courseStudentTestAnswers) => {
 					'el puntaje del id ',
 					answer.id,
 					'es',
-					(correctas * scoreValue) / countResp,
+					redondear((correctas * scoreValue) / countResp, 4),
 					' con ',
 					correctas,
 					' correctas'
 				);
-				score = score + (correctas * scoreValue) / countResp;
+				score =
+					score + redondear((correctas * scoreValue) / countResp, 4);
 				await resolveCourseStudentTestAnswer(
 					answer.id,
-					(correctas * scoreValue) / countResp
+					redondear((correctas * scoreValue) / countResp, 4)
 				);
 				break;
 			case 5:
@@ -597,7 +612,7 @@ export const evaluateAnswers = async (courseStudentTestAnswers) => {
 					'el puntaje del id ',
 					answer.id,
 					'es',
-					(correctas * scoreValue) / countResp,
+					redondear((correctas * scoreValue) / countResp, 4),
 					' con ',
 					correctas,
 					' correctas',
@@ -605,10 +620,11 @@ export const evaluateAnswers = async (courseStudentTestAnswers) => {
 					incorrectas,
 					' incorrectas'
 				);
-				score = score + (correctas * scoreValue) / countResp;
+				score =
+					score + redondear((correctas * scoreValue) / countResp, 4);
 				await resolveCourseStudentTestAnswer(
 					answer.id,
-					(correctas * scoreValue) / countResp
+					redondear((correctas * scoreValue) / countResp, 4)
 				);
 				break;
 
@@ -618,4 +634,38 @@ export const evaluateAnswers = async (courseStudentTestAnswers) => {
 		}
 	}
 	return score;
+};
+
+export const UpdateCourseStudentTestScore = async (req, res) => {
+	try {
+		const course_student_test_id = req.body.course_student_test_id;
+		const course_student_test_answer_id =
+			req.body.course_student_test_answer_id;
+		const score = req.body.score;
+		console.log(
+			score,
+			course_student_test_answer_id,
+			course_student_test_id
+		);
+		await resolveCourseStudentTestAnswer(
+			parseInt(course_student_test_answer_id),
+			parseFloat(score)
+		);
+		const totalScore = await getTotalScore(course_student_test_id);
+		console.log(totalScore);
+		await resolveCourseStudentTest(
+			course_student_test_id,
+			totalScore,
+			true
+		);
+		const courseStudentTestSelected = await getCourseStudentTestById(
+			course_student_test_id
+		);
+		res.send(courseStudentTestSelected);
+	} catch (error) {
+		console.error('Error en la creacion:', error.message);
+		console.log(error.message);
+
+		return res.status(400).send(`Error ${error.message}`);
+	}
 };

@@ -463,7 +463,8 @@ const resolveCourseStudentTestAnswer = async (
 
 const resolveCourseStudentTest = async (
 	course_student_test_answer_id,
-	score
+	score,
+	rev
 ) => {
 	const courseStudentTest = await CourseStudentTest.findOne({
 		where: { id: course_student_test_answer_id },
@@ -484,11 +485,11 @@ const resolveCourseStudentTest = async (
 
 	const approve = score >= test.min_score;
 	let changeCS = false;
-	if (score > courseStudent.score) {
+	if (score > courseStudent.score || rev) {
 		courseStudent.score = score;
 		changeCS = true;
 	}
-	if (!courseStudent.approve) {
+	if (!courseStudent.approve || rev) {
 		courseStudent.approve = approve;
 		changeCS = true;
 	}
@@ -500,6 +501,19 @@ const resolveCourseStudentTest = async (
 	courseStudentTest.finished = true;
 	await courseStudentTest.save();
 	return true;
+};
+
+const getTotalScore = async ({ course_student_test_id }) => {
+	try {
+		const totalScore = await CourseStudentTestAnswer.sum('score', {
+			where: course_student_test_id,
+		});
+
+		console.log('Total Score:', totalScore);
+		return totalScore;
+	} catch (error) {
+		console.error('Error al obtener la suma de scores:', error);
+	}
 };
 
 export {
@@ -529,4 +543,5 @@ export {
 	createCourseStudentTest,
 	createCourseStudentTestQuestion,
 	createCourseStudentTestAnswer,
+	getTotalScore,
 };
