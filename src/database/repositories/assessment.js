@@ -173,7 +173,7 @@ const getSubjectsByAssessment = async ({
 	course_student_assessment_day_id,
 }) => {
 	const subjects = await Subject.findAll({
-		where: { course_id },
+		where: { course_id, status: true, is_schedulable: false },
 		include: [
 			{
 				model: SubjectDays,
@@ -211,7 +211,7 @@ const getSubjectBySubjectId = async ({
 	course_student_assessment_day_id,
 }) => {
 	const subject = await Subject.findOne({
-		where: { id: subject_id },
+		where: { id: subject_id, status: true, is_schedulable: false },
 		include: [
 			{
 				model: SubjectDays,
@@ -296,7 +296,7 @@ const updateCourseStudentAssessmentLessonDay = async ({
 };
 const getSubjectBySubjectByCSA = async ({ CSA_id, course_id }) => {
 	const CSAD = await Subject.findAll({
-		where: { course_id },
+		where: { course_id, status: true, is_schedulable: false },
 		include: [
 			{
 				model: SubjectDays,

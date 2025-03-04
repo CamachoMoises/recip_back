@@ -21,6 +21,11 @@ export default (sequelize, DataTypes) => {
 				allowNull: true,
 				defaultValue: 0,
 			},
+			is_schedulable: {
+				type: DataTypes.TINYINT,
+				allowNull: true,
+				defaultValue: 1,
+			},
 			status: {
 				type: DataTypes.TINYINT,
 				allowNull: true,

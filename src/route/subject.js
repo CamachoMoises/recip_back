@@ -48,7 +48,12 @@ router.put(
 	convertTypes,
 	UpdateSubjectLesson
 );
-router.get('/course/:id', authenticateJWT, ListSubjectsCourse);
+router.get(
+	'/course/:id',
+	authenticateJWT,
+	convertTypes,
+	ListSubjectsCourse
+);
 router.get(
 	'/lesson/course/:id',
 	authenticateJWT,

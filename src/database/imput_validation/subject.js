@@ -18,6 +18,7 @@ const createSubjectSchema = Joi.object({
 		}),
 	order: Joi.number(),
 	status: Joi.alternatives().try(Joi.boolean(), Joi.number()),
+	is_schedulable: Joi.alternatives().try(Joi.boolean(), Joi.number()),
 });
 
 const updateSubjectSchema = Joi.object({
@@ -38,6 +39,7 @@ const updateSubjectSchema = Joi.object({
 		}),
 	order: Joi.number(),
 	status: Joi.alternatives().try(Joi.boolean(), Joi.number()),
+	is_schedulable: Joi.alternatives().try(Joi.boolean(), Joi.number()),
 });
 
 export { createSubjectSchema, updateSubjectSchema };

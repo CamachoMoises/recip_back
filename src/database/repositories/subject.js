@@ -45,11 +45,21 @@ const getSubjectByCourseId = async (course_id) => {
 
 	return subjects;
 };
-const getAllCourseSubjects = async (id) => {
+const getAllCourseSubjects = async (id, status, is_schedulable) => {
+	let where_clause = {
+		course_id: id,
+	};
+
+	console.log(status, is_schedulable, where_clause);
+	if (status) {
+		where_clause.status = true;
+	}
+	if (is_schedulable) {
+		where_clause.is_schedulable = true;
+	}
+	console.log(where_clause);
 	const data = await Subject.findAll({
-		where: {
-			course_id: id,
-		},
+		where: where_clause,
 		order: [['order', 'ASC']],
 		include: [
 			{
@@ -83,6 +93,7 @@ const createSubject = async ({
 	course_id,
 	order,
 	status,
+	is_schedulable,
 }) =>
 	await Subject.create({
 		name,
@@ -90,6 +101,7 @@ const createSubject = async ({
 		course_id,
 		order,
 		status,
+		is_schedulable,
 	});
 
 const createSubjectLesson = async ({
@@ -115,6 +127,7 @@ const editSubject = async ({
 	course_id,
 	order,
 	status,
+	is_schedulable,
 }) => {
 	const subject = await Subject.findByPk(id);
 	if (!subject) {
@@ -127,6 +140,7 @@ const editSubject = async ({
 		course_id,
 		order,
 		status,
+		is_schedulable,
 	});
 	return subject;
 };

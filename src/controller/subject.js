@@ -33,8 +33,16 @@ export const ListSubjects = async (req, res) => {
 
 export const ListSubjectsCourse = async (req, res) => {
 	const id = req.params.id;
+	console.log(req.query);
+	const status = req.query.status === 'true' ? true : false;
+	const is_schedulable =
+		req.query.is_schedulable === 'true' ? true : false;
 	try {
-		const subjects = await getAllCourseSubjects(id);
+		const subjects = await getAllCourseSubjects(
+			id,
+			status,
+			is_schedulable
+		);
 		res.send(subjects);
 	} catch (error) {
 		console.log(error);
@@ -68,13 +76,15 @@ export const CreateSubject = async (req, res) => {
 	const data = req.body;
 	try {
 		const new_data = await createSubjectSchema.validateAsync(data);
-		const { name, hours, course_id, order, status } = new_data;
+		const { name, hours, course_id, order, status, is_schedulable } =
+			new_data;
 		const new_subject = await createSubject({
 			name,
 			hours,
 			course_id,
 			order,
 			status,
+			is_schedulable,
 		});
 		res.status(201).send(new_subject);
 	} catch (error) {
@@ -117,7 +127,15 @@ export const UpdateSubject = async (req, res) => {
 	const data = req.body;
 	try {
 		const new_data = await updateSubjectSchema.validateAsync(data);
-		const { id, name, hours, course_id, order, status } = new_data;
+		const {
+			id,
+			name,
+			hours,
+			course_id,
+			order,
+			status,
+			is_schedulable,
+		} = new_data;
 		const editedSubject = await editSubject({
 			id,
 			name,
@@ -125,6 +143,7 @@ export const UpdateSubject = async (req, res) => {
 			course_id,
 			order,
 			status,
+			is_schedulable: is_schedulable,
 		});
 		calculateCourseTotalHours(course_id);
 		res.status(201).send(editedSubject);
