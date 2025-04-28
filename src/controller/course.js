@@ -34,8 +34,9 @@ export const ListCourses = async (req, res) => {
 export const ListCoursesStudent = async (req, res) => {
 	try {
 		const filters = req.query;
-		const coursesStudent = await getAllCoursesStudent(filters);
-		res.send(coursesStudent);
+		const dataCoursesStudent = await getAllCoursesStudent(filters);
+		console.log(filters, 'OJO Caso');
+		res.send(dataCoursesStudent);
 	} catch (error) {
 		console.log(error);
 		res.status(500).send(`Internal Server Error ${error}`);

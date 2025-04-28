@@ -45,12 +45,15 @@ const getAllCoursesStudent = async (filters) => {
 	if (filters.course_type_id) {
 		whereClause.id = filters.course_type_id;
 	}
-	const courseStudent = CourseStudent.findAll({
+	// Calculamos el offset basado en currentPage y pageSize
+	const pageSize = parseInt(filters.pageSize) || 10; // Valor por defecto 10
+	const currentPage = parseInt(filters.currentPage) || 1; // Valor por defecto 1
+	const offset = (currentPage - 1) * pageSize;
+	const courseStudent = await CourseStudent.findAndCountAll({
 		include: [
 			{
 				model: Student,
 				required: 'id' in whereClause ? true : false,
-
 				include: [{ model: User }],
 			},
 			{
@@ -78,11 +81,13 @@ const getAllCoursesStudent = async (filters) => {
 				include: [
 					{
 						model: Subject,
-						where: {
-							name: {
-								[Op.like]: `%examen%`, // Buscar valores que contengan "examen"
-							},
-						},
+						where:
+							whereClause.id == 1
+								? {
+										name: { [Op.like]: `%examen%` },
+								  }
+								: {},
+						required: whereClause.id == 1,
 					},
 					{
 						model: Instructor,
@@ -92,9 +97,18 @@ const getAllCoursesStudent = async (filters) => {
 			},
 		],
 		order: [['createdAt', 'DESC']],
+		limit: pageSize,
+		offset: offset,
 	});
-
-	return courseStudent;
+	console.log(courseStudent);
+	console.log('id' in whereClause ? true : false);
+	return {
+		data: courseStudent.rows,
+		totalItems: courseStudent.count,
+		currentPage: currentPage,
+		pageSize: pageSize,
+		totalPages: Math.ceil(courseStudent.count / pageSize),
+	};
 };
 
 const getAllCoursesTypes = async () => CourseType.findAll();
