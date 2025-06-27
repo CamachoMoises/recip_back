@@ -11,6 +11,7 @@ import {
 	ChangeCourseStudentAssessmentLessonDay,
 	CourseStudentAssessmentData,
 	CourseStudentAssessmentApprove,
+	SaveSignatures,
 } from '../controller/assessment.js';
 
 const upload = multer();
@@ -70,5 +71,11 @@ router.put(
 	convertTypes,
 	ChangeCourseStudentAssessmentLessonDay
 );
-
+router.post(
+	'/saveSignatures',
+	upload.none(),
+	authenticateJWT,
+	convertTypes,
+	SaveSignatures
+);
 export default router;

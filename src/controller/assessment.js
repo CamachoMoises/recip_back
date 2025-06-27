@@ -13,7 +13,7 @@ import {
 	updateCourseStudentAssessmentDay,
 	updateCourseStudentAssessmentLessonDay,
 } from '../database/repositories/assessment.js';
-
+import { cloudinaryApp } from '../app.js';
 export const CourseStudentAssessmentDetails = async (req, res) => {
 	try {
 		const courseStudentAssessmentId = req.params.id;
@@ -253,4 +253,84 @@ export const CourseStudentAssessmentData = async (req, res) => {
 		console.log(error);
 		res.status(500).send('Internal Server Error');
 	}
+};
+export const SaveSignatures = async (req, res) => {
+	try {
+		const { CSAD_id, signature1, signature2, signature3 } = req.body;
+
+		// Verificar si al menos una firma está presente
+		const hasAnySignature = signature1 || signature2 || signature3;
+		if (!hasAnySignature) {
+			return res.status(400).json({
+				success: false,
+				error: 'No se proporcionaron firmas para guardar.',
+			});
+		}
+
+		// Subir solo las firmas proporcionadas (en paralelo)
+		const uploadPromises = [];
+		if (signature1)
+			uploadPromises.push(uploadSignature(signature1, '1', CSAD_id));
+		if (signature2)
+			uploadPromises.push(uploadSignature(signature2, '2', CSAD_id));
+		if (signature3)
+			uploadPromises.push(uploadSignature(signature3, '3', CSAD_id));
+
+		const [
+			studentSignatureUrl,
+			instructorSignatureUrl,
+			fcaaSignatureUrl,
+		] = await Promise.all(uploadPromises);
+
+		console.log('Firmas subidas a Cloudinary:', {
+			studentSignatureUrl,
+			instructorSignatureUrl,
+			fcaaSignatureUrl,
+		});
+
+		// Guardar en DB solo si hay URLs (opcional)
+		const uploadedSignatures = {
+			...(studentSignatureUrl && { studentSignatureUrl }),
+			...(instructorSignatureUrl && { instructorSignatureUrl }),
+			...(fcaaSignatureUrl && { fcaaSignatureUrl }),
+		};
+
+		if (Object.keys(uploadedSignatures).length > 0) {
+			// await saveToDatabase(CSAD_id, uploadedSignatures); // Implementa esto según tu DB
+		}
+
+		res.status(200).json({
+			success: true,
+			message: 'Firmas procesadas correctamente.',
+			data: uploadedSignatures,
+		});
+	} catch (error) {
+		console.error('Error en SaveSignatures:', error);
+		res.status(500).json({
+			success: false,
+			error: 'Error al procesar las firmas.',
+		});
+	}
+};
+
+// Función para subir una firma (con overwrite: true)
+const uploadSignature = async (
+	signatureData,
+	signatureType,
+	CSAD_id
+) => {
+	if (!signatureData) return null; // Skip si no hay firma
+
+	const publicId = `firmas/signature_${signatureType}_${CSAD_id}`;
+
+	// Subir la firma (sobrescribiendo si ya existe)
+	const result = await cloudinaryApp.uploader.upload(signatureData, {
+		public_id: publicId, // Nombre único
+		folder: 'firmas', // Carpeta en Cloudinary
+		format: 'webp', // Convertir a WebP
+		overwrite: true, // Sobrescribir automáticamente
+		transformation: [{ quality: 'auto' }], // Optimización
+	});
+
+	return result.secure_url;
 };

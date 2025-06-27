@@ -12,6 +12,14 @@ import courseRoutes from './route/course.js';
 import subjectRoutes from './route/subject.js';
 import configRoutes from './route/config.js';
 import testRoutes from './route/test.js';
+import { v2 as cloudinaryApp } from 'cloudinary';
+
+cloudinaryApp.config({
+	cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+	api_key: process.env.CLOUDINARY_API_KEY,
+	api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
 const app = express();
 
 app.use(morgan('dev'));
@@ -121,4 +129,5 @@ app.use('/api/test', testRoutes);
 // 		res.status(500).send('Internal Server Error');
 // 	}
 // });
+export { cloudinaryApp };
 export default app;
