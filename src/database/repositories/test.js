@@ -226,7 +226,7 @@ const createAnswerQuestionTest = async ({
 	if (!test) {
 		throw new Error('Test not found');
 	}
-	const question = await Question.findByPk(test_id);
+	const question = await Question.findByPk(question_id);
 	if (!question) {
 		throw new Error('Question not found');
 	}
