@@ -8,6 +8,7 @@ import {
 	CreateAnswerQuestionTest,
 	CreateQuestionTest,
 	CreateTest,
+	ImportQuestionsFromExcel,
 	ListAnswerQuestion,
 	ListQuestionTest,
 	ListQuestionTypes,
@@ -24,7 +25,23 @@ import {
 import convertTypes from '../middleware/convertTypes.js';
 import { authenticateJWT } from '../controller/authentication.js';
 
-const upload = multer();
+// Configure multer for file uploads
+const storage = multer.memoryStorage();
+const upload = multer({ 
+	storage: storage,
+	fileFilter: (req, file, cb) => {
+		if (file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
+			file.mimetype === 'application/vnd.ms-excel') {
+			cb(null, true);
+		} else {
+			cb(new Error('Only Excel files are allowed'), false);
+		}
+	},
+	limits: {
+		fileSize: 10 * 1024 * 1024 // 10MB limit
+	}
+});
+
 const router = express.Router();
 
 router.get('/', authenticateJWT, ListTest);
@@ -123,4 +140,13 @@ router.put(
 	convertTypes,
 	UpdateCourseStudentTestScore
 );
+
+// Excel import route
+router.post(
+	'/import-excel/:test_id',
+	upload.single('excel_file'),
+	authenticateJWT,
+	ImportQuestionsFromExcel
+);
+
 export default router;
