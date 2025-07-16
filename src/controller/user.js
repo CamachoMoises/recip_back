@@ -15,6 +15,7 @@ import {
 	getUsersInstructors,
 	getUsersStudents,
 } from '../database/repositories/user.js';
+import { stringToBoolean } from './utilities.js';
 
 export const ListUsers = async (req, res) => {
 	try {
@@ -61,7 +62,11 @@ export const ListUserDocType = async (req, res) => {
 };
 export const ListStudents = async (req, res) => {
 	try {
-		const students = await getUsersStudents();
+		let { status } = req.query;
+		if (status) {
+			status = stringToBoolean(status);
+		}
+		const students = await getUsersStudents(status);
 
 		res.send(students);
 	} catch (error) {
@@ -72,7 +77,11 @@ export const ListStudents = async (req, res) => {
 
 export const ListInstructors = async (req, res) => {
 	try {
-		const instructors = await getUsersInstructors();
+		let { status } = req.query;
+		if (status) {
+			status = stringToBoolean(status);
+		}
+		const instructors = await getUsersInstructors(status);
 
 		res.send(instructors);
 	} catch (error) {

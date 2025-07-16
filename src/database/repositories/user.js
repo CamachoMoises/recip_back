@@ -163,10 +163,19 @@ const editUser = async ({
 		return null;
 	}
 };
-const getUsersStudents = async () => {
+const getUsersStudents = async (status) => {
+	const whereCondition = {};
+	const whereStudentCondition = {};
+	if (status !== undefined) {
+		whereCondition.is_active = status;
+		whereStudentCondition.status = status;
+	}
+	console.log('whereCondition', whereCondition);
 	const students = await User.findAll({
+		where: whereCondition,
 		include: [
 			{
+				where: whereStudentCondition,
 				model: Student,
 				required: true,
 			},
@@ -178,10 +187,20 @@ const getUsersStudents = async () => {
 	return students;
 };
 
-const getUsersInstructors = async () => {
-	const instructor = await User.findAll({
+const getUsersInstructors = async (status) => {
+	const whereCondition = {};
+	const whereInstructorCondition = {};
+
+	if (status !== undefined) {
+		whereCondition.is_active = status;
+		whereInstructorCondition.status = status;
+	}
+
+	const instructors = await User.findAll({
+		where: whereCondition,
 		include: [
 			{
+				where: whereInstructorCondition,
 				model: Instructor,
 				required: true,
 			},
@@ -190,7 +209,7 @@ const getUsersInstructors = async () => {
 			},
 		],
 	});
-	return instructor;
+	return instructors;
 };
 
 export {

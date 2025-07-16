@@ -34,3 +34,8 @@ export function redondear(monto, decimales) {
 	const nuevoValor = parseFloat(montoPotencia.toFixed(decimales));
 	return nuevoValor;
 }
+export function stringToBoolean(str) {
+	if (str === 'true') return true;
+	if (str === 'false') return false;
+	throw new Error('El string no es "true" ni "false"');
+}
