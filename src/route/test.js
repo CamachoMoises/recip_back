@@ -10,8 +10,8 @@ import {
 	CreateTest,
 	ImportQuestionsFromExcel,
 	ListAnswerQuestion,
-	ListQuestionTest,
 	ListQuestionTypes,
+	ListQuestionsByTest,
 	ListTest,
 	ListTestCourse,
 	TestCourseDetail,
@@ -27,19 +27,22 @@ import { authenticateJWT } from '../controller/authentication.js';
 
 // Configure multer for file uploads
 const storage = multer.memoryStorage();
-const upload = multer({ 
+const upload = multer({
 	storage: storage,
 	fileFilter: (req, file, cb) => {
-		if (file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || 
-			file.mimetype === 'application/vnd.ms-excel') {
+		if (
+			file.mimetype ===
+				'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+			file.mimetype === 'application/vnd.ms-excel'
+		) {
 			cb(null, true);
 		} else {
 			cb(new Error('Only Excel files are allowed'), false);
 		}
 	},
 	limits: {
-		fileSize: 10 * 1024 * 1024 // 10MB limit
-	}
+		fileSize: 10 * 1024 * 1024, // 10MB limit
+	},
 });
 
 const router = express.Router();
@@ -47,7 +50,11 @@ const router = express.Router();
 router.get('/', authenticateJWT, ListTest);
 router.get('/tests/:course_id', authenticateJWT, ListTestCourse);
 router.get('/test/:test_id', authenticateJWT, TestCourseDetail);
-router.get('/questions/:test_id', authenticateJWT, ListQuestionTest);
+router.get(
+	'/questions/by-test/:test_id',
+	authenticateJWT,
+	ListQuestionsByTest
+);
 router.get('/questionTypes', authenticateJWT, ListQuestionTypes);
 router.get('/answers/:id', authenticateJWT, ListAnswerQuestion);
 router.put(
