@@ -23,7 +23,7 @@ async function init() {
 		});
 		// Ruta básica para la raíz
 		app.get('/', (req, res) => {
-			res.send('¡Hola, mundo desde Express!!!!!');
+			res.send('Proyecto RECIPE - Backend API');
 		});
 
 		// Iniciar el servidor

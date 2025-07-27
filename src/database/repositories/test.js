@@ -157,7 +157,7 @@ const createTest = async ({ course_id, duration, min_score }) => {
 		numberCode = prevTest.id + 1;
 	}
 	const stringCode = String(numberCode).padStart(4, '0');
-	const code = `T-${stringCode}`;
+	const code = `E-${stringCode}`;
 	const test = await Test.create({
 		course_id,
 		code,

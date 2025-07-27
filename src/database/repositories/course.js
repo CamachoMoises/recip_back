@@ -224,7 +224,7 @@ const createCourseStudent = async (course_id) => {
 		numberCode = prevCourseStudent.id + 1;
 	}
 	const stringCode = String(numberCode).padStart(8, '0');
-	const code = `CS-${stringCode}`;
+	const code = `CP-${stringCode}`;
 	const newCourseStudent = await CourseStudent.create({
 		course_id,
 		code,
