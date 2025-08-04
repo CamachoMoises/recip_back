@@ -35,7 +35,6 @@ export const ListCoursesStudent = async (req, res) => {
 	try {
 		const filters = req.query;
 		const dataCoursesStudent = await getAllCoursesStudent(filters);
-		console.log(filters, 'OJO Caso');
 		res.send(dataCoursesStudent);
 	} catch (error) {
 		console.log(error);
@@ -99,6 +98,7 @@ export const CreateCourse = async (req, res) => {
 		const {
 			name,
 			description,
+			code,
 			// hours,
 			plane_model,
 			days,
@@ -110,6 +110,7 @@ export const CreateCourse = async (req, res) => {
 		const new_course = await createCourse({
 			name,
 			description,
+			code,
 			// hours,
 			days,
 			plane_model,
@@ -161,6 +162,7 @@ export const UpdateCourse = async (req, res) => {
 			id,
 			name,
 			description,
+			code,
 			// hours,
 			plane_model,
 			days,
@@ -172,9 +174,9 @@ export const UpdateCourse = async (req, res) => {
 			id,
 			name,
 			description,
+			code,
 			// hours,
 			plane_model,
-
 			days,
 			course_type_id,
 			course_level_id,
