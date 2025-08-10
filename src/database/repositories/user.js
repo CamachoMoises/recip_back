@@ -211,6 +211,7 @@ const getUsersInstructors = async (status) => {
 	});
 	return instructors;
 };
+// repositories/user.js
 
 export {
 	getAllUsers,

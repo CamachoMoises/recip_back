@@ -14,6 +14,7 @@ import {
 } from '../controller/user.js';
 import convertTypes from '../middleware/convertTypes.js';
 import { authenticateJWT } from '../controller/authentication.js';
+import { GetLoggedUser } from '../controller/user.js';
 const upload = multer();
 const router = express.Router();
 
@@ -49,6 +50,7 @@ router.post(
 	convertTypes,
 	CreateInstructor
 );
+router.get('/me', authenticateJWT, GetLoggedUser);
 // router.get('/:id', usuarioController.obtenerUsuarioPorId);
 router.put(
 	'/',

@@ -16,7 +16,6 @@ import {
 	getUsersStudents,
 } from '../database/repositories/user.js';
 import { stringToBoolean } from './utilities.js';
-
 export const ListUsers = async (req, res) => {
 	try {
 		const users = await getAllUsers();
@@ -220,5 +219,27 @@ export const CreateInstructor = async (req, res) => {
 		return res
 			.status(400)
 			.send(`Input Validation Error ${error.message}`);
+	}
+};
+
+export const GetLoggedUser = async (req, res) => {
+	try {
+		// req.user.id debe venir del token JWT
+		const userId = req.user?.id;
+		if (!userId) {
+			return res.status(401).json({ message: 'No autenticado' });
+		}
+
+		const user = await getUserById(userId); // este repo debe incluir student e instructor
+		if (!user) {
+			return res
+				.status(404)
+				.json({ message: 'Usuario no encontrado' });
+		}
+
+		res.json(user);
+	} catch (error) {
+		console.error(error);
+		res.status(500).send('Internal Server Error');
 	}
 };
