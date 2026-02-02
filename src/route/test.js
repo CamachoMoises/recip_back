@@ -8,6 +8,7 @@ import {
 	CreateAnswerQuestionTest,
 	CreateQuestionTest,
 	CreateTest,
+	ImportQuestionsFromCSV,
 	ImportQuestionsFromExcel,
 	ListAnswerQuestion,
 	ListQuestionTypes,
@@ -25,7 +26,7 @@ import {
 import convertTypes from '../middleware/convertTypes.js';
 import { authenticateJWT } from '../controller/authentication.js';
 
-// Configure multer for file uploads
+// Configure multer for file uploads (Excel)
 const storage = multer.memoryStorage();
 const upload = multer({
 	storage: storage,
@@ -38,6 +39,26 @@ const upload = multer({
 			cb(null, true);
 		} else {
 			cb(new Error('Only Excel files are allowed'), false);
+		}
+	},
+	limits: {
+		fileSize: 10 * 1024 * 1024, // 10MB limit
+	},
+});
+
+// Configure multer for CSV uploads
+const uploadCSV = multer({
+	storage: storage,
+	fileFilter: (req, file, cb) => {
+		if (
+			file.mimetype === 'text/csv' ||
+			file.mimetype === 'application/csv' ||
+			file.mimetype === 'text/plain' ||
+			file.originalname.endsWith('.csv')
+		) {
+			cb(null, true);
+		} else {
+			cb(new Error('Only CSV files are allowed'), false);
 		}
 	},
 	limits: {
@@ -154,6 +175,14 @@ router.post(
 	upload.single('excel_file'),
 	authenticateJWT,
 	ImportQuestionsFromExcel
+);
+
+// CSV import route
+router.post(
+	'/import-csv',
+	uploadCSV.single('csv_file'),
+	// authenticateJWT,
+	ImportQuestionsFromCSV
 );
 
 export default router;

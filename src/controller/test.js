@@ -36,6 +36,144 @@ import {
 } from './utilities.js';
 import { getCourseStudentById } from '../database/repositories/course.js';
 
+export const ImportQuestionsFromCSV = async (req, res) => {
+	try {
+		const test_id = parseInt(req.query.test_id);
+		console.log(test_id);
+		if (!test_id || isNaN(test_id)) {
+			return res.status(400).json({
+				error:
+					'test_id query parameter is required and must be a valid number',
+			});
+		}
+
+		if (!req.file) {
+			return res.status(400).json({ error: 'No file uploaded' });
+		}
+
+		// Read CSV file
+		const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+		const sheetName = workbook.SheetNames[0];
+		const worksheet = workbook.Sheets[sheetName];
+		const data = xlsx.utils.sheet_to_json(worksheet);
+
+		let questionsImported = 0;
+		let answersImported = 0;
+
+		for (const row of data) {
+			try {
+				// Extract question data
+				const {
+					course_id,
+					question_type_id,
+					test_question_type_id,
+					header,
+					answer_1,
+					answer_1_correct,
+					answer_2,
+					answer_2_correct,
+					answer_3,
+					answer_3_correct,
+					answer_4,
+					answer_4_correct,
+					answer_5,
+					answer_5_correct,
+				} = row;
+
+				// Validate required fields
+				if (
+					!course_id ||
+					!question_type_id ||
+					!test_question_type_id ||
+					!header
+				) {
+					console.warn(
+						'Skipping row with missing required fields:',
+						row
+					);
+					continue;
+				}
+
+				// Create question
+				const question = await createQuestionTest({
+					course_id: parseInt(course_id),
+					test_id,
+					question_type_id: parseInt(question_type_id),
+					test_question_type_id: parseInt(test_question_type_id),
+					header: header.toString().trim(),
+				});
+
+				questionsImported++;
+
+				// Create answers if they exist
+				const answers = [
+					{ value: answer_1, is_correct: answer_1_correct },
+					{ value: answer_2, is_correct: answer_2_correct },
+					{ value: answer_3, is_correct: answer_3_correct },
+					{ value: answer_4, is_correct: answer_4_correct },
+					{ value: answer_5, is_correct: answer_5_correct },
+				];
+
+				for (const answer of answers) {
+					if (answer.value && answer.value.toString().trim() !== '') {
+						await createAnswerQuestionTest({
+							course_id: parseInt(course_id),
+							test_id,
+							question_type_id: parseInt(question_type_id),
+							question_id: question.id,
+							value: answer.value.toString().trim(),
+						});
+
+						// Update answer to set correct flag if needed
+						if (
+							answer.is_correct === true ||
+							answer.is_correct === 'true' ||
+							answer.is_correct === 1 ||
+							answer.is_correct === '1'
+						) {
+							// Get the created answer to update it
+							const createdAnswers = await getAnswerQuestion(
+								question.id
+							);
+							const lastAnswer =
+								createdAnswers[createdAnswers.length - 1];
+
+							await updateAnswerQuestionTest({
+								id: lastAnswer.id,
+								value: answer.value.toString().trim(),
+								is_correct: true,
+								status: true,
+							});
+						}
+
+						answersImported++;
+					}
+				}
+			} catch (rowError) {
+				console.error(
+					'Error processing row:',
+					rowError.message,
+					'Row data:',
+					row
+				);
+				continue;
+			}
+		}
+
+		res.status(201).json({
+			message: 'CSV import completed',
+			questionsImported,
+			answersImported,
+		});
+	} catch (error) {
+		console.error('Error importing from CSV:', error.message);
+		res.status(500).json({
+			error: 'Internal Server Error',
+			message: error.message,
+		});
+	}
+};
+
 export const ImportQuestionsFromExcel = async (req, res) => {
 	try {
 		const test_id = parseInt(req.params.test_id);
