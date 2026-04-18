@@ -1,5 +1,5 @@
 const saltRounds = 10;
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 export const generateRandomNumber = (digits) => {
 	if (digits <= 0) return 0;
 
@@ -25,8 +25,8 @@ export const cleanString = (input) => {
 	return input.trim().toLowerCase().replace(/\s+/g, '');
 };
 
-export const hashPassword = async (password) => {
-	return await bcrypt.hash(password, saltRounds);
+export const hashPassword = (password) => {
+	return bcrypt.hashSync(password, saltRounds);
 };
 
 export function redondear(monto, decimales) {

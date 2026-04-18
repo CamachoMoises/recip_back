@@ -106,7 +106,7 @@ const createUser = async ({
 	is_superuser,
 	passwordUnHash,
 }) => {
-	const password = await hashPassword(`${passwordUnHash}`);
+	const password = hashPassword(`${passwordUnHash}`);
 	const user = User.create({
 		name,
 		country_name,
@@ -155,7 +155,7 @@ const editUser = async ({
 		user.is_staff = is_staff;
 		user.is_superuser = is_superuser;
 		if (password) {
-			user.password = await hashPassword(`${password}`);
+			user.password = hashPassword(`${password}`);
 		}
 		await user.save();
 		return user;
