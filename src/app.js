@@ -28,6 +28,14 @@ app.use(json());
 app.use(cors());
 // app.use(raw());
 
+// Status route for server health check
+app.get('/', (req, res) => {
+	res.status(200).json({
+		status: 'Server is running',
+		timestamp: new Date().toISOString(),
+	});
+});
+
 app.use('/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/assessment', assessmentRoutes);
