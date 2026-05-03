@@ -11,6 +11,7 @@ import {
 	ListUserDocType,
 	UserData,
 	UserValidateEmail,
+	DisableUserRole,
 } from '../controller/user.js';
 import convertTypes from '../middleware/convertTypes.js';
 import { authenticateJWT } from '../controller/authentication.js';
@@ -24,7 +25,7 @@ router.get('/user/:user_id', authenticateJWT, UserData);
 router.get(
 	'/userEmailValidate/:email',
 	authenticateJWT,
-	UserValidateEmail
+	UserValidateEmail,
 );
 router.get('/userDocType', authenticateJWT, ListUserDocType);
 router.get('/student', authenticateJWT, ListStudents);
@@ -34,21 +35,21 @@ router.post(
 	upload.none(),
 	authenticateJWT,
 	convertTypes,
-	CreateUser
+	CreateUser,
 );
 router.post(
 	'/student',
 	upload.none(),
 	authenticateJWT,
 	convertTypes,
-	CreateStudent
+	CreateStudent,
 );
 router.post(
 	'/instructor',
 	upload.none(),
 	authenticateJWT,
 	convertTypes,
-	CreateInstructor
+	CreateInstructor,
 );
 router.get('/me', authenticateJWT, GetLoggedUser);
 // router.get('/:id', usuarioController.obtenerUsuarioPorId);
@@ -57,7 +58,14 @@ router.put(
 	upload.none(),
 	authenticateJWT,
 	convertTypes,
-	UpdateUser
+	UpdateUser,
+);
+router.put(
+	'/disable-role',
+	upload.none(),
+	authenticateJWT,
+	convertTypes,
+	DisableUserRole,
 );
 // router.delete('/:id', usuarioController.eliminarUsuario);
 

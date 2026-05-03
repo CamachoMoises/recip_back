@@ -14,6 +14,8 @@ import {
 	getUserByUUID,
 	getUsersInstructors,
 	getUsersStudents,
+	removeStudentByUserId,
+	removeInstructorByUserId,
 } from '../database/repositories/user.js';
 import { stringToBoolean } from './utilities.js';
 export const ListUsers = async (req, res) => {
@@ -240,6 +242,24 @@ export const GetLoggedUser = async (req, res) => {
 		res.json(user);
 	} catch (error) {
 		console.error(error);
+		res.status(500).send('Internal Server Error');
+	}
+};
+
+export const DisableUserRole = async (req, res) => {
+	const { user_id, role } = req.body;
+	try {
+		if (role === 'student') {
+			await removeStudentByUserId(user_id);
+		} else if (role === 'instructor') {
+			await removeInstructorByUserId(user_id);
+		} else {
+			return res.status(400).send('Invalid role');
+		}
+		const user = await getUserById(user_id);
+		res.send(user);
+	} catch (error) {
+		console.log(error);
 		res.status(500).send('Internal Server Error');
 	}
 };

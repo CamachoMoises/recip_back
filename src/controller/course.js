@@ -21,6 +21,7 @@ import {
 	updateSchedule,
 } from '../database/repositories/course.js';
 import { getSubjectByCourseId } from '../database/repositories/subject.js';
+import { updateInstructorStatus } from '../database/repositories/user.js';
 
 export const ListCourses = async (req, res) => {
 	try {
@@ -233,6 +234,24 @@ export const UpdateCourseStudentStatus = async (req, res) => {
 	} catch (error) {
 		console.log(error);
 		res.status(500).send(`Internal Server Error ${error}`);
+	}
+};
+
+export const UpdateInstructorStatus = async (req, res) => {
+	const { user_id, status } = req.body;
+
+	try {
+		if (!user_id || status === undefined) {
+			return res.status(400).send('user_id and status are required');
+		}
+		const instructor = await updateInstructorStatus(user_id, status);
+		res.send(instructor);
+	} catch (error) {
+		console.log(error);
+		if (error.message === 'Instructor not found') {
+			return res.status(404).send('Instructor not found for this user');
+		}
+		res.status(500).send(`Internal Server Error: ${error.message}`);
 	}
 };
 

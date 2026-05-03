@@ -60,6 +60,36 @@ const getInstructorByUserId = async (user_id) => {
 		return instructor;
 	}
 };
+
+const removeStudentByUserId = async (user_id) => {
+	const user = await User.findByPk(user_id);
+	if (!user) throw new Error('User not found');
+	const student = await user.getStudent();
+	if (student) {
+		student.status = false;
+		await student.save();
+	}
+};
+
+const removeInstructorByUserId = async (user_id) => {
+	const user = await User.findByPk(user_id);
+	if (!user) throw new Error('User not found');
+	const instructor = await user.getInstructor();
+	if (instructor) {
+		instructor.status = false;
+		await instructor.save();
+	}
+};
+
+const updateInstructorStatus = async (userId, status) => {
+	const user = await User.findByPk(userId);
+	if (!user) throw new Error('User not found');
+	const instructor = await user.getInstructor();
+	if (!instructor) throw new Error('Instructor not found');
+	instructor.status = status;
+	await instructor.save();
+	return instructor;
+};
 const getUserById = async (id) => {
 	const user = await User.findByPk(id, {
 		include: [
@@ -225,4 +255,7 @@ export {
 	getUserByEmail,
 	getStudentByUserId,
 	getInstructorByUserId,
+	removeStudentByUserId,
+	removeInstructorByUserId,
+	updateInstructorStatus,
 };

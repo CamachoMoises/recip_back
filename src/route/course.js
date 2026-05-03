@@ -18,6 +18,7 @@ import {
 	UpdateCourseStudent,
 	UpdateCourseStudentStatus,
 	UpdateSchedule,
+	UpdateInstructorStatus,
 } from '../controller/course.js';
 import { authenticateJWT } from '../controller/authentication.js';
 
@@ -56,6 +57,13 @@ router.put(
 	authenticateJWT,
 	convertTypes,
 	UpdateCourseStudentStatus,
+);
+router.put(
+	'/status',
+	upload.none(),
+	authenticateJWT,
+	convertTypes,
+	UpdateInstructorStatus,
 );
 router.put(
 	'/courseStudent/:course_id',
