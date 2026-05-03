@@ -45,11 +45,20 @@ const getAllCoursesStudent = async (filters) => {
 	if (filters.course_type_id) {
 		whereClause.id = filters.course_type_id;
 	}
+	const courseStudentWhere = {};
+	if (filters.status !== undefined && filters.status !== '') {
+		courseStudentWhere.status =
+			filters.status === 'true' ? true : false;
+	}
 	// Calculamos el offset basado en currentPage y pageSize
 	const pageSize = parseInt(filters.pageSize) || 10; // Valor por defecto 10
 	const currentPage = parseInt(filters.currentPage) || 1; // Valor por defecto 1
 	const offset = (currentPage - 1) * pageSize;
+
 	const courseStudent = await CourseStudent.findAndCountAll({
+		distinct: true,
+		col: 'id',
+		where: courseStudentWhere,
 		include: [
 			{
 				model: Student,
@@ -85,7 +94,7 @@ const getAllCoursesStudent = async (filters) => {
 							whereClause.id == 1
 								? {
 										name: { [Op.like]: `%examen%` },
-								  }
+									}
 								: {},
 						required: whereClause.id == 1,
 					},
@@ -243,11 +252,10 @@ const editCourseStudent = async (
 	student_id,
 	typeTrip,
 	license,
-	regulation
+	regulation,
 ) => {
-	const courseStudent = await CourseStudent.findByPk(
-		course_student_id
-	);
+	const courseStudent =
+		await CourseStudent.findByPk(course_student_id);
 	if (!courseStudent) {
 		throw new Error('Course not found');
 	}
@@ -260,6 +268,21 @@ const editCourseStudent = async (
 		type_trip: type_trip,
 		license: license,
 		regulation: regulation,
+	});
+	return courseStudent;
+};
+
+const updateCourseStudentStatus = async (
+	course_student_id,
+	status,
+) => {
+	const courseStudent =
+		await CourseStudent.findByPk(course_student_id);
+	if (!courseStudent) {
+		throw new Error('CourseStudent not found');
+	}
+	await courseStudent.update({
+		status,
 	});
 	return courseStudent;
 };
@@ -339,7 +362,7 @@ const createSchedule = async (
 	course_student_id,
 	date,
 	hour,
-	classTime
+	classTime,
 ) => {
 	const newSchedule = await Schedule.create({
 		instructor_id,
@@ -359,7 +382,7 @@ const updateSchedule = async (
 	instructor_id,
 	date,
 	hour,
-	classTime
+	classTime,
 ) => {
 	const editSchedule = await Schedule.findByPk(id);
 	if (!editSchedule) {
@@ -387,6 +410,7 @@ export {
 	editCourse,
 	updateCourseHours,
 	editCourseStudent,
+	updateCourseStudentStatus,
 	createCourseStudent,
 	getAllSchedule,
 	getScheduleById,

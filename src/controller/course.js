@@ -17,6 +17,7 @@ import {
 	getCourseStudentById,
 	getScheduleById,
 	updateCourseHours,
+	updateCourseStudentStatus,
 	updateSchedule,
 } from '../database/repositories/course.js';
 import { getSubjectByCourseId } from '../database/repositories/subject.js';
@@ -210,7 +211,23 @@ export const UpdateCourseStudent = async (req, res) => {
 			student_id,
 			typeTrip,
 			license,
-			regulation
+			regulation,
+		);
+		res.send(courseStudentEdited);
+	} catch (error) {
+		console.log(error);
+		res.status(500).send(`Internal Server Error ${error}`);
+	}
+};
+
+export const UpdateCourseStudentStatus = async (req, res) => {
+	const course_student_id = req.params.course_student_id;
+	const { status = false } = req.body;
+
+	try {
+		const courseStudentEdited = await updateCourseStudentStatus(
+			course_student_id,
+			status,
 		);
 		res.send(courseStudentEdited);
 	} catch (error) {
@@ -253,7 +270,7 @@ export const CreateSchedule = async (req, res) => {
 			course_student_id,
 			date,
 			hour,
-			classTime
+			classTime,
 		);
 		const SC = await getScheduleById(newSchedule.id);
 		res.send(SC);
@@ -274,7 +291,7 @@ export const UpdateSchedule = async (req, res) => {
 			instructor_id,
 			date,
 			hour,
-			classTime
+			classTime,
 		);
 		const SC = await getScheduleById(editSchedule.id);
 		res.send(SC);

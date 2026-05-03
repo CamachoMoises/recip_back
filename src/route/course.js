@@ -16,6 +16,7 @@ import {
 	ListSchedule,
 	UpdateCourse,
 	UpdateCourseStudent,
+	UpdateCourseStudentStatus,
 	UpdateSchedule,
 } from '../controller/course.js';
 import { authenticateJWT } from '../controller/authentication.js';
@@ -31,14 +32,14 @@ router.post(
 	upload.none(),
 	authenticateJWT,
 	convertTypes,
-	CreateCourse
+	CreateCourse,
 );
 router.put(
 	'/',
 	upload.none(),
 	authenticateJWT,
 	convertTypes,
-	UpdateCourse
+	UpdateCourse,
 );
 router.get('/courseTypes', authenticateJWT, ListCoursesTypes);
 router.get('/courseLevel', authenticateJWT, ListCoursesLevel);
@@ -47,21 +48,28 @@ router.post(
 	upload.none(),
 	authenticateJWT,
 	convertTypes,
-	CreateCourseStudent
+	CreateCourseStudent,
+);
+router.put(
+	'/courseStudent/:course_student_id/status',
+	upload.none(),
+	authenticateJWT,
+	convertTypes,
+	UpdateCourseStudentStatus,
 );
 router.put(
 	'/courseStudent/:course_id',
 	upload.none(),
 	authenticateJWT,
 	convertTypes,
-	UpdateCourseStudent
+	UpdateCourseStudent,
 );
 
 router.get('/course/:id', authenticateJWT, CourseDetails);
 router.get(
 	'/courseStudent/:id',
 	authenticateJWT,
-	CourseStudentDetails
+	CourseStudentDetails,
 );
 router.get('/schedule/:id', authenticateJWT, ListSchedule);
 router.post(
@@ -69,7 +77,7 @@ router.post(
 	upload.none(),
 	authenticateJWT,
 	convertTypes,
-	CreateSchedule
+	CreateSchedule,
 );
 router.put('/schedule', upload.none(), convertTypes, UpdateSchedule);
 
