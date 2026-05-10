@@ -31,11 +31,11 @@ app.use(
 			process.env.NODE_ENV === 'development'
 				? '*'
 				: [
-						'https://www.recip360atc.com',
 						'https://recip-kappa.vercel.app/',
 						'https://www.recip-kappa.vercel.app/',
-						'https://recip360atc.com',
+						'https://www.recip360atc.com',
 						'https://api.recip360atc.com',
+						'https://recip360atc.com',
 					],
 	}),
 );
