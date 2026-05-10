@@ -55,7 +55,7 @@ export const ImportQuestionsFromCSV = async (req, res) => {
 		const data = await readXlsxFile(req.file.buffer);
 		// Skip header row and convert to objects with appropriate keys
 		const headers = data[0];
-		const jsonData = data.slice(1).map(row => {
+		const jsonData = data.slice(1).map((row) => {
 			const obj = {};
 			headers.forEach((header, index) => {
 				obj[header] = row[index];
@@ -192,7 +192,7 @@ export const ImportQuestionsFromExcel = async (req, res) => {
 		const data = await readXlsxFile(req.file.buffer);
 		// Skip header row and convert to objects with appropriate keys
 		const headers = data[0];
-		const jsonData = data.slice(1).map(row => {
+		const jsonData = data.slice(1).map((row) => {
 			const obj = {};
 			headers.forEach((header, index) => {
 				obj[header] = row[index];
