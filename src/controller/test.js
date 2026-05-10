@@ -1,5 +1,5 @@
 import moment from 'moment';
-import xlsx from 'xlsx';
+import readXlsxFile from 'read-excel-file';
 import {
 	createAnswerQuestionTest,
 	createCourseStudentTest,
@@ -52,15 +52,21 @@ export const ImportQuestionsFromCSV = async (req, res) => {
 		}
 
 		// Read CSV file
-		const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
-		const sheetName = workbook.SheetNames[0];
-		const worksheet = workbook.Sheets[sheetName];
-		const data = xlsx.utils.sheet_to_json(worksheet);
+		const data = await readXlsxFile(req.file.buffer);
+		// Skip header row and convert to objects with appropriate keys
+		const headers = data[0];
+		const jsonData = data.slice(1).map(row => {
+			const obj = {};
+			headers.forEach((header, index) => {
+				obj[header] = row[index];
+			});
+			return obj;
+		});
 
 		let questionsImported = 0;
 		let answersImported = 0;
 
-		for (const row of data) {
+		for (const row of jsonData) {
 			try {
 				// Extract question data
 				const {
@@ -89,7 +95,7 @@ export const ImportQuestionsFromCSV = async (req, res) => {
 				) {
 					console.warn(
 						'Skipping row with missing required fields:',
-						row
+						row,
 					);
 					continue;
 				}
@@ -133,7 +139,7 @@ export const ImportQuestionsFromCSV = async (req, res) => {
 						) {
 							// Get the created answer to update it
 							const createdAnswers = await getAnswerQuestion(
-								question.id
+								question.id,
 							);
 							const lastAnswer =
 								createdAnswers[createdAnswers.length - 1];
@@ -154,7 +160,7 @@ export const ImportQuestionsFromCSV = async (req, res) => {
 					'Error processing row:',
 					rowError.message,
 					'Row data:',
-					row
+					row,
 				);
 				continue;
 			}
@@ -183,15 +189,21 @@ export const ImportQuestionsFromExcel = async (req, res) => {
 		}
 
 		// Read Excel file
-		const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
-		const sheetName = workbook.SheetNames[0];
-		const worksheet = workbook.Sheets[sheetName];
-		const data = xlsx.utils.sheet_to_json(worksheet);
+		const data = await readXlsxFile(req.file.buffer);
+		// Skip header row and convert to objects with appropriate keys
+		const headers = data[0];
+		const jsonData = data.slice(1).map(row => {
+			const obj = {};
+			headers.forEach((header, index) => {
+				obj[header] = row[index];
+			});
+			return obj;
+		});
 
 		let questionsImported = 0;
 		let answersImported = 0;
 
-		for (const row of data) {
+		for (const row of jsonData) {
 			try {
 				// Extract question data
 				const {
@@ -220,7 +232,7 @@ export const ImportQuestionsFromExcel = async (req, res) => {
 				) {
 					console.warn(
 						'Skipping row with missing required fields:',
-						row
+						row,
 					);
 					continue;
 				}
@@ -264,7 +276,7 @@ export const ImportQuestionsFromExcel = async (req, res) => {
 						) {
 							// Get the created answer to update it
 							const createdAnswers = await getAnswerQuestion(
-								question.id
+								question.id,
 							);
 							const lastAnswer =
 								createdAnswers[createdAnswers.length - 1];
@@ -285,7 +297,7 @@ export const ImportQuestionsFromExcel = async (req, res) => {
 					'Error processing row:',
 					rowError.message,
 					'Row data:',
-					row
+					row,
 				);
 				continue;
 			}
@@ -593,9 +605,8 @@ export const ListAnswerQuestion = async (req, res) => {
 export const CourseStudentTestDetails = async (req, res) => {
 	const id = req.params.id;
 	try {
-		const courseStudentTestSelected = await getCourseStudentTestById(
-			id
-		);
+		const courseStudentTestSelected =
+			await getCourseStudentTestById(id);
 		res.send(courseStudentTestSelected);
 	} catch (error) {
 		console.error('Error en la creacion:', error.message);
@@ -609,10 +620,10 @@ export const CourseStudentTest = async (req, res) => {
 	try {
 		const currentDate = moment();
 		const courseStudent = await getCourseStudentById(
-			req.params.course_student_id
+			req.params.course_student_id,
 		);
 		const test = courseStudent.course.tests.find(
-			(dataTest) => dataTest.status
+			(dataTest) => dataTest.status,
 		);
 		if (!test.id) {
 			throw new Error('Question Type not found');
@@ -640,7 +651,7 @@ export const CourseStudentTest = async (req, res) => {
 		if (!exist) {
 			const courseStudentTest = await createCourseStudentTest(
 				filters.course_student_id,
-				filters.test_id
+				filters.test_id,
 			);
 
 			for (
@@ -653,16 +664,15 @@ export const CourseStudentTest = async (req, res) => {
 					await CourseStudentTestQuestions(
 						courseStudentTest,
 						TQT.question_type_id,
-						TQT.amount
+						TQT.amount,
 					);
 				} else if (TQT.question_type_id === 4 && TQT.amount > 0) {
 					const questionFilters = {
 						test_id: filters.test_id,
 						question_type_id: 4,
 					};
-					const questionsType_4 = await getQuestionTest(
-						questionFilters
-					);
+					const questionsType_4 =
+						await getQuestionTest(questionFilters);
 					for (const questionType_4 of questionsType_4) {
 						await createCourseStudentTestQuestion(
 							courseStudentTest.course_id,
@@ -670,7 +680,7 @@ export const CourseStudentTest = async (req, res) => {
 							courseStudentTest.test_id,
 							courseStudentTest.course_student_id,
 							courseStudentTest.id,
-							questionType_4.id
+							questionType_4.id,
 						);
 					}
 				}
@@ -678,9 +688,8 @@ export const CourseStudentTest = async (req, res) => {
 			course_student_id = courseStudentTest.id;
 		}
 
-		const courseStudentTestSelected = await getCourseStudentTestById(
-			course_student_id
-		);
+		const courseStudentTestSelected =
+			await getCourseStudentTestById(course_student_id);
 		res.send(courseStudentTestSelected);
 	} catch (error) {
 		console.error('Error en la creacion:', error.message);
@@ -693,7 +702,7 @@ export const CourseStudentTest = async (req, res) => {
 const CourseStudentTestQuestions = async (
 	courseStudentTest,
 	question_type_id,
-	question_Amount
+	question_Amount,
 ) => {
 	const filters = {
 		test_id: courseStudentTest.test_id,
@@ -713,7 +722,7 @@ const CourseStudentTestQuestions = async (
 				courseStudentTest.test_id,
 				courseStudentTest.course_student_id,
 				courseStudentTest.id,
-				new_id
+				new_id,
 			);
 		}
 	} catch (error) {
@@ -726,12 +735,12 @@ export const CourseStudentTestAnswer = async (req, res) => {
 	try {
 		const CSTA = req.body.courseStudentTestAnswer;
 		const exist = await getCourseStudentTestAnswerByQuestion(
-			CSTA.course_student_test_question_id
+			CSTA.course_student_test_question_id,
 		);
 		if (exist) {
 			const data = await updateCourseStudentTestAnswer(
 				CSTA.course_student_test_question_id,
-				CSTA.resp
+				CSTA.resp,
 			);
 			return res.send(data);
 		} else {
@@ -769,7 +778,7 @@ export const CourseStudentTestEnd = async (req, res) => {
 		await resolveCourseStudentTest(
 			filters.course_student_test_id,
 			score,
-			false
+			false,
 		);
 		const dataResponse = {
 			answers: courseStudentTestAnswers,
@@ -809,7 +818,7 @@ export const evaluateAnswers = async (courseStudentTestAnswers) => {
 					score = score + scoreValue;
 				} else {
 					console.log(
-						`LA RESPUESTA DE LA ${answer.id} es incorrecta`
+						`LA RESPUESTA DE LA ${answer.id} es incorrecta`,
 					);
 					await resolveCourseStudentTestAnswer(answer.id, 0);
 				}
@@ -834,23 +843,23 @@ export const evaluateAnswers = async (courseStudentTestAnswers) => {
 					redondear(
 						(correctas * scoreValue) / countResp -
 							(incorrectas * scoreValue) / countResp,
-						4
-					)
+						4,
+					),
 				);
 				score =
 					score +
 					redondear(
 						(correctas * scoreValue) / countResp -
 							(incorrectas * scoreValue) / countResp,
-						4
+						4,
 					);
 				await resolveCourseStudentTestAnswer(
 					answer.id,
 					redondear(
 						(correctas * scoreValue) / countResp -
 							(incorrectas * scoreValue) / countResp,
-						4
-					)
+						4,
+					),
 				);
 				break;
 
@@ -861,7 +870,7 @@ export const evaluateAnswers = async (courseStudentTestAnswers) => {
 					score = score + scoreValue;
 				} else {
 					console.log(
-						`LA RESPUESTA DE LA ${answer.id} es incorrecta`
+						`LA RESPUESTA DE LA ${answer.id} es incorrecta`,
 					);
 					await resolveCourseStudentTestAnswer(answer.id, 0);
 				}
@@ -871,7 +880,7 @@ export const evaluateAnswers = async (courseStudentTestAnswers) => {
 				for (const detalisRes of resp) {
 					if (
 						correct_answers.find(
-							(val) => val.value === cleanString(detalisRes)
+							(val) => val.value === cleanString(detalisRes),
 						)
 					) {
 						correctas++;
@@ -886,20 +895,20 @@ export const evaluateAnswers = async (courseStudentTestAnswers) => {
 					redondear((correctas * scoreValue) / countResp, 4),
 					' con ',
 					correctas,
-					' correctas'
+					' correctas',
 				);
 				score =
 					score + redondear((correctas * scoreValue) / countResp, 4);
 				await resolveCourseStudentTestAnswer(
 					answer.id,
-					redondear((correctas * scoreValue) / countResp, 4)
+					redondear((correctas * scoreValue) / countResp, 4),
 				);
 				break;
 			case 5:
 				for (const detalisRes of resp) {
 					if (
 						correct_answers.find(
-							(val) => val.value === cleanString(detalisRes)
+							(val) => val.value === cleanString(detalisRes),
 						)
 					) {
 						correctas++;
@@ -917,13 +926,13 @@ export const evaluateAnswers = async (courseStudentTestAnswers) => {
 					' correctas',
 					' y ',
 					incorrectas,
-					' incorrectas'
+					' incorrectas',
 				);
 				score =
 					score + redondear((correctas * scoreValue) / countResp, 4);
 				await resolveCourseStudentTestAnswer(
 					answer.id,
-					redondear((correctas * scoreValue) / countResp, 4)
+					redondear((correctas * scoreValue) / countResp, 4),
 				);
 				break;
 
@@ -944,21 +953,21 @@ export const UpdateCourseStudentTestScore = async (req, res) => {
 		console.log(
 			score,
 			course_student_test_answer_id,
-			course_student_test_id
+			course_student_test_id,
 		);
 		await resolveCourseStudentTestAnswer(
 			parseInt(course_student_test_answer_id),
-			parseFloat(score)
+			parseFloat(score),
 		);
 		const totalScore = await getTotalScore(course_student_test_id);
 		console.log(totalScore);
 		await resolveCourseStudentTest(
 			course_student_test_id,
 			totalScore,
-			true
+			true,
 		);
 		const courseStudentTestSelected = await getCourseStudentTestById(
-			course_student_test_id
+			course_student_test_id,
 		);
 		res.send(courseStudentTestSelected);
 	} catch (error) {
