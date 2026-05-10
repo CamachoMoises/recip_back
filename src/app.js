@@ -1,7 +1,6 @@
 import express, { json, urlencoded } from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
-
 import authRoutes from './route/authentication.js';
 import userRoutes from './route/user.js';
 import assessmentRoutes from './route/assessment.js';
@@ -49,6 +48,10 @@ app.use('/api/config', configRoutes);
 app.use('/api/test', testRoutes);
 app.use('/api/email', emailRoutes);
 
+app.use(
+	'/storage',
+	express.static('/home/recipatc/public_html/storage'),
+);
 // app.get('/participants', async (req, res) => {
 // 	try {
 // 		const participants = await getAllParticipants();
