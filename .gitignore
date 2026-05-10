@@ -60,3 +60,6 @@ Thumbs.db
 
 # Yarn lockfile (if using npm)
 yarn.lock
+
+#file system
+storage/

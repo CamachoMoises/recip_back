@@ -1,4 +1,8 @@
 import moment from 'moment';
+import fs from 'fs';
+import path from 'path';
+import { Buffer } from 'buffer';
+
 import {
 	createCourseStudentAssessment,
 	createCourseStudentAssessmentDay,
@@ -175,7 +179,7 @@ export const ListSubjectsAssessment = async (req, res) => {
 
 export const ChangeCourseStudentAssessmentLessonDay = async (
 	req,
-	res
+	res,
 ) => {
 	try {
 		const data = req.body;
@@ -245,7 +249,7 @@ export const CourseStudentAssessmentData = async (req, res) => {
 			});
 		} else {
 			throw new Error(
-				'Cannot find Course Student Assessment Day for this Course Student Assessment'
+				'Cannot find Course Student Assessment Day for this Course Student Assessment',
 			);
 		}
 		res.send({ CSA: courseStudentAssessment, CASD });
@@ -254,11 +258,11 @@ export const CourseStudentAssessmentData = async (req, res) => {
 		res.status(500).send('Internal Server Error');
 	}
 };
+
 export const SaveSignatures = async (req, res) => {
 	try {
 		const { CSAD_id, signature1, signature2, signature3 } = req.body;
 
-		// Verificar si al menos una firma está presente
 		const hasAnySignature = signature1 || signature2 || signature3;
 		if (!hasAnySignature) {
 			return res.status(400).json({
@@ -267,7 +271,6 @@ export const SaveSignatures = async (req, res) => {
 			});
 		}
 
-		// Subir solo las firmas proporcionadas (en paralelo)
 		const uploadPromises = [];
 		if (signature1)
 			uploadPromises.push(uploadSignature(signature1, '1', CSAD_id));
@@ -277,27 +280,26 @@ export const SaveSignatures = async (req, res) => {
 			uploadPromises.push(uploadSignature(signature3, '3', CSAD_id));
 
 		const [
-			studentSignatureUrl,
-			instructorSignatureUrl,
-			fcaaSignatureUrl,
+			studentSignatureResult,
+			instructorSignatureResult,
+			fcaaSignatureResult,
 		] = await Promise.all(uploadPromises);
 
-		console.log('Firmas subidas a Cloudinary:', {
-			studentSignatureUrl,
-			instructorSignatureUrl,
-			fcaaSignatureUrl,
-		});
-
-		// Guardar en DB solo si hay URLs (opcional)
 		const uploadedSignatures = {
-			...(studentSignatureUrl && { studentSignatureUrl }),
-			...(instructorSignatureUrl && { instructorSignatureUrl }),
-			...(fcaaSignatureUrl && { fcaaSignatureUrl }),
+			...(studentSignatureResult && {
+				studentSignatureUrl: studentSignatureResult.cloudinaryUrl,
+				studentSignatureLocal: studentSignatureResult.localPath,
+			}),
+			...(instructorSignatureResult && {
+				instructorSignatureUrl:
+					instructorSignatureResult.cloudinaryUrl,
+				instructorSignatureLocal: instructorSignatureResult.localPath,
+			}),
+			...(fcaaSignatureResult && {
+				fcaaSignatureUrl: fcaaSignatureResult.cloudinaryUrl,
+				fcaaSignatureLocal: fcaaSignatureResult.localPath,
+			}),
 		};
-
-		if (Object.keys(uploadedSignatures).length > 0) {
-			// await saveToDatabase(CSAD_id, uploadedSignatures); // Implementa esto según tu DB
-		}
 
 		res.status(200).json({
 			success: true,
@@ -313,24 +315,66 @@ export const SaveSignatures = async (req, res) => {
 	}
 };
 
-// Función para subir una firma (con overwrite: true)
 const uploadSignature = async (
 	signatureData,
 	signatureType,
-	CSAD_id
+	CSAD_id,
 ) => {
-	if (!signatureData) return null; // Skip si no hay firma
+	if (!signatureData) return null;
 
 	const publicId = `firmas/signature_${signatureType}_${CSAD_id}`;
 
-	// Subir la firma (sobrescribiendo si ya existe)
-	const result = await cloudinaryApp.uploader.upload(signatureData, {
-		public_id: publicId, // Nombre único
-		folder: 'firmas', // Carpeta en Cloudinary
-		format: 'webp', // Convertir a WebP
-		overwrite: true, // Sobrescribir automáticamente
-		transformation: [{ quality: 'auto' }], // Optimización
-	});
+	// Subir a Cloudinary y guardar localmente en paralelo
+	const [cloudinaryResult, localPath] = await Promise.all([
+		cloudinaryApp.uploader.upload(signatureData, {
+			public_id: publicId,
+			folder: 'firmas',
+			format: 'webp',
+			overwrite: true,
+			transformation: [{ quality: 'auto' }],
+		}),
+		saveSignatureLocally(signatureData, signatureType, CSAD_id),
+	]);
 
-	return result.secure_url;
+	return {
+		cloudinaryUrl: cloudinaryResult.secure_url,
+		localPath,
+	};
+};
+
+const saveSignatureLocally = async (
+	signatureData,
+	signatureType,
+	CSAD_id,
+) => {
+	// Directorio base configurable vía variable de entorno
+	const baseDir =
+		process.env.SIGNATURES_LOCAL_PATH || '/var/app/storage/firmas';
+	const dir = path.join(baseDir, String(CSAD_id));
+
+	// Crear directorio si no existe
+	await fs.promises.mkdir(dir, { recursive: true });
+
+	const filename = `signature_${signatureType}_${CSAD_id}.webp`;
+	const filepath = path.join(dir, filename);
+
+	// Detectar si es base64 o URL
+	let buffer;
+	if (signatureData.startsWith('data:')) {
+		// Data URL: "data:image/png;base64,iVBOR..."
+		const base64Data = signatureData.split(',')[1];
+		buffer = Buffer.from(base64Data, 'base64');
+	} else if (signatureData.startsWith('http')) {
+		// URL remota: descargar el archivo
+		const response = await fetch(signatureData);
+		buffer = Buffer.from(await response.arrayBuffer());
+	} else {
+		// Asumir base64 puro
+		buffer = Buffer.from(signatureData, 'base64');
+	}
+
+	await fs.promises.writeFile(filepath, buffer);
+
+	console.log(`Firma guardada localmente: ${filepath}`);
+	return filepath;
 };

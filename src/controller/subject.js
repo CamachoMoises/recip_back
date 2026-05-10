@@ -41,7 +41,7 @@ export const ListSubjectsCourse = async (req, res) => {
 		const subjects = await getAllCourseSubjects(
 			id,
 			status,
-			is_schedulable
+			is_schedulable,
 		);
 		res.send(subjects);
 	} catch (error) {
@@ -191,7 +191,7 @@ export const ChangeStatusDay = async (req, res) => {
 			subject_id,
 			course_id,
 			day,
-			status
+			status,
 		);
 		if (subject_days) {
 			res.status(201).send('OK');
@@ -226,7 +226,7 @@ export const ChangeStatusLessonDay = async (req, res) => {
 			subject_days_status = await checkStatusDay(
 				subject_id,
 				subject_lesson_days_id,
-				day
+				day,
 			);
 		}
 
@@ -234,14 +234,14 @@ export const ChangeStatusLessonDay = async (req, res) => {
 			subject_id,
 			course_id,
 			day,
-			subject_days_status
+			subject_days_status,
 		);
 		const validate = await getSubjectsLessonDaysByFull(
 			course_id,
 			subject_id,
 			subject_days.id,
 			subject_lesson_id,
-			day
+			day,
 		);
 		if (!validate.length) {
 			const subject_lesson_days = await createSubjectLessonDay({
@@ -283,12 +283,12 @@ export const ChangeStatusDayFunc = async (
 	subject_id,
 	course_id,
 	day,
-	status
+	status,
 ) => {
 	const validate = await getSubjectsDaysByFull(
 		subject_id,
 		course_id,
-		day
+		day,
 	);
 	let subject_days = null;
 	if (!validate.length) {
