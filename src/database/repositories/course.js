@@ -59,6 +59,18 @@ const getAllCoursesStudent = async (filters) => {
 		distinct: true,
 		col: 'id',
 		where: courseStudentWhere,
+		attributes: {
+			include: [
+				[
+					Sequelize.literal(`(
+                    SELECT MAX(cst.score)
+                    FROM course_student_test AS cst
+                    WHERE cst.course_student_id = course_student.id
+                )`),
+					'highest_score',
+				],
+			],
+		},
 		include: [
 			{
 				model: Student,
