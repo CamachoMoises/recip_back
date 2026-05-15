@@ -16,6 +16,7 @@ import {
 	ListSchedule,
 	UpdateCourse,
 	UpdateCourseStudent,
+	UpdateCourseStudentMaxAttempts,
 	UpdateCourseStudentStatus,
 	UpdateSchedule,
 	UpdateInstructorStatus,
@@ -88,5 +89,13 @@ router.post(
 	CreateSchedule,
 );
 router.put('/schedule', upload.none(), convertTypes, UpdateSchedule);
+
+router.put(
+	'/courseStudentMaxAttempts',
+	upload.none(),
+	authenticateJWT,
+	convertTypes,
+	UpdateCourseStudentMaxAttempts
+);
 
 export default router;

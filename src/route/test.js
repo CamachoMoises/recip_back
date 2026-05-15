@@ -18,7 +18,6 @@ import {
 	ListTestCourse,
 	TestCourseDetail,
 	UpdateAnswerQuestionTest,
-	UpdateCourseStudentTestScore,
 	UpdateQuestionTest,
 	UpdateQuestionType,
 	UpdateTest,
@@ -75,52 +74,56 @@ router.get('/test/:test_id', authenticateJWT, TestCourseDetail);
 router.get(
 	'/questions/by-test/:test_id',
 	authenticateJWT,
-	ListQuestionsByTest
+	ListQuestionsByTest,
 );
 router.get('/questionTypes', authenticateJWT, ListQuestionTypes);
 router.get('/answers/:id', authenticateJWT, ListAnswerQuestion);
-router.get('/student/:student_id', authenticateJWT, ListAllTestsByStudent);
+router.get(
+	'/student/:student_id',
+	authenticateJWT,
+	ListAllTestsByStudent,
+);
 router.put(
 	'/questionTypes',
 	upload.none(),
 	authenticateJWT,
 	convertTypes,
-	UpdateQuestionType
+	UpdateQuestionType,
 );
 router.post(
 	'/test',
 	upload.none(),
 	authenticateJWT,
 	convertTypes,
-	CreateTest
+	CreateTest,
 );
 router.put(
 	'/test',
 	upload.none(),
 	authenticateJWT,
 	convertTypes,
-	UpdateTest
+	UpdateTest,
 );
 router.post(
 	'/questionTest',
 	upload.none(),
 	authenticateJWT,
 	convertTypes,
-	CreateQuestionTest
+	CreateQuestionTest,
 );
 router.put(
 	'/questionTest',
 	upload.none(),
 	authenticateJWT,
 	convertTypes,
-	UpdateQuestionTest
+	UpdateQuestionTest,
 );
 router.post(
 	'/answerQuestionTest',
 	upload.none(),
 	authenticateJWT,
 	convertTypes,
-	CreateAnswerQuestionTest
+	CreateAnswerQuestionTest,
 );
 
 router.put(
@@ -128,7 +131,7 @@ router.put(
 	upload.none(),
 	authenticateJWT,
 	convertTypes,
-	UpdateAnswerQuestionTest
+	UpdateAnswerQuestionTest,
 );
 
 router.put(
@@ -136,7 +139,7 @@ router.put(
 	upload.none(),
 	authenticateJWT,
 	convertTypes,
-	UpdateTestQuestionType
+	UpdateTestQuestionType,
 );
 
 router.get('/courseStudentTest/:id', CourseStudentTestDetails);
@@ -145,7 +148,7 @@ router.post(
 	upload.none(),
 	authenticateJWT,
 	convertTypes,
-	CourseStudentTest
+	CourseStudentTest,
 );
 
 router.post(
@@ -153,7 +156,7 @@ router.post(
 	upload.none(),
 	authenticateJWT,
 	convertTypes,
-	CourseStudentTestAnswer
+	CourseStudentTestAnswer,
 );
 
 router.post(
@@ -161,14 +164,7 @@ router.post(
 	upload.none(),
 	authenticateJWT,
 	convertTypes,
-	CourseStudentTestEnd
-);
-router.put(
-	'/updateCourseStudentTestScore',
-	upload.none(),
-	authenticateJWT,
-	convertTypes,
-	UpdateCourseStudentTestScore
+	CourseStudentTestEnd,
 );
 
 // Excel import route
@@ -176,7 +172,7 @@ router.post(
 	'/import-excel/:test_id',
 	upload.single('excel_file'),
 	authenticateJWT,
-	ImportQuestionsFromExcel
+	ImportQuestionsFromExcel,
 );
 
 // CSV import route
@@ -184,7 +180,7 @@ router.post(
 	'/import-csv',
 	uploadCSV.single('csv_file'),
 	// authenticateJWT,
-	ImportQuestionsFromCSV
+	ImportQuestionsFromCSV,
 );
 
 export default router;

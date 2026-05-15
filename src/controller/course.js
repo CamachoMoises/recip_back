@@ -17,6 +17,7 @@ import {
 	getCourseStudentById,
 	getScheduleById,
 	updateCourseHours,
+	updateCourseStudentMaxAttempts,
 	updateCourseStudentStatus,
 	updateSchedule,
 } from '../database/repositories/course.js';
@@ -320,6 +321,34 @@ export const UpdateSchedule = async (req, res) => {
 	} catch (error) {
 		console.log(error);
 		res.status(500).send(`Internal Server Error ${error}`);
+	}
+};
+
+export const UpdateCourseStudentMaxAttempts = async (req, res) => {
+	try {
+		const { course_student_id, max_attempts } = req.body;
+
+		if (!course_student_id || isNaN(course_student_id)) {
+			return res
+				.status(400)
+				.json({ error: 'Parámetro course_student_id inválido' });
+		}
+
+		if (max_attempts === undefined || max_attempts === null || isNaN(max_attempts)) {
+			return res
+				.status(400)
+				.json({ error: 'Parámetro max_attempts inválido' });
+		}
+
+		const updated = await updateCourseStudentMaxAttempts(
+			parseInt(course_student_id),
+			parseInt(max_attempts),
+		);
+
+		res.status(200).json(updated);
+	} catch (error) {
+		console.error('Error al actualizar max_attempts:', error.message);
+		res.status(400).json({ error: error.message });
 	}
 };
 

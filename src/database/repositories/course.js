@@ -419,6 +419,16 @@ const updateSchedule = async (
 	return editSchedule;
 };
 
+const updateCourseStudentMaxAttempts = async (id, max_attempts) => {
+	const record = await CourseStudent.findByPk(id);
+	if (!record) {
+		throw new Error('CourseStudent not found');
+	}
+	record.max_attempts = max_attempts;
+	await record.save();
+	return record;
+};
+
 export {
 	getAllCourses,
 	getAllCoursesStudent,
@@ -438,4 +448,5 @@ export {
 	getScheduleById,
 	createSchedule,
 	updateSchedule,
+	updateCourseStudentMaxAttempts,
 };
