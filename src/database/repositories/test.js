@@ -1,7 +1,7 @@
 import moment from 'moment';
 import { models } from '../initDB.js';
 import { getCourseStudentById } from './course.js';
-import { Op } from 'sequelize';
+import { Op, Sequelize } from 'sequelize';
 
 const {
 	Test,
@@ -302,7 +302,7 @@ const getCourseStudentTest = async (filters) => {
 
 const createCourseStudentTest = async (
 	course_student_id,
-	test_id
+	test_id,
 ) => {
 	let numberCode = 1;
 	const prevCourseStudentTest = await CourseStudentTest.findOne({
@@ -343,7 +343,7 @@ const createCourseStudentTestQuestion = async (
 	test_id,
 	course_student_id,
 	course_student_test_id,
-	question_id
+	question_id,
 ) => {
 	const newCourseStudentTestQuestion =
 		await CourseStudentTestQuestion.create({
@@ -387,7 +387,7 @@ const createCourseStudentTestAnswer = async ({
 };
 const updateCourseStudentTestAnswer = async (
 	course_student_test_question_id,
-	resp
+	resp,
 ) => {
 	const selectedCourseStudentTestAnswer =
 		await CourseStudentTestAnswer.findOne({
@@ -402,7 +402,7 @@ const updateCourseStudentTestAnswer = async (
 };
 
 const getCourseStudentTestAnswerByQuestion = async (
-	course_student_test_question_id
+	course_student_test_question_id,
 ) => {
 	const data = await CourseStudentTestAnswer.findOne({
 		where: {
@@ -451,7 +451,7 @@ const getAllCourseStudentTestAnswer = async (filters) => {
 };
 const resolveCourseStudentTestAnswer = async (
 	course_student_test_answer_id,
-	scoreValue
+	scoreValue,
 ) => {
 	const selectedCourseStudentTestAnswer =
 		await CourseStudentTestAnswer.findOne({
@@ -464,7 +464,7 @@ const resolveCourseStudentTestAnswer = async (
 const resolveCourseStudentTest = async (
 	course_student_test_answer_id,
 	score,
-	rev
+	rev,
 ) => {
 	const courseStudentTest = await CourseStudentTest.findOne({
 		where: { id: course_student_test_answer_id },
@@ -479,7 +479,7 @@ const resolveCourseStudentTest = async (
 
 	if (!courseStudentTest || !courseStudent || !test) {
 		throw new Error(
-			'courseStudent or courseStudentTest or Test Type not found'
+			'courseStudent or courseStudentTest or Test Type not found',
 		);
 	}
 
@@ -516,6 +516,32 @@ const getTotalScore = async ({ course_student_test_id }) => {
 	}
 };
 
+const getAllCourseStudentTestByStudentId = async (
+	student_id,
+	course_student_id,
+) => {
+	const whereClause = {
+		student_id: student_id,
+	};
+	if (course_student_id) {
+		whereClause.course_student_id = course_student_id;
+	}
+	const data = await CourseStudentTest.findAll({
+		where: whereClause,
+		include: [
+			{ model: Test },
+			{
+				model: CourseStudent,
+				include: [{ model: Course }],
+			},
+		],
+		order: [
+			[Sequelize.col('course_student_test.created_at'), 'DESC'],
+		],
+	});
+	return data;
+};
+
 export {
 	getAllTest,
 	getTestById,
@@ -544,4 +570,5 @@ export {
 	createCourseStudentTestQuestion,
 	createCourseStudentTestAnswer,
 	getTotalScore,
+	getAllCourseStudentTestByStudentId,
 };

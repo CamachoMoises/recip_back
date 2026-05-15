@@ -25,6 +25,7 @@ import { updateInstructorStatus } from '../database/repositories/user.js';
 
 export const ListCourses = async (req, res) => {
 	try {
+		console.log('Lista de todos los cursos');
 		const filters = req.query;
 		const courses = await getAllCourses(filters);
 		res.send(courses);
@@ -249,7 +250,9 @@ export const UpdateInstructorStatus = async (req, res) => {
 	} catch (error) {
 		console.log(error);
 		if (error.message === 'Instructor not found') {
-			return res.status(404).send('Instructor not found for this user');
+			return res
+				.status(404)
+				.send('Instructor not found for this user');
 		}
 		res.status(500).send(`Internal Server Error: ${error.message}`);
 	}

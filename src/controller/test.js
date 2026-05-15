@@ -9,6 +9,7 @@ import {
 	createTest,
 	createTestQuestionType,
 	getAllCourseStudentTestAnswer,
+	getAllCourseStudentTestByStudentId,
 	getAllTest,
 	getAllTestCourse,
 	getAnswerQuestion,
@@ -994,6 +995,38 @@ export const getQuestionsByTest = async (req, res) => {
 		res.status(200).json(questions);
 	} catch (error) {
 		console.error('Error al obtener preguntas del examen:', error);
+		res.status(500).json({ error: 'Error interno del servidor' });
+	}
+};
+
+export const ListAllTestsByStudent = async (req, res) => {
+	try {
+		const student_id = parseInt(req.params.student_id);
+		const course_student_id = req.query.course_student_id
+			? parseInt(req.query.course_student_id)
+			: null;
+
+		if (!student_id || isNaN(student_id)) {
+			return res
+				.status(400)
+				.json({ error: 'Parámetro student_id inválido' });
+		}
+
+		const tests = await getAllCourseStudentTestByStudentId(
+			student_id,
+			course_student_id,
+		);
+		console.log(
+			'estos son los test',
+			student_id,
+			course_student_id,
+			//quiero contar los test
+			tests.length,
+		);
+
+		res.status(200).json(tests);
+	} catch (error) {
+		console.error('Error al obtener exámenes del estudiante:', error);
 		res.status(500).json({ error: 'Error interno del servidor' });
 	}
 };

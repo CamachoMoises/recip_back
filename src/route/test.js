@@ -11,6 +11,7 @@ import {
 	ImportQuestionsFromCSV,
 	ImportQuestionsFromExcel,
 	ListAnswerQuestion,
+	ListAllTestsByStudent,
 	ListQuestionTypes,
 	ListQuestionsByTest,
 	ListTest,
@@ -78,6 +79,7 @@ router.get(
 );
 router.get('/questionTypes', authenticateJWT, ListQuestionTypes);
 router.get('/answers/:id', authenticateJWT, ListAnswerQuestion);
+router.get('/student/:student_id', authenticateJWT, ListAllTestsByStudent);
 router.put(
 	'/questionTypes',
 	upload.none(),

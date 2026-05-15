@@ -1,4 +1,4 @@
-import { Op } from 'sequelize';
+import { Op, Sequelize } from 'sequelize';
 import { models } from '../initDB.js';
 
 const {
@@ -81,9 +81,21 @@ const getAllCoursesStudent = async (filters) => {
 			},
 			{
 				model: CourseStudentTest,
+				where: {
+					course_student_id: {
+						[Op.eq]: Sequelize.col('course_student.id'),
+					},
+				},
+				required: false,
 			},
 			{
 				model: CourseStudentAssessment,
+				where: {
+					course_student_id: {
+						[Op.eq]: Sequelize.col('course_student.id'),
+					},
+				},
+				required: false,
 			},
 			{
 				model: Schedule,
@@ -109,8 +121,6 @@ const getAllCoursesStudent = async (filters) => {
 		limit: pageSize,
 		offset: offset,
 	});
-	console.log(courseStudent);
-	console.log('id' in whereClause ? true : false);
 	return {
 		data: courseStudent.rows,
 		totalItems: courseStudent.count,
