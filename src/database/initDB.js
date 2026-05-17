@@ -66,6 +66,11 @@ const sequelize = new Sequelize(
 	{
 		host: process.env.DB_HOST_CLEVER,
 		dialect: 'mysql',
+		// logging:
+		// 	process.env.NODE_ENV === 'development'
+		// 		? (msg) => log('sql', { message: msg })
+		// 		: false,
+		logging: false,
 		port: process.env.DB_PORT_CLEVER,
 		define: {
 			underscored: true,
@@ -79,12 +84,15 @@ const sequelize = new Sequelize(
 			acquire: 30000,
 			idle: 10000,
 		},
-	}
+	},
 );
 
 sequelize.afterConnect('main', async (connection, err) => {
 	if (err) {
-		log('warn', { message: 'Database pool connection issue', error: err.message });
+		log('warn', {
+			message: 'Database pool connection issue',
+			error: err.message,
+		});
 	} else {
 		setDbConnected(true);
 		log('info', { message: 'Database connected' });
@@ -117,20 +125,20 @@ const CourseStudent = loadCourseStudent(sequelize, DataTypes);
 const CourseStudentTest = loadCourseStudentTest(sequelize, DataTypes);
 const CourseStudentTestQuestion = loadCourseStudentTestQuestion(
 	sequelize,
-	DataTypes
+	DataTypes,
 );
 const CourseStudentTestAnswer = loadCourseStudentTestAnswer(
 	sequelize,
-	DataTypes
+	DataTypes,
 );
 const CourseStudentAssessment = loadCourseStudentAssessment(
 	sequelize,
-	DataTypes
+	DataTypes,
 );
 
 const CourseStudentAssessmentDay = loadCourseStudentAssessmentDay(
 	sequelize,
-	DataTypes
+	DataTypes,
 );
 const CourseStudentAssessmentLessonDetail =
 	loadCourseStudentAssessmentLessonDetail(sequelize, DataTypes);
@@ -226,7 +234,7 @@ CourseStudentAssessmentDay.hasMany(
 	CourseStudentAssessmentLessonDetail,
 	{
 		foreignKey: 'course_student_assessment_day_id',
-	}
+	},
 );
 
 CourseStudentAssessmentLessonDetail.belongsTo(Course, {
@@ -242,13 +250,13 @@ CourseStudentAssessmentLessonDetail.belongsTo(
 	CourseStudentAssessment,
 	{
 		foreignKey: 'course_student_assessment_id',
-	}
+	},
 );
 CourseStudentAssessmentLessonDetail.belongsTo(
 	CourseStudentAssessmentDay,
 	{
 		foreignKey: 'course_student_assessment_day_id',
-	}
+	},
 );
 CourseStudentAssessmentLessonDetail.belongsTo(Subject, {
 	foreignKey: 'subject_id',

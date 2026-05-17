@@ -33,7 +33,6 @@ export const ListSubjects = async (req, res) => {
 
 export const ListSubjectsCourse = async (req, res) => {
 	const id = req.params.id;
-	console.log(req.query);
 	const status = req.query.status === 'true' ? true : false;
 	const is_schedulable =
 		req.query.is_schedulable === 'true' ? true : false;

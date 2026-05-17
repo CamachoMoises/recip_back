@@ -200,7 +200,6 @@ const getUsersStudents = async (status) => {
 		whereCondition.is_active = status;
 		whereStudentCondition.status = status;
 	}
-	console.log('whereCondition', whereCondition);
 	const students = await User.findAll({
 		where: whereCondition,
 		include: [

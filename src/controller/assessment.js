@@ -39,7 +39,6 @@ export const CourseStudentAssessmentDay = async (req, res) => {
 		const course_id = req.query.course_id;
 		const student_id = req.query.student_id;
 		const course_student_id = req.query.course_student_id;
-		console.log(req.query);
 		const CSAD_prev = await getCourseStudentAssessmentDayByCSA({
 			CSA_id,
 			day,
@@ -73,7 +72,6 @@ export const CreateCourseStudentAssessment = async (req, res) => {
 		const data = req.body;
 		const { course_id, student_id, course_student_id } = data;
 		const date = moment().format('YYYY-MM-DD');
-		console.log(course_id, student_id, course_student_id);
 		const courseStudentAssessment =
 			await createCourseStudentAssessment({
 				course_id,
@@ -95,7 +93,6 @@ export const CourseStudentAssessmentApprove = async (req, res) => {
 	try {
 		const data = req.body;
 		const { course_student_assessment_id, approve } = data;
-		console.log(course_student_assessment_id, approve);
 		const courseStudentAssessment =
 			await updateCourseStudentAssessmentApprove({
 				id: course_student_assessment_id,

@@ -26,7 +26,6 @@ import { updateInstructorStatus } from '../database/repositories/user.js';
 
 export const ListCourses = async (req, res) => {
 	try {
-		console.log('Lista de todos los cursos');
 		const filters = req.query;
 		const courses = await getAllCourses(filters);
 		res.send(courses);
@@ -334,7 +333,11 @@ export const UpdateCourseStudentMaxAttempts = async (req, res) => {
 				.json({ error: 'Parámetro course_student_id inválido' });
 		}
 
-		if (max_attempts === undefined || max_attempts === null || isNaN(max_attempts)) {
+		if (
+			max_attempts === undefined ||
+			max_attempts === null ||
+			isNaN(max_attempts)
+		) {
 			return res
 				.status(400)
 				.json({ error: 'Parámetro max_attempts inválido' });

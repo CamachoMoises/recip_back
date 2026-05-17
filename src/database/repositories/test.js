@@ -509,7 +509,6 @@ const getTotalScore = async (course_student_test_id) => {
 			where: { course_student_test_id },
 		});
 
-		console.log('Total Score:', totalScore);
 		return totalScore;
 	} catch (error) {
 		console.error('Error al obtener la suma de scores:', error);

@@ -40,7 +40,6 @@ import { getCourseStudentById } from '../database/repositories/course.js';
 export const ImportQuestionsFromCSV = async (req, res) => {
 	try {
 		const test_id = parseInt(req.query.test_id);
-		console.log(test_id);
 		if (!test_id || isNaN(test_id)) {
 			return res.status(400).json({
 				error:
@@ -567,7 +566,6 @@ export const UpdateTestQuestionType = async (req, res) => {
 				value,
 				status,
 			});
-			// console.log(updateTQT, 'OJO');
 			if (updateTQT) {
 				const test = await getTestById(test_id);
 				res.status(201).send(test);
@@ -768,6 +766,8 @@ export const CourseStudentTestAnswer = async (req, res) => {
 
 export const CourseStudentTestEnd = async (req, res) => {
 	try {
+		//prueba del front  20 segundos de timeout
+		// await new Promise((resolve) => setTimeout(resolve, 20000));
 		const course_student_test_id = req.body.course_student_test_id;
 		const filters = {
 			course_student_test_id: course_student_test_id,
@@ -775,7 +775,6 @@ export const CourseStudentTestEnd = async (req, res) => {
 		const courseStudentTestAnswers =
 			await getAllCourseStudentTestAnswer(filters);
 		const score = await evaluateAnswers(courseStudentTestAnswers);
-		console.log('The score is', score);
 		await resolveCourseStudentTest(
 			filters.course_student_test_id,
 			score,
@@ -960,7 +959,6 @@ export const UpdateCourseStudentTestScore = async (req, res) => {
 			parseFloat(score),
 		);
 		const totalScore = await getTotalScore(course_student_test_id);
-		console.log(totalScore);
 		await resolveCourseStudentTest(
 			course_student_test_id,
 			totalScore,

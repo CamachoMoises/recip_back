@@ -50,7 +50,6 @@ const getAllCourseSubjects = async (id, status, is_schedulable) => {
 		course_id: id,
 	};
 
-	console.log(status, is_schedulable, where_clause);
 	if (status) {
 		where_clause.status = true;
 	}
@@ -179,7 +178,7 @@ const getSubjectsLessonDaysByFull = async (
 	subject_id,
 	subject_days_id,
 	subject_lesson_id,
-	day
+	day,
 ) => {
 	const data = await SubjectLessonDays.findAll({
 		where: {
@@ -196,7 +195,7 @@ const getSubjectsLessonDaysByFull = async (
 const checkStatusDay = async (
 	subject_id,
 	subject_lesson_days_id,
-	day
+	day,
 ) => {
 	const excludeID = [subject_lesson_days_id];
 	const subject_lesson_days = await SubjectLessonDays.findAll({
