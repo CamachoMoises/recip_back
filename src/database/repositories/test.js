@@ -503,10 +503,10 @@ const resolveCourseStudentTest = async (
 	return true;
 };
 
-const getTotalScore = async ({ course_student_test_id }) => {
+const getTotalScore = async (course_student_test_id) => {
 	try {
 		const totalScore = await CourseStudentTestAnswer.sum('score', {
-			where: course_student_test_id,
+			where: { course_student_test_id },
 		});
 
 		console.log('Total Score:', totalScore);
@@ -571,5 +571,4 @@ export {
 	createCourseStudentTestAnswer,
 	getTotalScore,
 	getAllCourseStudentTestByStudentId,
-
 };

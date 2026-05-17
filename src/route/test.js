@@ -22,6 +22,7 @@ import {
 	UpdateQuestionType,
 	UpdateTest,
 	UpdateTestQuestionType,
+	UpdateCourseStudentTestScore,
 } from '../controller/test.js';
 import convertTypes from '../middleware/convertTypes.js';
 import { authenticateJWT } from '../controller/authentication.js';
@@ -165,6 +166,14 @@ router.post(
 	authenticateJWT,
 	convertTypes,
 	CourseStudentTestEnd,
+);
+
+router.put(
+	'/updateCourseStudentTestScore',
+	upload.none(),
+	authenticateJWT,
+	convertTypes,
+	UpdateCourseStudentTestScore,
 );
 
 // Excel import route

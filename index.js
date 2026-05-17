@@ -8,6 +8,29 @@ dotenv.config();
 const PORT = process.env.PORT || 3000;
 
 global.dbConnected = false;
+let isReconnecting = false;
+
+export async function attemptReconnect() {
+	if (isReconnecting || global.dbConnected) {
+		return;
+	}
+
+	isReconnecting = true;
+	log('info', { message: 'Attempting database reconnection...' });
+
+	try {
+		await sequelize.authenticate();
+		global.dbConnected = true;
+		setDbConnected(true);
+		log('info', { message: 'Database reconnected successfully' });
+	} catch (error) {
+		log('error', { message: 'Database reconnection failed', error: error.message });
+		global.dbConnected = false;
+		setDbConnected(false);
+	} finally {
+		isReconnecting = false;
+	}
+}
 
 async function assertDbConnection() {
 	try {

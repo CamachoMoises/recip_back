@@ -43,11 +43,15 @@ import { log } from '../services/logger.js';
 dotenv.config();
 
 let dbConnectedCallback = null;
+let lastDbConnectedState = false;
 
 export function setDbConnected(connected) {
-	global.dbConnected = connected;
-	if (dbConnectedCallback) {
-		dbConnectedCallback(connected);
+	if (lastDbConnectedState !== connected) {
+		lastDbConnectedState = connected;
+		global.dbConnected = connected;
+		if (dbConnectedCallback) {
+			dbConnectedCallback(connected);
+		}
 	}
 }
 
@@ -69,16 +73,19 @@ const sequelize = new Sequelize(
 		retry: {
 			max: 3,
 		},
+		pool: {
+			max: 5,
+			min: 0,
+			acquire: 30000,
+			idle: 10000,
+		},
 	}
 );
 
 sequelize.afterConnect('main', async (connection, err) => {
 	if (err) {
-		global.dbConnected = false;
-		setDbConnected(false);
-		log('error', { message: 'Database connection error', error: err.message });
+		log('warn', { message: 'Database pool connection issue', error: err.message });
 	} else {
-		global.dbConnected = true;
 		setDbConnected(true);
 		log('info', { message: 'Database connected' });
 	}

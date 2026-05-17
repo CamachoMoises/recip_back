@@ -950,6 +950,7 @@ export const UpdateCourseStudentTestScore = async (req, res) => {
 			req.body.course_student_test_answer_id;
 		const score = req.body.score;
 		console.log(
+			'Updating course student test score:',
 			score,
 			course_student_test_answer_id,
 			course_student_test_id,
