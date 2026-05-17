@@ -1,5 +1,4 @@
 import { Sequelize, DataTypes } from 'sequelize';
-// import loadUser from './models/user.js';
 import dotenv from 'dotenv';
 import loadParticipant from './models/participant.js';
 import loadGroup, {
@@ -38,9 +37,23 @@ import loadTest, {
 	question as loadQuestion,
 	answer as loadAnswer,
 } from './models/test.js';
-// import loadRating from './models/rating.js';
 import loadSchedule from './models/schedule.js';
+import { log } from '../services/logger.js';
+
 dotenv.config();
+
+let dbConnectedCallback = null;
+
+export function setDbConnected(connected) {
+	global.dbConnected = connected;
+	if (dbConnectedCallback) {
+		dbConnectedCallback(connected);
+	}
+}
+
+export function onDbConnectedChange(callback) {
+	dbConnectedCallback = callback;
+}
 
 const sequelize = new Sequelize(
 	process.env.DB_NAME_CLEVER,
@@ -51,11 +64,25 @@ const sequelize = new Sequelize(
 		dialect: 'mysql',
 		port: process.env.DB_PORT_CLEVER,
 		define: {
-			underscored: true, // Esto hará que Sequelize use snake_case por defecto
+			underscored: true,
 		},
-		// logging: console.log,
+		retry: {
+			max: 3,
+		},
 	}
 );
+
+sequelize.afterConnect('main', async (connection, err) => {
+	if (err) {
+		global.dbConnected = false;
+		setDbConnected(false);
+		log('error', { message: 'Database connection error', error: err.message });
+	} else {
+		global.dbConnected = true;
+		setDbConnected(true);
+		log('info', { message: 'Database connected' });
+	}
+});
 
 const Participant = loadParticipant(sequelize, DataTypes);
 const Group = loadGroup(sequelize, DataTypes);

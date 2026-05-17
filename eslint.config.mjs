@@ -5,10 +5,11 @@ export default [
 	{
 		files: ['**/*.js'],
 		languageOptions: {
-			sourceType: 'module', // Cambiar a "module" para permitir import/export
+			sourceType: 'module',
 			globals: {
-				process: 'readonly', // Añade process como una variable global de solo lectura
-				node: true, // Habilita el entorno de Node.js
+				process: 'readonly',
+				node: true,
+				global: 'readonly',
 			},
 		},
 	},

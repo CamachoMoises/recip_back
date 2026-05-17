@@ -13,6 +13,7 @@ import configRoutes from './route/config.js';
 import testRoutes from './route/test.js';
 import emailRoutes from './route/email.js';
 import { v2 as cloudinaryApp } from 'cloudinary';
+import { dbHealthMiddleware } from './middleware/dbHealth.js';
 
 cloudinaryApp.config({
 	cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -39,15 +40,16 @@ app.use(
 					],
 	}),
 );
-// app.use(raw());
 
-// Status route for server health check
 app.get('/status', (req, res) => {
 	res.status(200).json({
 		status: 'Server is running',
 		timestamp: new Date().toISOString(),
+		dbConnected: global.dbConnected || false,
 	});
 });
+
+app.use(dbHealthMiddleware);
 
 app.use('/auth', authRoutes);
 app.use('/api/users', userRoutes);
