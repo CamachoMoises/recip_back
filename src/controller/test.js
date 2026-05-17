@@ -25,7 +25,6 @@ import {
 	resolveCourseStudentTestAnswer,
 	updateAnswerQuestionTest,
 	updateCourseStudentTestAnswer,
-
 	updateQuestionTest,
 	updateQuestionType,
 	updateTest,
@@ -799,151 +798,149 @@ export const evaluateAnswers = async (courseStudentTestAnswers) => {
 	let score = 0;
 
 	for (const answer of courseStudentTestAnswers) {
-		const resp = JSON.parse(answer.resp);
+		// Parseo defensivo de resp
+		let resp;
+		try {
+			resp =
+				typeof answer.resp === 'string'
+					? JSON.parse(answer.resp)
+					: answer.resp;
+		} catch (e) {
+			console.error(
+				`Error parseando resp del answer id ${answer.id}:`,
+				answer.resp,
+				e,
+			);
+			await resolveCourseStudentTestAnswer(answer.id, 0);
+			continue;
+		}
+
 		const scoreValue = answer.question.test_question_type.value;
-		let correctas = 0;
-		let incorrectas = 0;
-		let rspCheck = [];
-		const correct_answers = answer.question.answers.map((CorAnsw) => {
-			return {
-				id: CorAnsw.id,
-				is_correct: CorAnsw.is_correct,
-				value: cleanString(CorAnsw.value),
-			};
-		});
+		const questionTypeId = answer.question.question_type_id;
+
+		// Mapeamos todas las respuestas con sus flags
+		const correct_answers = answer.question.answers.map((a) => ({
+			id: a.id,
+			is_correct: a.is_correct,
+			value: cleanString(a.value),
+		}));
+
+		// Solo las marcadas como correctas
+		const only_correct = correct_answers.filter((a) => a.is_correct);
 		const countResp = correct_answers.length;
-		switch (answer.question.question_type_id) {
+
+		let questionScore = 0;
+
+		switch (questionTypeId) {
 			case 1:
-				if (resp === correct_answers[0].id) {
-					console.log(`LA RESPUESTA DE LA ${answer.id} es correcta`);
-					await resolveCourseStudentTestAnswer(answer.id, scoreValue);
-					score = score + scoreValue;
+			case 3: {
+				// resp es un id numérico — normalizamos ambos lados
+				const respId = Number(resp);
+				const correctId = Number(correct_answers[0]?.id);
+
+				if (!isNaN(respId) && respId === correctId) {
+					questionScore = scoreValue;
+					console.log(
+						`Answer ${answer.id} [tipo ${questionTypeId}]: CORRECTA`,
+					);
 				} else {
 					console.log(
-						`LA RESPUESTA DE LA ${answer.id} es incorrecta`,
+						`Answer ${answer.id} [tipo ${questionTypeId}]: INCORRECTA (resp: ${respId}, correcta: ${correctId})`,
 					);
-					await resolveCourseStudentTestAnswer(answer.id, 0);
 				}
 				break;
+			}
 
-			case 2:
-				rspCheck = resp.filter((respAll) => respAll.check);
+			case 2: {
+				// resp es array de objetos { id, check }
+				if (!Array.isArray(resp)) {
+					console.error(
+						`Answer ${answer.id} [tipo 2]: resp no es array`,
+						resp,
+					);
+					break;
+				}
 
-				for (const RSC of rspCheck) {
-					if (
-						correct_answers.find((CorAnsw) => CorAnsw.id === RSC.id)
-					) {
+				const markedIds = resp
+					.filter((r) => r.check)
+					.map((r) => Number(r.id));
+
+				let correctas = 0;
+				let incorrectas = 0;
+
+				for (const markedId of markedIds) {
+					const found = correct_answers.find(
+						(a) => Number(a.id) === markedId,
+					);
+					if (found && found.is_correct) {
 						correctas++;
 					} else {
 						incorrectas++;
 					}
 				}
-				console.log(
-					'el puntaje del id ',
-					answer.id,
-					'es',
-					redondear(
-						(correctas * scoreValue) / countResp -
-							(incorrectas * scoreValue) / countResp,
-						4,
-					),
-				);
-				score =
-					score +
-					redondear(
-						(correctas * scoreValue) / countResp -
-							(incorrectas * scoreValue) / countResp,
-						4,
-					);
-				await resolveCourseStudentTestAnswer(
-					answer.id,
-					redondear(
-						(correctas * scoreValue) / countResp -
-							(incorrectas * scoreValue) / countResp,
-						4,
-					),
-				);
-				break;
 
-			case 3:
-				if (resp === correct_answers[0].id) {
-					console.log(`LA RESPUESTA DE LA ${answer.id} es correcta`);
-					await resolveCourseStudentTestAnswer(answer.id, scoreValue);
-					score = score + scoreValue;
-				} else {
-					console.log(
-						`LA RESPUESTA DE LA ${answer.id} es incorrecta`,
-					);
-					await resolveCourseStudentTestAnswer(answer.id, 0);
-				}
+				questionScore = redondear(
+					(correctas * scoreValue) / countResp -
+						(incorrectas * scoreValue) / countResp,
+					4,
+				);
+				// No permitir score negativo por pregunta
+				questionScore = Math.max(0, questionScore);
+
+				console.log(
+					`Answer ${answer.id} [tipo 2]: correctas=${correctas}, incorrectas=${incorrectas}, score=${questionScore}`,
+				);
 				break;
+			}
 
 			case 4:
-				for (const detalisRes of resp) {
-					if (
-						correct_answers.find(
-							(val) => val.value === cleanString(detalisRes),
-						)
-					) {
+			case 5: {
+				// resp es array de strings que se comparan contra los valores correctos
+				if (!Array.isArray(resp)) {
+					console.error(
+						`Answer ${answer.id} [tipo ${questionTypeId}]: resp no es array`,
+						resp,
+					);
+					break;
+				}
+
+				let correctas = 0;
+
+				for (const detalle of resp) {
+					const cleaned = cleanString(detalle);
+					if (!cleaned) continue; // ignorar vacíos
+
+					const match = only_correct.find((a) => a.value === cleaned);
+					if (match) {
 						correctas++;
-					} else {
-						incorrectas++;
 					}
 				}
-				console.log(
-					'el puntaje del id ',
-					answer.id,
-					'es',
-					redondear((correctas * scoreValue) / countResp, 4),
-					' con ',
-					correctas,
-					' correctas',
+
+				// Usamos only_correct.length como denominador, no countResp
+				const denominator = only_correct.length || countResp;
+				questionScore = redondear(
+					(correctas * scoreValue) / denominator,
+					4,
 				);
-				score =
-					score + redondear((correctas * scoreValue) / countResp, 4);
-				await resolveCourseStudentTestAnswer(
-					answer.id,
-					redondear((correctas * scoreValue) / countResp, 4),
+
+				console.log(
+					`Answer ${answer.id} [tipo ${questionTypeId}]: correctas=${correctas}/${denominator}, score=${questionScore}`,
 				);
 				break;
-			case 5:
-				for (const detalisRes of resp) {
-					if (
-						correct_answers.find(
-							(val) => val.value === cleanString(detalisRes),
-						)
-					) {
-						correctas++;
-					} else {
-						incorrectas++;
-					}
-				}
-				console.log(
-					'el puntaje del id ',
-					answer.id,
-					'es',
-					redondear((correctas * scoreValue) / countResp, 4),
-					' con ',
-					correctas,
-					' correctas',
-					' y ',
-					incorrectas,
-					' incorrectas',
-				);
-				score =
-					score + redondear((correctas * scoreValue) / countResp, 4);
-				await resolveCourseStudentTestAnswer(
-					answer.id,
-					redondear((correctas * scoreValue) / countResp, 4),
-				);
-				break;
+			}
 
 			default:
-				console.log('unknown case');
+				console.warn(
+					`Answer ${answer.id}: question_type_id desconocido (${questionTypeId})`,
+				);
 				break;
 		}
+
+		score += questionScore;
+		await resolveCourseStudentTestAnswer(answer.id, questionScore);
 	}
-	return score;
+
+	return redondear(score, 4);
 };
 
 export const UpdateCourseStudentTestScore = async (req, res) => {

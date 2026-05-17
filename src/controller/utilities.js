@@ -9,33 +9,34 @@ export const generateRandomNumber = (digits) => {
 	return Math.floor(min + Math.random() * (max - min + 1));
 };
 
-export function getRandomSubset(array, newLength) {
+export const getRandomSubset = (array, newLength) => {
 	if (array.length < newLength) {
 		console.log(`El array debe tener más de ${newLength} elementos.`);
 		throw new Error(
-			`El array debe tener más de ${newLength} elementos.`
+			`El array debe tener más de ${newLength} elementos.`,
 		);
 	} else {
 		const shuffled = [...array].sort(() => Math.random() - 0.5); // Mezclar el array
 		return shuffled.slice(0, newLength); // Tomar los primeros 10 elementos
 	}
-}
+};
 
 export const cleanString = (input) => {
-	return input.trim().toLowerCase().replace(/\s+/g, '');
+	if (input === null || input === undefined) return '';
+	return String(input).trim().toLowerCase().replace(/\s+/g, '');
 };
 
 export const hashPassword = (password) => {
 	return bcrypt.hashSync(password, saltRounds);
 };
 
-export function redondear(monto, decimales) {
-	const montoPotencia = Math.round(monto * 100) / 100;
-	const nuevoValor = parseFloat(montoPotencia.toFixed(decimales));
-	return nuevoValor;
-}
-export function stringToBoolean(str) {
+export const redondear = (monto, decimales) => {
+	const factor = Math.pow(10, decimales);
+	return Math.round(monto * factor) / factor;
+};
+
+export const stringToBoolean = (str) => {
 	if (str === 'true') return true;
 	if (str === 'false') return false;
 	throw new Error('El string no es "true" ni "false"');
-}
+};
