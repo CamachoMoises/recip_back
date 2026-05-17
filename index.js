@@ -24,7 +24,10 @@ export async function attemptReconnect() {
 		setDbConnected(true);
 		log('info', { message: 'Database reconnected successfully' });
 	} catch (error) {
-		log('error', { message: 'Database reconnection failed', error: error.message });
+		log('error', {
+			message: 'Database reconnection failed',
+			error: error.message,
+		});
 		global.dbConnected = false;
 		setDbConnected(false);
 	} finally {
@@ -41,7 +44,10 @@ async function assertDbConnection() {
 	} catch (error) {
 		global.dbConnected = false;
 		setDbConnected(false);
-		log('error', { message: 'Database connection failed', error: error.message });
+		log('error', {
+			message: 'Database connection failed',
+			error: error.message,
+		});
 	}
 }
 
@@ -53,16 +59,21 @@ async function init() {
 			await sequelize.sync({ force: false });
 			log('info', { message: 'Database sync completed' });
 		} catch (error) {
-			log('error', { message: 'Database sync failed', error: error.message });
+			log('error', {
+				message: 'Database sync failed',
+				error: error.message,
+			});
 		}
 	}
 
 	app.get('/', (req, res) => {
-		res.send('Proyecto RECIPE - Backend API');
+		res.send('Proyecto R.E.C.I.P.E. - Backend API');
 	});
 
 	app.listen(PORT, () => {
-		log('info', { message: `Server running on http://localhost:${PORT}` });
+		log('info', {
+			message: `Server running on http://localhost:${PORT}`,
+		});
 		console.log(`Servidor ejecutándose en http://localhost:${PORT}`);
 	});
 }
