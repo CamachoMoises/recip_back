@@ -383,8 +383,14 @@ export function setupAssociations(models) {
 	});
 	User.hasOne(Student, { foreignKey: 'user_id' });
 	User.hasOne(Instructor, { foreignKey: 'user_id' });
-	User.hasMany(UserGroup, { foreignKey: 'user_id' });
-	User.hasMany(UserPermission, { foreignKey: 'user_id' });
+	User.hasMany(UserGroup, {
+		foreignKey: 'user_id',
+		as: 'userGroups',
+	});
+	User.hasMany(UserPermission, {
+		foreignKey: 'user_id',
+		as: 'userPermissions',
+	});
 	User.hasMany(UserSuggestion, {
 		foreignKey: 'user_id',
 		as: 'suggestions',
@@ -392,13 +398,19 @@ export function setupAssociations(models) {
 
 	// ========== USER GROUP ASSOCIATIONS ==========
 	UserGroup.belongsTo(Group, { foreignKey: 'group_id' });
-	UserGroup.belongsTo(User, { foreignKey: 'user_id' });
+	UserGroup.belongsTo(User, {
+		foreignKey: 'user_id',
+		as: 'groupUser',
+	});
 
 	// ========== USER PERMISSION ASSOCIATIONS ==========
 	UserPermission.belongsTo(Permission, {
 		foreignKey: 'permission_id',
 	});
-	UserPermission.belongsTo(User, { foreignKey: 'user_id' });
+	UserPermission.belongsTo(User, {
+		foreignKey: 'user_id',
+		as: 'permissionUser',
+	});
 
 	// ========== USER DOC TYPE ASSOCIATIONS ==========
 	UserDocType.hasMany(User, { foreignKey: 'user_doc_type_id' });

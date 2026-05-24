@@ -7,6 +7,7 @@ const getAllSuggestions = async () =>
 		include: [
 			{
 				model: User,
+				as: 'user', // ← faltaba
 				attributes: ['id', 'name', 'last_name', 'email'],
 			},
 		],
@@ -18,6 +19,7 @@ const getSuggestionById = async (id) => {
 		include: [
 			{
 				model: User,
+				as: 'user', // ← faltaba
 				attributes: ['id', 'name', 'last_name', 'email'],
 			},
 		],
@@ -32,6 +34,7 @@ const getSuggestionsByUserId = async (user_id) =>
 		include: [
 			{
 				model: User,
+				as: 'user', // ← faltaba
 				attributes: ['id', 'name', 'last_name', 'email'],
 			},
 		],
@@ -39,7 +42,7 @@ const getSuggestionsByUserId = async (user_id) =>
 	});
 
 const createSuggestion = async ({ user_id, title, description }) => {
-	UserSuggestion.create({ user_id, title, description });
+	return UserSuggestion.create({ user_id, title, description });
 };
 
 const updateSuggestion = async ({
