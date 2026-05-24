@@ -1,4 +1,4 @@
-import { models } from '../initDB.js';
+import { models } from '../index.js';
 
 const {
 	Course,
@@ -283,7 +283,7 @@ const updateCourseStudentAssessmentLessonDay = async ({
 		await CourseStudentAssessmentLessonDetail.findByPk(id);
 	if (!courseStudentAssessmentLessonDetail) {
 		throw new Error(
-			'Course Student Assessment Lesson Detail not found'
+			'Course Student Assessment Lesson Detail not found',
 		);
 	}
 	await courseStudentAssessmentLessonDetail.update({

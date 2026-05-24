@@ -1,4 +1,4 @@
-import { models } from '../initDB.js';
+import { models } from '../index.js';
 
 const { Module } = models;
 

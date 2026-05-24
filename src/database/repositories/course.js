@@ -1,5 +1,5 @@
 import { Op, Sequelize } from 'sequelize';
-import { models } from '../initDB.js';
+import { models } from '../index.js';
 
 const {
 	Course,

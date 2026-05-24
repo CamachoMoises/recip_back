@@ -86,7 +86,7 @@ export default (sequelize, DataTypes) => {
 					fields: [{ name: 'id' }],
 				},
 			],
-		}
+		},
 	);
 };
 
@@ -145,7 +145,7 @@ export const user_group = (sequelize, DataTypes) => {
 					fields: [{ name: 'group_id' }],
 				},
 			],
-		}
+		},
 	);
 };
 
@@ -198,7 +198,7 @@ export const user_permission = (sequelize, DataTypes) => {
 					fields: [{ name: 'permission_id' }],
 				},
 			],
-		}
+		},
 	);
 };
 
@@ -243,7 +243,7 @@ export const student = (sequelize, DataTypes) => {
 					fields: [{ name: 'user_id' }],
 				},
 			],
-		}
+		},
 	);
 };
 
@@ -288,7 +288,7 @@ export const instructor = (sequelize, DataTypes) => {
 					fields: [{ name: 'user_id' }],
 				},
 			],
-		}
+		},
 	);
 };
 
@@ -324,6 +324,48 @@ export const user_doc_type = (sequelize, DataTypes) => {
 					fields: [{ name: 'id' }],
 				},
 			],
-		}
+		},
+	);
+};
+export const user_suggestion = (sequelize, DataTypes) => {
+	return sequelize.define(
+		'user_suggestion',
+		{
+			id: {
+				autoIncrement: true,
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				primaryKey: true,
+			},
+			user_id: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				references: {
+					model: 'user',
+					key: 'id',
+				},
+			},
+			title: {
+				type: DataTypes.STRING(500),
+				allowNull: false,
+			},
+			description: {
+				type: DataTypes.TEXT,
+				allowNull: false,
+			},
+		},
+		{
+			sequelize,
+			tableName: 'user_suggestion',
+			timestamps: true,
+			indexes: [
+				{
+					name: 'PRIMARY',
+					unique: true,
+					using: 'BTREE',
+					fields: [{ name: 'id' }],
+				},
+			],
+		},
 	);
 };

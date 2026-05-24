@@ -1,5 +1,5 @@
 import app from './src/app.js';
-import { sequelize, setDbConnected } from './src/database/initDB.js';
+import { sequelize, setDbConnected } from './src/database/index.js';
 import dotenv from 'dotenv';
 import { log } from './src/services/logger.js';
 
@@ -56,7 +56,7 @@ async function init() {
 
 	if (global.dbConnected) {
 		try {
-			await sequelize.sync({ force: false });
+			await sequelize.sync({ force: false, alter: false });
 			log('info', { message: 'Database sync completed' });
 		} catch (error) {
 			log('error', {
@@ -67,7 +67,10 @@ async function init() {
 	}
 
 	app.get('/', (req, res) => {
-		res.send('Proyecto R.E.C.I.P.E. - Backend API');
+		//version de la API
+		const version = process.env.API_VERSION || '1.0.0';
+
+		res.send(`Proyecto R.E.C.I.P.E. - Backend API v${version}`);
 	});
 
 	app.listen(PORT, () => {

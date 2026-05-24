@@ -1,5 +1,5 @@
 import moment from 'moment';
-import { models } from '../initDB.js';
+import { models } from '../index.js';
 import { getCourseStudentById } from './course.js';
 import { Op, Sequelize } from 'sequelize';
 

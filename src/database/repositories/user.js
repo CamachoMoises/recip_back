@@ -1,5 +1,5 @@
 import { hashPassword } from '../../controller/utilities.js';
-import { models } from '../initDB.js';
+import { models } from '../index.js';
 
 const { User, Student, Instructor, UserDocType } = models;
 
