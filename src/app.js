@@ -11,7 +11,7 @@ import courseRoutes from './route/course.js';
 import subjectRoutes from './route/subject.js';
 import configRoutes from './route/config.js';
 import testRoutes from './route/test.js';
-import emailRoutes from './route/email.js';
+import mailRoutes from './route/mail.js';
 import suggestionRoutes from './route/suggestion.js';
 import { v2 as cloudinaryApp } from 'cloudinary';
 import { dbHealthMiddleware } from './middleware/dbHealth.js';
@@ -62,7 +62,7 @@ app.use('/api/group', groupRoutes);
 app.use('/api/permission', groupPermission);
 app.use('/api/config', configRoutes);
 app.use('/api/test', testRoutes);
-app.use('/api/email', emailRoutes);
+app.use('/api/mail', mailRoutes);
 app.use('/api/suggestions', suggestionRoutes);
 
 app.use(

@@ -2,6 +2,7 @@ import app from './src/app.js';
 import { sequelize, setDbConnected } from './src/database/index.js';
 import dotenv from 'dotenv';
 import { log } from './src/services/logger.js';
+import transporter from './config/mailer.js';
 
 dotenv.config();
 
@@ -9,7 +10,13 @@ const PORT = process.env.PORT || 3000;
 
 global.dbConnected = false;
 let isReconnecting = false;
-
+transporter.verify((error) => {
+	if (error) {
+		console.error('❌ SMTP no disponible:', error.message);
+	} else {
+		console.log('✅ SMTP listo para enviar correos');
+	}
+});
 export async function attemptReconnect() {
 	if (isReconnecting || global.dbConnected) {
 		return;
