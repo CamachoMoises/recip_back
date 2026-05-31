@@ -5,6 +5,8 @@
 export function setupAssociations(models) {
 	const {
 		Answer,
+		Attendance,
+		AttendanceStatus,
 		Course,
 		CourseLevel,
 		CourseType,
@@ -36,6 +38,20 @@ export function setupAssociations(models) {
 		UserPermission,
 		UserSuggestion,
 	} = models;
+
+	// ========== ATTENDANCE ASSOCIATIONS ==========
+	Attendance.belongsTo(CourseStudent, {
+		foreignKey: 'course_student_id',
+	});
+	Attendance.belongsTo(AttendanceStatus, {
+		foreignKey: 'attendance_status_id',
+	});
+	CourseStudent.hasMany(Attendance, {
+		foreignKey: 'course_student_id',
+	});
+	AttendanceStatus.hasMany(Attendance, {
+		foreignKey: 'attendance_status_id',
+	});
 
 	// ========== ANSWER ASSOCIATIONS ==========
 	Answer.belongsTo(Test, { foreignKey: 'test_id' });

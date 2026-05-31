@@ -29,7 +29,8 @@ const sequelize = new Sequelize(
 	{
 		host: process.env.DB_HOST_CLEVER,
 		dialect: 'mysql',
-		logging: false,
+		//ver queries en consola
+		logging: true,
 		port: process.env.DB_PORT_CLEVER,
 		define: {
 			underscored: true,

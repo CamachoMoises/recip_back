@@ -18,6 +18,9 @@ export const Login = async (req, res) => {
 		if (!user) {
 			throw new Error('invalid_user');
 		}
+		if (!user.is_active) {
+			throw new Error('inactive_user');
+		}
 		const is_correct_password = bcrypt.compareSync(
 			`${password}`,
 			user.password
@@ -38,6 +41,9 @@ export const Login = async (req, res) => {
 				break;
 			case 'invalid_password':
 				res.status(401).send('Invalid Password');
+				break;
+			case 'inactive_user':
+				res.status(401).send('User is inactive');
 				break;
 
 			default:

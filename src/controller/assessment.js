@@ -1,7 +1,4 @@
 import moment from 'moment';
-import fs from 'fs';
-import path from 'path';
-import { Buffer } from 'buffer';
 
 import {
 	createCourseStudentAssessment,
@@ -285,16 +282,13 @@ export const SaveSignatures = async (req, res) => {
 		const uploadedSignatures = {
 			...(studentSignatureResult && {
 				studentSignatureUrl: studentSignatureResult.cloudinaryUrl,
-				studentSignatureLocal: studentSignatureResult.localPath,
 			}),
 			...(instructorSignatureResult && {
 				instructorSignatureUrl:
 					instructorSignatureResult.cloudinaryUrl,
-				instructorSignatureLocal: instructorSignatureResult.localPath,
 			}),
 			...(fcaaSignatureResult && {
 				fcaaSignatureUrl: fcaaSignatureResult.cloudinaryUrl,
-				fcaaSignatureLocal: fcaaSignatureResult.localPath,
 			}),
 		};
 
@@ -321,57 +315,15 @@ const uploadSignature = async (
 
 	const publicId = `firmas/signature_${signatureType}_${CSAD_id}`;
 
-	// Subir a Cloudinary y guardar localmente en paralelo
-	const [cloudinaryResult, localPath] = await Promise.all([
-		cloudinaryApp.uploader.upload(signatureData, {
-			public_id: publicId,
-			folder: 'firmas',
-			format: 'webp',
-			overwrite: true,
-			transformation: [{ quality: 'auto' }],
-		}),
-		saveSignatureLocally(signatureData, signatureType, CSAD_id),
-	]);
+	const cloudinaryResult = await cloudinaryApp.uploader.upload(signatureData, {
+		public_id: publicId,
+		folder: 'firmas',
+		format: 'webp',
+		overwrite: true,
+		transformation: [{ quality: 'auto' }],
+	});
 
 	return {
 		cloudinaryUrl: cloudinaryResult.secure_url,
-		localPath,
 	};
-};
-
-const saveSignatureLocally = async (
-	signatureData,
-	signatureType,
-	CSAD_id,
-) => {
-	// Directorio base configurable vía variable de entorno
-	const baseDir =
-		process.env.SIGNATURES_LOCAL_PATH || '/var/app/storage/firmas';
-	const dir = path.join(baseDir, String(CSAD_id));
-
-	// Crear directorio si no existe
-	await fs.promises.mkdir(dir, { recursive: true });
-
-	const filename = `signature_${signatureType}_${CSAD_id}.webp`;
-	const filepath = path.join(dir, filename);
-
-	// Detectar si es base64 o URL
-	let buffer;
-	if (signatureData.startsWith('data:')) {
-		// Data URL: "data:image/png;base64,iVBOR..."
-		const base64Data = signatureData.split(',')[1];
-		buffer = Buffer.from(base64Data, 'base64');
-	} else if (signatureData.startsWith('http')) {
-		// URL remota: descargar el archivo
-		const response = await fetch(signatureData);
-		buffer = Buffer.from(await response.arrayBuffer());
-	} else {
-		// Asumir base64 puro
-		buffer = Buffer.from(signatureData, 'base64');
-	}
-
-	await fs.promises.writeFile(filepath, buffer);
-
-	console.log(`Firma guardada localmente: ${filepath}`);
-	return filepath;
 };

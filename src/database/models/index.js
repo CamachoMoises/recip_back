@@ -40,6 +40,9 @@ import loadTest, {
 	answer as loadAnswer,
 } from './test.js';
 import loadSchedule from './schedule.js';
+import loadAttendance, {
+	attendance_status as loadAttendanceStatus,
+} from './attendance.js';
 
 // Initialize all models
 const Participant = loadParticipant(sequelize, DataTypes);
@@ -89,6 +92,8 @@ const SubjectDays = loadSubjectDays(sequelize, DataTypes);
 const SubjectLesson = loadSubjectLesson(sequelize, DataTypes);
 const SubjectLessonDays = loadSubjectLessonDays(sequelize, DataTypes);
 const UserSuggestion = loadUserSuggestion(sequelize, DataTypes);
+const Attendance = loadAttendance(sequelize, DataTypes);
+const AttendanceStatus = loadAttendanceStatus(sequelize, DataTypes);
 
 // Collect all models into an object
 const models = {
@@ -124,6 +129,8 @@ const models = {
 	UserPermission,
 	UserDocType,
 	UserSuggestion,
+	Attendance,
+	AttendanceStatus,
 };
 
 export default models;

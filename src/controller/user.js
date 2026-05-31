@@ -16,6 +16,7 @@ import {
 	getUsersStudents,
 	removeStudentByUserId,
 	removeInstructorByUserId,
+	searchStudents,
 } from '../database/repositories/user.js';
 import { stringToBoolean } from './utilities.js';
 export const ListUsers = async (req, res) => {
@@ -258,6 +259,22 @@ export const DisableUserRole = async (req, res) => {
 		}
 		const user = await getUserById(user_id);
 		res.send(user);
+	} catch (error) {
+		console.log(error);
+		res.status(500).send('Internal Server Error');
+	}
+};
+
+export const SearchStudents = async (req, res) => {
+	const { search } = req.query;
+	if (!search || search.trim() === '') {
+		return res
+			.status(400)
+			.json({ message: 'Search query is required' });
+	}
+	try {
+		const students = await searchStudents(search.trim());
+		res.json({ data: students });
 	} catch (error) {
 		console.log(error);
 		res.status(500).send('Internal Server Error');

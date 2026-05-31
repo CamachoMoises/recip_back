@@ -203,6 +203,7 @@ export const UpdateCourseStudent = async (req, res) => {
 		typeTrip,
 		license,
 		regulation,
+		instructorCode,
 	} = data;
 
 	try {
@@ -214,6 +215,7 @@ export const UpdateCourseStudent = async (req, res) => {
 			typeTrip,
 			license,
 			regulation,
+			instructorCode,
 		);
 		res.send(courseStudentEdited);
 	} catch (error) {

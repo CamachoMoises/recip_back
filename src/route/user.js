@@ -12,6 +12,7 @@ import {
 	UserData,
 	UserValidateEmail,
 	DisableUserRole,
+	SearchStudents,
 } from '../controller/user.js';
 import convertTypes from '../middleware/convertTypes.js';
 import { authenticateJWT } from '../controller/authentication.js';
@@ -67,6 +68,7 @@ router.put(
 	convertTypes,
 	DisableUserRole,
 );
+router.get('/student/search', authenticateJWT, SearchStudents);
 // router.delete('/:id', usuarioController.eliminarUsuario);
 
 export default router;

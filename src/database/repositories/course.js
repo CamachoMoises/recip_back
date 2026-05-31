@@ -275,6 +275,7 @@ const editCourseStudent = async (
 	typeTrip,
 	license,
 	regulation,
+	instructorCode,
 ) => {
 	const courseStudent =
 		await CourseStudent.findByPk(course_student_id);
@@ -290,6 +291,7 @@ const editCourseStudent = async (
 		type_trip: type_trip,
 		license: license,
 		regulation: regulation,
+		instructor_code: instructorCode ?? null,
 	});
 	return courseStudent;
 };

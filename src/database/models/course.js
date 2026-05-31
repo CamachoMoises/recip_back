@@ -196,10 +196,14 @@ export const course_student = (sequelize, DataTypes) => {
 				allowNull: true,
 				defaultValue: 1,
 			},
-			max_attempts: {
+		max_attempts: {
 				type: DataTypes.INTEGER,
 				allowNull: true,
 				defaultValue: 5,
+			},
+			instructor_code: {
+				type: DataTypes.TEXT,
+				allowNull: true,
 			},
 		},
 		{

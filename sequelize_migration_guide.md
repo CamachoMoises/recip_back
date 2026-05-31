@@ -15,7 +15,7 @@ recip_backend/
 │   └── database.cjs        ← credenciales de BD para el CLI
 ├── migrations/
 │   └── XXXX-nombre.cjs     ← archivos de migración (siempre .cjs)
-├── seeders/                ← vacío por ahora
+├── seeders/                ← archivos de seed (ej: 20260530100002-seed-attendance-status.cjs)
 └── package.json            ← scripts de migración definidos aquí
 ```
 
@@ -26,7 +26,9 @@ recip_backend/
   "scripts": {
     "migrate": "sequelize-cli db:migrate --config config/database.cjs --migrations-path migrations --models-path models --seeders-path seeders",
     "migrate:undo": "sequelize-cli db:migrate:undo --config config/database.cjs --migrations-path migrations --models-path models --seeders-path seeders",
-    "migrate:generate": "sequelize-cli migration:generate --migrations-path migrations"
+    "migrate:generate": "sequelize-cli migration:generate --migrations-path migrations",
+    "seed": "sequelize-cli db:seed:all --config config/database.cjs --migrations-path migrations --models-path models --seeders-path seeders",
+    "seed:undo": "sequelize-cli db:seed:undo --config config/database.cjs --migrations-path migrations --models-path models --seeders-path seeders"
   }
 }
 ```
@@ -242,6 +244,8 @@ module.exports = {
 | Deshacer hasta migración específica | ver abajo |
 | Deshacer todas las migraciones | ver abajo |
 | Ver estado de migraciones | ver abajo |
+| Ejecutar seeds | `npm run seed` |
+| Deshacer último seed | `npm run seed:undo` |
 
 ### Comandos avanzados (con parámetros completos)
 

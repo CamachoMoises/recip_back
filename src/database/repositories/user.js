@@ -1,5 +1,6 @@
 import { hashPassword } from '../../controller/utilities.js';
 import { models } from '../index.js';
+import { Op } from 'sequelize';
 
 const { User, Student, Instructor, UserDocType } = models;
 
@@ -188,6 +189,20 @@ const editUser = async ({
 			user.password = hashPassword(`${password}`);
 		}
 		await user.save();
+
+		if (is_active !== undefined) {
+			const student = await user.getStudent();
+			if (student) {
+				student.status = is_active;
+				await student.save();
+			}
+			const instructor = await user.getInstructor();
+			if (instructor) {
+				instructor.status = is_active;
+				await instructor.save();
+			}
+		}
+
 		return user;
 	} else {
 		return null;
@@ -242,6 +257,34 @@ const getUsersInstructors = async (status) => {
 };
 // repositories/user.js
 
+const searchStudents = async (query) => {
+	const searchPattern = `%${query}%`;
+	const users = await User.findAll({
+		where: {
+			[Op.or]: [
+				{ name: { [Op.like]: searchPattern } },
+				{ last_name: { [Op.like]: searchPattern } },
+				{ email: { [Op.like]: searchPattern } },
+			],
+		},
+		include: [
+			{
+				model: Student,
+				required: true,
+			},
+			{
+				model: UserDocType,
+			},
+		],
+	});
+
+	return users.map((user) => ({
+		student_id: user.student.id,
+		name: `${user.name} ${user.last_name}`.trim(),
+		email: user.email,
+	}));
+};
+
 export {
 	getAllUsers,
 	getUsersStudents,
@@ -257,4 +300,5 @@ export {
 	removeStudentByUserId,
 	removeInstructorByUserId,
 	updateInstructorStatus,
+	searchStudents,
 };
