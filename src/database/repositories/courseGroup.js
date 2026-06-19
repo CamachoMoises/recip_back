@@ -14,6 +14,9 @@ const getAllCourseGroups = async (filters) => {
 	if (filters.user_code) {
 		whereClause.user_code = { [Op.like]: `%${filters.user_code}%` };
 	}
+	if (filters.status !== undefined) {
+		whereClause.status = filters.status === 'true' ? true : false;
+	}
 
 	const pageSize = parseInt(filters.pageSize) || 10;
 	const currentPage = parseInt(filters.currentPage) || 1;
@@ -47,7 +50,7 @@ const getCourseGroupById = async (id) =>
 		],
 	});
 
-const createCourseGroup = async ({ title, user_code, date, course_id }) => {
+const createCourseGroup = async ({ title, user_code, date, course_id, status }) => {
 	let numberCode = 1;
 	const prevCourseGroup = await CourseGroup.findOne({
 		order: [['createdAt', 'DESC']],
@@ -64,11 +67,12 @@ const createCourseGroup = async ({ title, user_code, date, course_id }) => {
 		user_code: user_code || null,
 		date: date || null,
 		course_id: course_id || null,
+		status: status !== undefined ? status : true,
 	});
 	return newCourseGroup;
 };
 
-const editCourseGroup = async ({ id, title, user_code, date, signature_url }) => {
+const editCourseGroup = async ({ id, title, user_code, date, signature_url, status }) => {
 	const courseGroup = await CourseGroup.findByPk(id);
 	if (!courseGroup) {
 		throw new Error('CourseGroup not found');
@@ -78,6 +82,7 @@ const editCourseGroup = async ({ id, title, user_code, date, signature_url }) =>
 		user_code: user_code !== undefined ? user_code : null,
 		date: date !== undefined ? date : null,
 		signature_url: signature_url !== undefined ? signature_url : null,
+		status: status !== undefined ? status : courseGroup.status,
 	});
 	return courseGroup;
 };

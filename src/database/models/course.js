@@ -490,6 +490,11 @@ export const course_group = (sequelize, DataTypes) => {
 				key: 'id',
 			},
 		},
+		status: {
+			type: DataTypes.BOOLEAN,
+			allowNull: false,
+			defaultValue: true,
+		},
 		},
 		{
 			sequelize,

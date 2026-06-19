@@ -5,6 +5,7 @@ export const createCourseGroupSchema = Joi.object({
 	user_code: Joi.string().max(50).allow(null, ''),
 	date: Joi.date().allow(null),
 	course_id: Joi.number().integer().required(),
+	status: Joi.boolean().default(true),
 });
 
 export const updateCourseGroupSchema = Joi.object({
@@ -13,4 +14,5 @@ export const updateCourseGroupSchema = Joi.object({
 	user_code: Joi.string().max(50).allow(null, ''),
 	date: Joi.date().allow(null),
 	signature_url: Joi.string().max(500).allow(null, ''),
+	status: Joi.boolean().optional(),
 });
