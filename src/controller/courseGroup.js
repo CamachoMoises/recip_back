@@ -1,0 +1,186 @@
+import {
+	createCourseGroupSchema,
+	updateCourseGroupSchema,
+} from '../database/imput_validation/courseGroup.js';
+import {
+	createCourseGroup,
+	deleteCourseGroup,
+	editCourseGroup,
+	getAllCourseGroups,
+	getCourseGroupById,
+	getCourseStudentsByGroupId,
+	removeCourseStudentsFromGroup,
+} from '../database/repositories/courseGroup.js';
+import { cloudinaryApp } from '../app.js';
+
+export const ListCourseGroups = async (req, res) => {
+	try {
+		const filters = req.query;
+		const result = await getAllCourseGroups(filters);
+		res.send(result);
+	} catch (error) {
+		console.log(error);
+		res.status(500).send(`Internal Server Error ${error}`);
+	}
+};
+
+export const CourseGroupDetails = async (req, res) => {
+	const id = req.params.id;
+	try {
+		const courseGroup = await getCourseGroupById(id);
+		if (!courseGroup) {
+			return res.status(404).send('CourseGroup not found');
+		}
+		res.send(courseGroup);
+	} catch (error) {
+		console.log(error);
+		res.status(500).send(`Internal Server Error ${error}`);
+	}
+};
+
+export const CreateCourseGroup = async (req, res) => {
+	const data = req.body;
+	try {
+		const validated = await createCourseGroupSchema.validateAsync(data);
+		const { title, user_code, date, course_id } = validated;
+		const courseGroup = await createCourseGroup({
+			title,
+			user_code,
+			date,
+			course_id,
+		});
+		const created = await getCourseGroupById(courseGroup.id);
+		res.status(201).send(created);
+	} catch (error) {
+		console.log(error);
+		res.status(400).send(`Input Validation Error ${error.message}`);
+	}
+};
+
+export const UpdateCourseGroup = async (req, res) => {
+	const data = req.body;
+	try {
+		const validated = await updateCourseGroupSchema.validateAsync(data);
+		const courseGroup = await editCourseGroup(validated);
+		res.send(courseGroup);
+	} catch (error) {
+		console.log(error);
+		if (error.message === 'CourseGroup not found') {
+			return res.status(404).send(error.message);
+		}
+		res.status(400).send(`Input Validation Error ${error.message}`);
+	}
+};
+
+export const DeleteCourseGroup = async (req, res) => {
+	const id = req.params.id;
+	try {
+		await deleteCourseGroup(id);
+		res.status(204).send();
+	} catch (error) {
+		console.log(error);
+		if (error.message === 'CourseGroup not found') {
+			return res.status(404).send(error.message);
+		}
+		res.status(500).send(`Internal Server Error ${error}`);
+	}
+};
+
+export const ListCourseGroupStudents = async (req, res) => {
+	const id = req.params.id;
+	try {
+		const filters = req.query;
+		const result = await getCourseStudentsByGroupId(id, filters);
+		res.send(result);
+	} catch (error) {
+		console.log(error);
+		res.status(500).send(`Internal Server Error ${error}`);
+	}
+};
+
+export const SaveCourseGroupSignature = async (req, res) => {
+	try {
+		const { course_group_id, signature } = req.body;
+
+		if (!signature) {
+			return res.status(400).json({
+				success: false,
+				error: 'No se proporcionó la firma para guardar.',
+			});
+		}
+
+		if (!course_group_id) {
+			return res.status(400).json({
+				success: false,
+				error: 'El course_group_id es requerido.',
+			});
+		}
+
+		const publicId = `firmas/course_group_signature_${course_group_id}`;
+
+		const cloudinaryResult = await cloudinaryApp.uploader.upload(signature, {
+			public_id: publicId,
+			folder: 'firmas',
+			format: 'webp',
+			overwrite: true,
+			transformation: [{ quality: 'auto' }],
+		});
+
+		const courseGroup = await editCourseGroup({
+			id: course_group_id,
+			signature_url: cloudinaryResult.secure_url,
+		});
+
+		res.status(200).json({
+			success: true,
+			message: 'Firma guardada correctamente.',
+			data: {
+				signatureUrl: cloudinaryResult.secure_url,
+				courseGroup,
+			},
+		});
+	} catch (error) {
+		console.error('Error en SaveCourseGroupSignature:', error);
+		res.status(500).json({
+			success: false,
+			error: 'Error al procesar la firma.',
+		});
+	}
+};
+
+export const RemoveCourseStudentsFromGroup = async (req, res) => {
+	const groupId = req.params.id;
+	const { course_student_ids } = req.query;
+
+	try {
+		if (!course_student_ids) {
+			return res.status(400).json({
+				error: 'course_student_ids query parameter is required (comma-separated)',
+			});
+		}
+
+		const ids = course_student_ids
+			.split(',')
+			.map((id) => parseInt(id.trim()))
+			.filter((id) => !isNaN(id));
+
+		if (ids.length === 0) {
+			return res.status(400).json({
+				error: 'No valid course_student_ids provided',
+			});
+		}
+
+		const removedCount = await removeCourseStudentsFromGroup(groupId, ids);
+
+		res.status(200).json({
+			message: `${removedCount} student(s) removed from group`,
+			removed_count: removedCount,
+		});
+	} catch (error) {
+		console.log(error);
+		if (error.message === 'CourseGroup not found') {
+			return res.status(404).json({ error: error.message });
+		}
+		res.status(500).json({ error: 'Internal Server Error' });
+	}
+};

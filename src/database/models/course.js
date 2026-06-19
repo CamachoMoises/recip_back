@@ -452,6 +452,66 @@ export const course_student_test_question = (
 	);
 };
 
+export const course_group = (sequelize, DataTypes) => {
+	return sequelize.define(
+		'course_group',
+		{
+			id: {
+				autoIncrement: true,
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				primaryKey: true,
+			},
+			title: {
+				type: DataTypes.STRING(500),
+				allowNull: false,
+			},
+			code: {
+				type: DataTypes.STRING(50),
+				allowNull: false,
+			},
+			user_code: {
+				type: DataTypes.STRING(50),
+				allowNull: true,
+			},
+			date: {
+				type: DataTypes.DATEONLY,
+				allowNull: true,
+			},
+			signature_url: {
+				type: DataTypes.STRING(500),
+				allowNull: true,
+			},
+		course_id: {
+			type: DataTypes.INTEGER,
+			allowNull: false,
+			references: {
+				model: 'course',
+				key: 'id',
+			},
+		},
+		},
+		{
+			sequelize,
+			tableName: 'course_group',
+			timestamps: true,
+			indexes: [
+				{
+					name: 'PRIMARY',
+					unique: true,
+					using: 'BTREE',
+					fields: [{ name: 'id' }],
+				},
+				{
+					name: 'fk_course_group_course_idx',
+					using: 'BTREE',
+					fields: [{ name: 'course_id' }],
+				},
+			],
+		}
+	);
+};
+
 export const course_student_test_answer = (sequelize, DataTypes) => {
 	return sequelize.define(
 		'course_student_test_answer',

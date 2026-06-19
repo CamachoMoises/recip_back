@@ -14,6 +14,7 @@ import testRoutes from './route/test.js';
 import mailRoutes from './route/mail.js';
 import suggestionRoutes from './route/suggestion.js';
 import attendanceRoutes from './route/attendance.js';
+import courseGroupRoutes from './route/courseGroup.js';
 import { v2 as cloudinaryApp } from 'cloudinary';
 import { dbHealthMiddleware } from './middleware/dbHealth.js';
 
@@ -66,6 +67,7 @@ app.use('/api/test', testRoutes);
 app.use('/api/mail', mailRoutes);
 app.use('/api/suggestions', suggestionRoutes);
 app.use('/api/attendance', attendanceRoutes);
+app.use('/api/course-groups', courseGroupRoutes);
 
 export { cloudinaryApp };
 export default app;

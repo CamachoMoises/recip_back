@@ -8,6 +8,7 @@ const {
 	CourseStudent,
 	CourseStudentTest,
 	CourseStudentAssessment,
+	CourseGroup,
 	SubjectDays,
 	Subject,
 	Student,
@@ -50,6 +51,9 @@ const getAllCoursesStudent = async (filters) => {
 		courseStudentWhere.status =
 			filters.status === 'true' ? true : false;
 	}
+	if (filters.course_group_id) {
+		courseStudentWhere.course_group_id = filters.course_group_id;
+	}
 	// Calculamos el offset basado en currentPage y pageSize
 	const pageSize = parseInt(filters.pageSize) || 10; // Valor por defecto 10
 	const currentPage = parseInt(filters.currentPage) || 1; // Valor por defecto 1
@@ -76,6 +80,10 @@ const getAllCoursesStudent = async (filters) => {
 				model: Student,
 				required: 'id' in whereClause ? true : false,
 				include: [{ model: User }],
+			},
+			{
+				model: CourseGroup,
+				required: false,
 			},
 			{
 				model: Course,
@@ -151,6 +159,10 @@ const getCourseStudentById = async (id) =>
 		include: [
 			{
 				model: Student,
+			},
+			{
+				model: CourseGroup,
+				required: false,
 			},
 			{
 				model: Course,
@@ -276,12 +288,24 @@ const editCourseStudent = async (
 	license,
 	regulation,
 	instructorCode,
+	courseGroupId,
 ) => {
 	const courseStudent =
 		await CourseStudent.findByPk(course_student_id);
 	if (!courseStudent) {
 		throw new Error('Course not found');
 	}
+
+	if (courseGroupId) {
+		const courseGroup = await CourseGroup.findByPk(courseGroupId);
+		if (!courseGroup) {
+			throw new Error('CourseGroup not found');
+		}
+		if (courseStudent.course_id !== courseGroup.course_id) {
+			throw new Error('Student course does not match the group course');
+		}
+	}
+
 	const type_trip = typeTrip;
 	const new_date = date ? date : null;
 
@@ -292,6 +316,7 @@ const editCourseStudent = async (
 		license: license,
 		regulation: regulation,
 		instructor_code: instructorCode ?? null,
+		course_group_id: courseGroupId ?? null,
 	});
 	return courseStudent;
 };

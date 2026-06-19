@@ -204,6 +204,7 @@ export const UpdateCourseStudent = async (req, res) => {
 		license,
 		regulation,
 		instructorCode,
+		courseGroupId,
 	} = data;
 
 	try {
@@ -216,6 +217,7 @@ export const UpdateCourseStudent = async (req, res) => {
 			license,
 			regulation,
 			instructorCode,
+			courseGroupId,
 		);
 		res.send(courseStudentEdited);
 	} catch (error) {

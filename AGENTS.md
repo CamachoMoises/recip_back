@@ -40,11 +40,17 @@ Migration files live in `migrations/` (`.cjs` — CommonJS for CLI compat) and s
 
 MySQL with `underscored: true` naming (snake_case columns/timestamps). Sequelize sync runs at startup (`force: false, alter: false`). Schema versioning via CLI migrations.
 
-### Models (33 models across tables)
+
+
+## SKILLS
+
+Always use the skills in .opencode\skills\recip-backend
+
+### Models (34 models across tables)
 
 **User domain:** User, UserGroup, UserPermission, UserDocType, Student, Instructor, UserSuggestion, Group, GroupPermission
 
-**Course domain:** Course, CourseType, CourseLevel, CourseStudent, CourseStudentTest, CourseStudentTestQuestion, CourseStudentTestAnswer
+**Course domain:** Course, CourseType, CourseLevel, CourseStudent, CourseStudentTest, CourseStudentTestQuestion, CourseStudentTestAnswer, CourseGroup
 
 **Assessment domain:** CourseStudentAssessment, CourseStudentAssessmentDay, CourseStudentAssessmentLessonDetail
 
@@ -68,6 +74,7 @@ MySQL with `underscored: true` naming (snake_case columns/timestamps). Sequelize
 | `/api/assessment` | Student assessments + signatures |
 | `/api/test` | Tests, questions, answers, Excel/CSV import |
 | `/api/attendance` | Attendance + statuses CRUD + signature upload |
+| `/api/course-groups` | Course groups CRUD + students list + remove students + signature upload |
 | `/api/suggestions` | User suggestions CRUD |
 | `/api/module` | List modules (public) |
 | `/api/group` | List groups (public) |

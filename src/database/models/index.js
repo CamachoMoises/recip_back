@@ -22,6 +22,7 @@ import loadCourse, {
 	course_student_test as loadCourseStudentTest,
 	course_student_test_question as loadCourseStudentTestQuestion,
 	course_student_test_answer as loadCourseStudentTestAnswer,
+	course_group as loadCourseGroup,
 } from './course.js';
 import loadCourseStudentAssessment, {
 	course_student_assessment_day as loadCourseStudentAssessmentDay,
@@ -94,6 +95,7 @@ const SubjectLessonDays = loadSubjectLessonDays(sequelize, DataTypes);
 const UserSuggestion = loadUserSuggestion(sequelize, DataTypes);
 const Attendance = loadAttendance(sequelize, DataTypes);
 const AttendanceStatus = loadAttendanceStatus(sequelize, DataTypes);
+const CourseGroup = loadCourseGroup(sequelize, DataTypes);
 
 // Collect all models into an object
 const models = {
@@ -131,6 +133,7 @@ const models = {
 	UserSuggestion,
 	Attendance,
 	AttendanceStatus,
+	CourseGroup,
 };
 
 export default models;

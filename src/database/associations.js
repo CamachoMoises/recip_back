@@ -8,6 +8,7 @@ export function setupAssociations(models) {
 		Attendance,
 		AttendanceStatus,
 		Course,
+		CourseGroup,
 		CourseLevel,
 		CourseType,
 		CourseStudent,
@@ -92,6 +93,12 @@ export function setupAssociations(models) {
 
 	// ========== COURSE TYPE ASSOCIATIONS ==========
 	CourseType.hasMany(Course, { foreignKey: 'course_type_id' });
+
+	// ========== COURSE GROUP ASSOCIATIONS ==========
+	CourseGroup.belongsTo(Course, { foreignKey: 'course_id' });
+	Course.hasMany(CourseGroup, { foreignKey: 'course_id' });
+	CourseGroup.hasMany(CourseStudent, { foreignKey: 'course_group_id' });
+	CourseStudent.belongsTo(CourseGroup, { foreignKey: 'course_group_id' });
 
 	// ========== COURSE STUDENT ASSOCIATIONS ==========
 	CourseStudent.belongsTo(Course, { foreignKey: 'course_id' });
