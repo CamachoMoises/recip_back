@@ -37,7 +37,9 @@ export const ListCourses = async (req, res) => {
 export const ListCoursesStudent = async (req, res) => {
 	try {
 		const filters = req.query;
+		console.log('filters', filters);
 		const dataCoursesStudent = await getAllCoursesStudent(filters);
+		console.log('dataCoursesStudent', dataCoursesStudent);
 		res.send(dataCoursesStudent);
 	} catch (error) {
 		console.log(error);

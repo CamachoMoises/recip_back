@@ -54,6 +54,9 @@ const getAllCoursesStudent = async (filters) => {
 	if (filters.course_group_id) {
 		courseStudentWhere.course_group_id = filters.course_group_id;
 	}
+	if (filters.student_id) {
+		courseStudentWhere.student_id = filters.student_id;
+	}
 	// Calculamos el offset basado en currentPage y pageSize
 	const pageSize = parseInt(filters.pageSize) || 10; // Valor por defecto 10
 	const currentPage = parseInt(filters.currentPage) || 1; // Valor por defecto 1

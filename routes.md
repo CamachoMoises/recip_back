@@ -67,6 +67,27 @@ List instructors.
 
 **Response** `200`: Array of users with instructor role.
 
+### `GET /api/users/student/search`
+Search students by name or email.
+
+**Query params**: `search` (string)
+
+**Response** `200`: Array of student user objects.
+
+### `POST /api/users/student`
+Create student user.
+
+**Request** (form-data): Same fields as create user + student-specific fields.
+
+**Response** `201`: Created user with student role.
+
+### `POST /api/users/instructor`
+Create instructor user.
+
+**Request** (form-data): Same fields as create user + instructor-specific fields.
+
+**Response** `201`: Created user with instructor role.
+
 ### `GET /api/users/me`
 Get currently logged user (from JWT).
 
@@ -132,6 +153,8 @@ List course-student enrollments (paginated).
 - `currentPage` (number, default 1)
 - `status` (boolean string: `"true"` / `"false"`)
 - `course_type_id` (number)
+- `course_group_id` (number)
+- `student_id` (number, optional) — filter by specific student ID
 
 **Response** `200`:
 ```json
@@ -276,6 +299,88 @@ max_attempts: number
 ```
 
 **Response** `200`: Updated course-student object.
+
+---
+
+## Course Groups
+
+### `GET /api/course-groups`
+List all course groups.
+
+**Response** `200`: Array of course group objects.
+
+### `GET /api/course-groups/:id`
+Get course group by ID.
+
+**Response** `200`: Course group object.
+
+### `GET /api/course-groups/:id/students`
+List students in a course group.
+
+**Response** `200`: Array of course-student objects in the group.
+
+### `POST /api/course-groups`
+Create course group.
+
+**Request** (form-data):
+```
+name: string
+course_id: number
+status: boolean
+```
+
+**Response** `201`: Created course group object.
+
+### `PUT /api/course-groups`
+Update course group.
+
+**Request** (form-data):
+```
+id: number
+name: string (optional)
+course_id: number (optional)
+status: boolean (optional)
+```
+
+**Response** `200`: Updated course group object.
+
+### `DELETE /api/course-groups/:id`
+Delete course group.
+
+**Response** `204`: No content.
+
+**Errors**: `404` Course group not found
+
+### `DELETE /api/course-groups/:id/students`
+Remove students from course group.
+
+**Request** (form-data):
+```
+student_ids: number[] (array of course_student_id)
+```
+
+**Response** `200`: Updated course group object.
+
+### `POST /api/course-groups/signature`
+Save course group signature (base64 → Cloudinary).
+
+**Request** (form-data):
+```
+course_group_id: number
+signature: string (base64 data-url)
+```
+
+**Response** `200`:
+```json
+{
+  "success": true,
+  "message": "Firma guardada correctamente.",
+  "data": {
+    "signatureUrl": "https://...",
+    "courseGroup": { ... }
+  }
+}
+```
 
 ---
 
@@ -671,9 +776,7 @@ Import questions from Excel file.
 ### `POST /api/test/import-csv`
 Import questions from CSV file.
 
-**Request**: `multipart/form-data` with `csv_file` field.
-
-**Query params**: `test_id`
+**Request**: `multipart/form-data` with `csv_file` field (`.csv`).
 
 **Response** `201`:
 ```json
@@ -905,9 +1008,9 @@ List all attendance statuses.
 **Response** `200`: Array of `{ id, name, description }`.
 
 ### `GET /api/attendance/statuses/:id`
-Get attendance status by ID.
+Get attendance status by ID (returns all statuses, same as `/statuses`).
 
-**Response** `200`: Attendance status object.
+**Response** `200`: Array of attendance status objects.
 
 ### `POST /api/attendance/statuses`
 Create attendance status.
@@ -1074,6 +1177,7 @@ Health check.
 | `/api/users` | `src/route/user.js` |
 | `/api/assessment` | `src/route/assessment.js` |
 | `/api/courses` | `src/route/course.js` |
+| `/api/course-groups` | `src/route/courseGroup.js` |
 | `/api/subjects` | `src/route/subject.js` |
 | `/api/module` | `src/route/module.js` |
 | `/api/group` | `src/route/group.js` |
