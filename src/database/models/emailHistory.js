@@ -8,6 +8,10 @@ export default (sequelize, DataTypes) => {
 				allowNull: false,
 				primaryKey: true,
 			},
+			email: {
+				type: DataTypes.STRING(255),
+				allowNull: false,
+			},
 			user_id: {
 				type: DataTypes.INTEGER,
 				allowNull: false,
