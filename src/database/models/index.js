@@ -44,6 +44,7 @@ import loadSchedule from './schedule.js';
 import loadAttendance, {
 	attendance_status as loadAttendanceStatus,
 } from './attendance.js';
+import loadEmailHistory from './emailHistory.js';
 
 // Initialize all models
 const Participant = loadParticipant(sequelize, DataTypes);
@@ -96,6 +97,7 @@ const UserSuggestion = loadUserSuggestion(sequelize, DataTypes);
 const Attendance = loadAttendance(sequelize, DataTypes);
 const AttendanceStatus = loadAttendanceStatus(sequelize, DataTypes);
 const CourseGroup = loadCourseGroup(sequelize, DataTypes);
+const EmailHistory = loadEmailHistory(sequelize, DataTypes);
 
 // Collect all models into an object
 const models = {
@@ -134,6 +136,7 @@ const models = {
 	Attendance,
 	AttendanceStatus,
 	CourseGroup,
+	EmailHistory,
 };
 
 export default models;

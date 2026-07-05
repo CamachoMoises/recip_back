@@ -304,22 +304,22 @@ max_attempts: number
 
 ## Course Groups
 
-### `GET /api/course-groups`
+### `GET /api/course_groups`
 List all course groups.
 
 **Response** `200`: Array of course group objects.
 
-### `GET /api/course-groups/:id`
+### `GET /api/course_groups/:id`
 Get course group by ID.
 
 **Response** `200`: Course group object.
 
-### `GET /api/course-groups/:id/students`
+### `GET /api/course_groups/:id/students`
 List students in a course group.
 
 **Response** `200`: Array of course-student objects in the group.
 
-### `POST /api/course-groups`
+### `POST /api/course_groups`
 Create course group.
 
 **Request** (form-data):
@@ -331,7 +331,7 @@ status: boolean
 
 **Response** `201`: Created course group object.
 
-### `PUT /api/course-groups`
+### `PUT /api/course_groups`
 Update course group.
 
 **Request** (form-data):
@@ -344,14 +344,14 @@ status: boolean (optional)
 
 **Response** `200`: Updated course group object.
 
-### `DELETE /api/course-groups/:id`
+### `DELETE /api/course_groups/:id`
 Delete course group.
 
 **Response** `204`: No content.
 
 **Errors**: `404` Course group not found
 
-### `DELETE /api/course-groups/:id/students`
+### `DELETE /api/course_groups/:id/students`
 Remove students from course group.
 
 **Request** (form-data):
@@ -361,7 +361,7 @@ student_ids: number[] (array of course_student_id)
 
 **Response** `200`: Updated course group object.
 
-### `POST /api/course-groups/signature`
+### `POST /api/course_groups/signature`
 Save course group signature (base64 → Cloudinary).
 
 **Request** (form-data):
@@ -1177,7 +1177,7 @@ Health check.
 | `/api/users` | `src/route/user.js` |
 | `/api/assessment` | `src/route/assessment.js` |
 | `/api/courses` | `src/route/course.js` |
-| `/api/course-groups` | `src/route/courseGroup.js` |
+| `/api/course_groups` | `src/route/courseGroup.js` |
 | `/api/subjects` | `src/route/subject.js` |
 | `/api/module` | `src/route/module.js` |
 | `/api/group` | `src/route/group.js` |

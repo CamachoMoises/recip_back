@@ -38,6 +38,7 @@ export function setupAssociations(models) {
 		UserGroup,
 		UserPermission,
 		UserSuggestion,
+		EmailHistory,
 	} = models;
 
 	// ========== ATTENDANCE ASSOCIATIONS ==========
@@ -418,6 +419,10 @@ export function setupAssociations(models) {
 		foreignKey: 'user_id',
 		as: 'suggestions',
 	});
+	User.hasMany(EmailHistory, {
+		foreignKey: 'user_id',
+		as: 'emailHistories',
+	});
 
 	// ========== USER GROUP ASSOCIATIONS ==========
 	UserGroup.belongsTo(Group, { foreignKey: 'group_id' });
@@ -440,6 +445,12 @@ export function setupAssociations(models) {
 
 	// ========== USER SUGGESTION ASSOCIATIONS ==========
 	UserSuggestion.belongsTo(User, {
+		foreignKey: 'user_id',
+		as: 'user',
+	});
+
+	// ========== EMAIL HISTORY ASSOCIATIONS ==========
+	EmailHistory.belongsTo(User, {
 		foreignKey: 'user_id',
 		as: 'user',
 	});

@@ -58,7 +58,7 @@ Always use the skills in .opencode\skills\recip-backend
 
 **Test domain:** Test, QuestionType, TestQuestionType, Question, Answer
 
-**Other:** Schedule, Attendance, AttendanceStatus, Module, Permission
+**Other:** Schedule, Attendance, AttendanceStatus, Module, Permission, EmailHistory
 
 **Disconnected (defined but no associations):** Participant, Evaluation, Rating
 
@@ -70,7 +70,7 @@ Always use the skills in .opencode\skills\recip-backend
 | `/api/users` | User/student/instructor CRUD |
 | `/api/users/student/search` | Fast student search by name/email |
 | `/api/courses` | Course + enrollment + schedule CRUD |
-| `/api/course-groups` | Course groups CRUD + students list + remove students + signature upload |
+| `/api/course_groups` | Course groups CRUD + students list + remove students + signature upload |
 | `/api/subjects` | Subject + lessons + days CRUD |
 | `/api/assessment` | Student assessments + signatures |
 | `/api/test` | Tests, questions, answers, Excel/CSV import |
@@ -82,6 +82,7 @@ Always use the skills in .opencode\skills\recip-backend
 | `/api/rating` | List ratings (public) |
 | `/api/config` | Run seeds/triggers (public) |
 | `/api/mail` | Send email (public) |
+| `/api/email_history` | Email history CRUD (list, create, delete) |
 | `/status` | Health check (public) |
 
 ## Middleware Stack
@@ -100,6 +101,7 @@ Always use the skills in .opencode\skills\recip-backend
 - `npm run seed:undo` — Undo last seeder
 - `npm test` — No test suite configured
 - `npm run migrate:generate` — Generate new migration file
+- `npm run lint` — Run ESLint
 
 Lint with `npx eslint .`
 

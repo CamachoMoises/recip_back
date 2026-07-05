@@ -1,7 +1,15 @@
 import { Op } from 'sequelize';
 import { models } from '../index.js';
 
-const { CourseGroup, Course, CourseStudent, Student, User } = models;
+const {
+	CourseGroup,
+	Course,
+	CourseType,
+	CourseLevel,
+	CourseStudent,
+	Student,
+	User,
+} = models;
 
 const getAllCourseGroups = async (filters) => {
 	const whereClause = {};
@@ -24,7 +32,12 @@ const getAllCourseGroups = async (filters) => {
 
 	const result = await CourseGroup.findAndCountAll({
 		where: whereClause,
-		include: [{ model: Course, include: [{ model: CourseStudent }] }],
+		include: [
+			{
+				model: Course,
+				include: [CourseType, CourseLevel],
+			},
+		],
 		order: [['createdAt', 'DESC']],
 		limit: pageSize,
 		offset: offset,
@@ -50,7 +63,13 @@ const getCourseGroupById = async (id) =>
 		],
 	});
 
-const createCourseGroup = async ({ title, user_code, date, course_id, status }) => {
+const createCourseGroup = async ({
+	title,
+	user_code,
+	date,
+	course_id,
+	status,
+}) => {
 	let numberCode = 1;
 	const prevCourseGroup = await CourseGroup.findOne({
 		order: [['createdAt', 'DESC']],
@@ -72,16 +91,27 @@ const createCourseGroup = async ({ title, user_code, date, course_id, status }) 
 	return newCourseGroup;
 };
 
-const editCourseGroup = async ({ id, title, user_code, date, signature_url, status }) => {
+const editCourseGroup = async ({
+	id,
+	title,
+	user_code,
+	date,
+	signature_url,
+	status,
+}) => {
 	const courseGroup = await CourseGroup.findByPk(id);
 	if (!courseGroup) {
 		throw new Error('CourseGroup not found');
 	}
 	await courseGroup.update({
 		title: title !== undefined ? title : courseGroup.title,
-		user_code: user_code !== undefined ? user_code : null,
-		date: date !== undefined ? date : null,
-		signature_url: signature_url !== undefined ? signature_url : null,
+		user_code:
+			user_code !== undefined ? user_code : courseGroup.user_code,
+		date: date !== undefined ? date : courseGroup.date,
+		signature_url:
+			signature_url !== undefined
+				? signature_url
+				: courseGroup.signature_url,
 		status: status !== undefined ? status : courseGroup.status,
 	});
 	return courseGroup;
@@ -121,14 +151,17 @@ const getCourseStudentsByGroupId = async (id, filters) => {
 	};
 };
 
-const removeCourseStudentsFromGroup = async (groupId, courseStudentIds) => {
+const removeCourseStudentsFromGroup = async (
+	groupId,
+	courseStudentIds,
+) => {
 	const group = await CourseGroup.findByPk(groupId);
 	if (!group) {
 		throw new Error('CourseGroup not found');
 	}
 	const [affectedCount] = await CourseStudent.update(
 		{ course_group_id: null },
-		{ where: { id: courseStudentIds } }
+		{ where: { id: courseStudentIds } },
 	);
 	return affectedCount;
 };

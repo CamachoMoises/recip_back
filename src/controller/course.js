@@ -197,6 +197,7 @@ export const UpdateCourse = async (req, res) => {
 
 export const UpdateCourseStudent = async (req, res) => {
 	const data = req.body;
+	console.log('UpdateCourseStudent data:', data);
 	const course_id = req.params.course_id;
 	const {
 		course_student_id,

@@ -305,22 +305,34 @@ const editCourseStudent = async (
 			throw new Error('CourseGroup not found');
 		}
 		if (courseStudent.course_id !== courseGroup.course_id) {
-			throw new Error('Student course does not match the group course');
+			throw new Error(
+				'Student course does not match the group course',
+			);
 		}
 	}
 
 	const type_trip = typeTrip;
 	const new_date = date ? date : null;
 
-	await courseStudent.update({
+	const updateData = {
 		date: new_date,
 		student_id: student_id,
 		type_trip: type_trip,
 		license: license,
 		regulation: regulation,
-		instructor_code: instructorCode ?? null,
-		course_group_id: courseGroupId ?? null,
-	});
+	};
+
+	// Only include instructor_code when it was provided by the caller
+	if (instructorCode !== undefined) {
+		updateData.instructor_code = instructorCode;
+	}
+
+	// Include course_group_id only when provided (preserve original behaviour if needed)
+	if (courseGroupId !== undefined) {
+		updateData.course_group_id = courseGroupId;
+	}
+
+	await courseStudent.update(updateData);
 	return courseStudent;
 };
 
