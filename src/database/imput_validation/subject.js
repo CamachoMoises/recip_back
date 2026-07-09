@@ -13,7 +13,6 @@ const createSubjectSchema = Joi.object({
 					message: 'Course not found',
 				});
 			}
-			// console.log(value);
 			return value;
 		}),
 	order: Joi.number(),
@@ -34,7 +33,6 @@ const updateSubjectSchema = Joi.object({
 					message: 'Course not found',
 				});
 			}
-			// console.log(value);
 			return value;
 		}),
 	order: Joi.number(),

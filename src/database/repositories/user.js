@@ -39,7 +39,6 @@ const getStudentByUserId = async (user_id) => {
 	const user = await User.findByPk(user_id);
 	if (!user) throw new Error('User not found');
 	const student = await user.getStudent();
-	console.log(student);
 	if (!student) {
 		const status = user.is_active;
 		return await user.createStudent({ status });
@@ -52,9 +51,7 @@ const getInstructorByUserId = async (user_id) => {
 	const user = await User.findByPk(user_id);
 	if (!user) throw new Error('User not found');
 	const instructor = await user.getInstructor();
-	console.log(instructor);
 	if (!instructor) {
-		console.log('Ojo');
 		const status = user.is_active;
 		return await user.createInstructor({ status });
 	} else {

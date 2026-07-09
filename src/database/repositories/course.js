@@ -54,6 +54,9 @@ const getAllCoursesStudent = async (filters) => {
 	if (filters.course_group_id) {
 		courseStudentWhere.course_group_id = filters.course_group_id;
 	}
+	if (filters.course_id) {
+		courseStudentWhere.course_id = filters.course_id;
+	}
 	if (filters.student_id) {
 		courseStudentWhere.student_id = filters.student_id;
 	}
@@ -282,55 +285,38 @@ const createCourseStudent = async (course_id) => {
 	return newCourseStudent;
 };
 
-const editCourseStudent = async (
-	course_id,
-	course_student_id,
-	date,
-	student_id,
-	typeTrip,
-	license,
-	regulation,
-	instructorCode,
-	courseGroupId,
-) => {
+const EDITABLE_COURSE_STUDENT_FIELDS = {
+	date: 'date',
+	student_id: 'student_id',
+	type_trip: 'typeTrip',
+	license: 'license',
+	regulation: 'regulation',
+	instructor_code: 'instructorCode',
+	course_group_id: 'courseGroupId',
+};
+
+const editCourseStudent = async (course_student_id, data) => {
 	const courseStudent =
 		await CourseStudent.findByPk(course_student_id);
-	if (!courseStudent) {
-		throw new Error('Course not found');
-	}
+	if (!courseStudent) throw new Error('Course not found');
 
-	if (courseGroupId) {
-		const courseGroup = await CourseGroup.findByPk(courseGroupId);
-		if (!courseGroup) {
-			throw new Error('CourseGroup not found');
-		}
-		if (courseStudent.course_id !== courseGroup.course_id) {
+	if (data.courseGroupId !== undefined && data.courseGroupId !== null) {
+		const courseGroup = await CourseGroup.findByPk(data.courseGroupId);
+		if (!courseGroup) throw new Error('CourseGroup not found');
+		if (courseStudent.course_id !== courseGroup.course_id)
 			throw new Error(
 				'Student course does not match the group course',
 			);
+	}
+
+	const updateData = {};
+	for (const [dbField, reqField] of Object.entries(EDITABLE_COURSE_STUDENT_FIELDS)) {
+		if (data[reqField] !== undefined) {
+			updateData[dbField] = data[reqField];
 		}
 	}
 
-	const type_trip = typeTrip;
-	const new_date = date ? date : null;
-
-	const updateData = {
-		date: new_date,
-		student_id: student_id,
-		type_trip: type_trip,
-		license: license,
-		regulation: regulation,
-	};
-
-	// Only include instructor_code when it was provided by the caller
-	if (instructorCode !== undefined) {
-		updateData.instructor_code = instructorCode;
-	}
-
-	// Include course_group_id only when provided (preserve original behaviour if needed)
-	if (courseGroupId !== undefined) {
-		updateData.course_group_id = courseGroupId;
-	}
+	if (Object.keys(updateData).length === 0) return courseStudent;
 
 	await courseStudent.update(updateData);
 	return courseStudent;

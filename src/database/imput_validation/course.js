@@ -8,7 +8,7 @@ const createCourseSchema = Joi.object({
 	name: Joi.alternatives().try(Joi.string().max(500), Joi.number()),
 	description: Joi.alternatives().try(
 		Joi.string().max(500),
-		Joi.number()
+		Joi.number(),
 	),
 	code: Joi.alternatives().try(Joi.string().max(50), Joi.number()),
 	plane_model: Joi.string().max(500),
@@ -23,7 +23,6 @@ const createCourseSchema = Joi.object({
 					message: 'Course type not found',
 				});
 			}
-			// console.log(value);
 			return value;
 		}),
 	course_level_id: Joi.number()
@@ -35,7 +34,6 @@ const createCourseSchema = Joi.object({
 					message: 'Course level not found',
 				});
 			}
-			// console.log(value);
 			return value;
 		}),
 	status: Joi.boolean(),
@@ -45,7 +43,7 @@ const updateCourseSchema = Joi.object({
 	name: Joi.alternatives().try(Joi.string().max(500), Joi.number()),
 	description: Joi.alternatives().try(
 		Joi.string().max(500),
-		Joi.number()
+		Joi.number(),
 	),
 	code: Joi.alternatives().try(Joi.string().max(50), Joi.number()),
 	plane_model: Joi.string().max(500),
@@ -61,7 +59,6 @@ const updateCourseSchema = Joi.object({
 					message: 'Course type not found',
 				});
 			}
-			// console.log(value);
 			return value;
 		}),
 	course_level_id: Joi.number()
@@ -73,7 +70,6 @@ const updateCourseSchema = Joi.object({
 					message: 'Course level not found',
 				});
 			}
-			// console.log(value);
 			return value;
 		}),
 	status: Joi.boolean(),

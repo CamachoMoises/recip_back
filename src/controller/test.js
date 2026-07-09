@@ -948,12 +948,7 @@ export const UpdateCourseStudentTestScore = async (req, res) => {
 		const course_student_test_answer_id =
 			req.body.course_student_test_answer_id;
 		const score = req.body.score;
-		console.log(
-			'Updating course student test score:',
-			score,
-			course_student_test_answer_id,
-			course_student_test_id,
-		);
+
 		await resolveCourseStudentTestAnswer(
 			parseInt(course_student_test_answer_id),
 			parseFloat(score),
@@ -1012,13 +1007,6 @@ export const ListAllTestsByStudent = async (req, res) => {
 		const tests = await getAllCourseStudentTestByStudentId(
 			student_id,
 			course_student_id,
-		);
-		console.log(
-			'estos son los test',
-			student_id,
-			course_student_id,
-			//quiero contar los test
-			tests.length,
 		);
 
 		res.status(200).json(tests);

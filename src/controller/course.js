@@ -37,9 +37,7 @@ export const ListCourses = async (req, res) => {
 export const ListCoursesStudent = async (req, res) => {
 	try {
 		const filters = req.query;
-		console.log('filters', filters);
 		const dataCoursesStudent = await getAllCoursesStudent(filters);
-		console.log('dataCoursesStudent', dataCoursesStudent);
 		res.send(dataCoursesStudent);
 	} catch (error) {
 		console.log(error);
@@ -197,30 +195,16 @@ export const UpdateCourse = async (req, res) => {
 
 export const UpdateCourseStudent = async (req, res) => {
 	const data = req.body;
-	console.log('UpdateCourseStudent data:', data);
-	const course_id = req.params.course_id;
-	const {
-		course_student_id,
-		date,
-		student_id,
-		typeTrip,
-		license,
-		regulation,
-		instructorCode,
-		courseGroupId,
-	} = data;
+	const { course_student_id } = data;
+
+	if (!course_student_id) {
+		return res.status(400).send('course_student_id is required');
+	}
 
 	try {
 		const courseStudentEdited = await editCourseStudent(
-			course_id,
 			course_student_id,
-			date,
-			student_id,
-			typeTrip,
-			license,
-			regulation,
-			instructorCode,
-			courseGroupId,
+			data,
 		);
 		res.send(courseStudentEdited);
 	} catch (error) {
