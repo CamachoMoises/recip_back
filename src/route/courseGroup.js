@@ -10,6 +10,7 @@ import {
 	ListCourseGroupStudents,
 	SaveCourseGroupSignature,
 	RemoveCourseStudentsFromGroup,
+	ListCourseGroupSignatures,
 } from '../controller/courseGroup.js';
 import { authenticateJWT } from '../controller/authentication.js';
 
@@ -35,6 +36,7 @@ router.put(
 router.delete('/:id', authenticateJWT, DeleteCourseGroup);
 router.get('/:id/students', authenticateJWT, ListCourseGroupStudents);
 router.delete('/:id/students', authenticateJWT, RemoveCourseStudentsFromGroup);
+router.get('/:id/signatures', authenticateJWT, ListCourseGroupSignatures);
 router.post(
 	'/signature',
 	upload.none(),

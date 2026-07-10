@@ -478,10 +478,6 @@ export const course_group = (sequelize, DataTypes) => {
 				type: DataTypes.DATEONLY,
 				allowNull: true,
 			},
-			signature_url: {
-				type: DataTypes.STRING(500),
-				allowNull: true,
-			},
 		course_id: {
 			type: DataTypes.INTEGER,
 			allowNull: false,

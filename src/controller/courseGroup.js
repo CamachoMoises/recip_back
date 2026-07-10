@@ -1,6 +1,7 @@
 import {
 	createCourseGroupSchema,
 	updateCourseGroupSchema,
+	saveCourseGroupSignatureSchema,
 } from '../database/imput_validation/courseGroup.js';
 import {
 	createCourseGroup,
@@ -11,7 +12,14 @@ import {
 	getCourseStudentsByGroupId,
 	removeCourseStudentsFromGroup,
 } from '../database/repositories/courseGroup.js';
+import {
+	upsertSignature,
+	getSignaturesByGroupId,
+} from '../database/repositories/courseGroupSignature.js';
+import { models } from '../database/index.js';
 import { cloudinaryApp } from '../app.js';
+
+const { Course } = models;
 
 export const ListCourseGroups = async (req, res) => {
 	try {
@@ -100,23 +108,27 @@ export const ListCourseGroupStudents = async (req, res) => {
 
 export const SaveCourseGroupSignature = async (req, res) => {
 	try {
-		const { course_group_id, signature } = req.body;
+		const validated =
+			await saveCourseGroupSignatureSchema.validateAsync(req.body);
+		const { course_group_id, day_number, signature } = validated;
 
-		if (!signature) {
-			return res.status(400).json({
+		const courseGroup = await getCourseGroupById(course_group_id);
+		if (!courseGroup) {
+			return res.status(404).json({
 				success: false,
-				error: 'No se proporcionó la firma para guardar.',
+				error: 'CourseGroup no encontrado.',
 			});
 		}
 
-		if (!course_group_id) {
+		const course = courseGroup.Course || await Course.findByPk(courseGroup.course_id);
+		if (course && day_number > course.days) {
 			return res.status(400).json({
 				success: false,
-				error: 'El course_group_id es requerido.',
+				error: `day_number (${day_number}) excede los días del curso (${course.days}).`,
 			});
 		}
 
-		const publicId = `firmas/course_group_signature_${course_group_id}`;
+		const publicId = `firmas/course_group_${course_group_id}_day_${day_number}`;
 
 		const cloudinaryResult = await cloudinaryApp.uploader.upload(signature, {
 			public_id: publicId,
@@ -126,17 +138,18 @@ export const SaveCourseGroupSignature = async (req, res) => {
 			transformation: [{ quality: 'auto' }],
 		});
 
-		const courseGroup = await editCourseGroup({
-			id: course_group_id,
-			signature_url: cloudinaryResult.secure_url,
-		});
+		const record = await upsertSignature(
+			course_group_id,
+			day_number,
+			cloudinaryResult.secure_url,
+		);
 
 		res.status(200).json({
 			success: true,
 			message: 'Firma guardada correctamente.',
 			data: {
 				signatureUrl: cloudinaryResult.secure_url,
-				courseGroup,
+				record,
 			},
 		});
 	} catch (error) {
@@ -145,6 +158,17 @@ export const SaveCourseGroupSignature = async (req, res) => {
 			success: false,
 			error: 'Error al procesar la firma.',
 		});
+	}
+};
+
+export const ListCourseGroupSignatures = async (req, res) => {
+	try {
+		const { id } = req.params;
+		const signatures = await getSignaturesByGroupId(id);
+		res.send(signatures);
+	} catch (error) {
+		console.log(error);
+		res.status(500).json({ error: 'Internal Server Error' });
 	}
 };
 

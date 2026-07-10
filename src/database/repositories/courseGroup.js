@@ -7,6 +7,7 @@ const {
 	CourseType,
 	CourseLevel,
 	CourseStudent,
+	CourseGroupSignature,
 	Student,
 	User,
 } = models;
@@ -60,6 +61,9 @@ const getCourseGroupById = async (id) =>
 				model: Course,
 				include: [{ model: CourseStudent }],
 			},
+			{
+				model: CourseGroupSignature,
+			},
 		],
 	});
 
@@ -96,7 +100,6 @@ const editCourseGroup = async ({
 	title,
 	user_code,
 	date,
-	signature_url,
 	status,
 }) => {
 	const courseGroup = await CourseGroup.findByPk(id);
@@ -108,10 +111,6 @@ const editCourseGroup = async ({
 		user_code:
 			user_code !== undefined ? user_code : courseGroup.user_code,
 		date: date !== undefined ? date : courseGroup.date,
-		signature_url:
-			signature_url !== undefined
-				? signature_url
-				: courseGroup.signature_url,
 		status: status !== undefined ? status : courseGroup.status,
 	});
 	return courseGroup;

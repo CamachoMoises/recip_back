@@ -46,11 +46,11 @@ MySQL with `underscored: true` naming (snake_case columns/timestamps). Sequelize
 
 Always use the skills in .opencode\skills\recip-backend
 
-### Models (34 models across tables)
+### Models (35 models across tables)
 
 **User domain:** User, UserGroup, UserPermission, UserDocType, Student, Instructor, UserSuggestion, Group, GroupPermission
 
-**Course domain:** Course, CourseType, CourseLevel, CourseStudent, CourseStudentTest, CourseStudentTestQuestion, CourseStudentTestAnswer, CourseGroup
+**Course domain:** Course, CourseType, CourseLevel, CourseStudent, CourseStudentTest, CourseStudentTestQuestion, CourseStudentTestAnswer, CourseGroup, CourseGroupSignature
 
 **Assessment domain:** CourseStudentAssessment, CourseStudentAssessmentDay, CourseStudentAssessmentLessonDetail
 
@@ -70,7 +70,7 @@ Always use the skills in .opencode\skills\recip-backend
 | `/api/users` | User/student/instructor CRUD |
 | `/api/users/student/search` | Fast student search by name/email |
 | `/api/courses` | Course + enrollment + schedule CRUD |
-| `/api/course_groups` | Course groups CRUD + students list + remove students + signature upload |
+| `/api/course_groups` | Course groups CRUD + students list + remove students + signature upload + list signatures per group |
 | `/api/subjects` | Subject + lessons + days CRUD |
 | `/api/assessment` | Student assessments + signatures |
 | `/api/test` | Tests, questions, answers, Excel/CSV import |

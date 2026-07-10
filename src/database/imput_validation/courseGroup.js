@@ -13,6 +13,11 @@ export const updateCourseGroupSchema = Joi.object({
 	title: Joi.string().max(500).optional(),
 	user_code: Joi.string().max(50).allow(null, ''),
 	date: Joi.date().allow(null),
-	signature_url: Joi.string().max(500).allow(null, ''),
 	status: Joi.boolean().optional(),
+});
+
+export const saveCourseGroupSignatureSchema = Joi.object({
+	course_group_id: Joi.number().integer().required(),
+	day_number: Joi.number().integer().min(1).required(),
+	signature: Joi.string().required(),
 });

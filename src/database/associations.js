@@ -39,6 +39,7 @@ export function setupAssociations(models) {
 		UserPermission,
 		UserSuggestion,
 		EmailHistory,
+		CourseGroupSignature,
 	} = models;
 
 	// ========== ATTENDANCE ASSOCIATIONS ==========
@@ -100,6 +101,8 @@ export function setupAssociations(models) {
 	Course.hasMany(CourseGroup, { foreignKey: 'course_id' });
 	CourseGroup.hasMany(CourseStudent, { foreignKey: 'course_group_id' });
 	CourseStudent.belongsTo(CourseGroup, { foreignKey: 'course_group_id' });
+	CourseGroup.hasMany(CourseGroupSignature, { foreignKey: 'course_group_id' });
+	CourseGroupSignature.belongsTo(CourseGroup, { foreignKey: 'course_group_id' });
 
 	// ========== COURSE STUDENT ASSOCIATIONS ==========
 	CourseStudent.belongsTo(Course, { foreignKey: 'course_id' });
