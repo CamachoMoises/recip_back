@@ -13,8 +13,11 @@ import {
 	removeCourseStudentsFromGroup,
 } from '../database/repositories/courseGroup.js';
 import {
-	upsertSignature,
+	getNextSignatureNumber,
+	createSignature,
 	getSignaturesByGroupId,
+	getSignatureById,
+	deleteSignature,
 } from '../database/repositories/courseGroupSignature.js';
 import { models } from '../database/index.js';
 import { cloudinaryApp } from '../app.js';
@@ -128,7 +131,20 @@ export const SaveCourseGroupSignature = async (req, res) => {
 			});
 		}
 
-		const publicId = `firmas/course_group_${course_group_id}_day_${day_number}`;
+		let signature_number;
+		try {
+			signature_number = await getNextSignatureNumber(
+				course_group_id,
+				day_number,
+			);
+		} catch (err) {
+			return res.status(400).json({
+				success: false,
+				error: err.message,
+			});
+		}
+
+		const publicId = `firmas/course_group_${course_group_id}_day_${day_number}_${signature_number}`;
 
 		const cloudinaryResult = await cloudinaryApp.uploader.upload(signature, {
 			public_id: publicId,
@@ -138,9 +154,10 @@ export const SaveCourseGroupSignature = async (req, res) => {
 			transformation: [{ quality: 'auto' }],
 		});
 
-		const record = await upsertSignature(
+		const record = await createSignature(
 			course_group_id,
 			day_number,
+			signature_number,
 			cloudinaryResult.secure_url,
 		);
 
@@ -149,6 +166,7 @@ export const SaveCourseGroupSignature = async (req, res) => {
 			message: 'Firma guardada correctamente.',
 			data: {
 				signatureUrl: cloudinaryResult.secure_url,
+				signature_number,
 				record,
 			},
 		});
@@ -169,6 +187,37 @@ export const ListCourseGroupSignatures = async (req, res) => {
 	} catch (error) {
 		console.log(error);
 		res.status(500).json({ error: 'Internal Server Error' });
+	}
+};
+
+export const DeleteCourseGroupSignature = async (req, res) => {
+	try {
+		const { signatureId } = req.params;
+		const signature = await getSignatureById(signatureId);
+
+		if (!signature) {
+			return res.status(404).json({
+				success: false,
+				error: 'Firma no encontrada.',
+			});
+		}
+
+		const publicId = `firmas/course_group_${signature.course_group_id}_day_${signature.day_number}_${signature.signature_number}`;
+
+		await cloudinaryApp.uploader.destroy(publicId);
+
+		await deleteSignature(signatureId);
+
+		res.status(200).json({
+			success: true,
+			message: 'Firma eliminada correctamente.',
+		});
+	} catch (error) {
+		console.error('Error en DeleteCourseGroupSignature:', error);
+		res.status(500).json({
+			success: false,
+			error: 'Error al eliminar la firma.',
+		});
 	}
 };
 

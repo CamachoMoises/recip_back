@@ -20,6 +20,11 @@ export default (sequelize, DataTypes) => {
 				type: DataTypes.INTEGER,
 				allowNull: false,
 			},
+			signature_number: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+				defaultValue: 1,
+			},
 			signature_url: {
 				type: DataTypes.STRING(500),
 				allowNull: true,
@@ -37,10 +42,10 @@ export default (sequelize, DataTypes) => {
 					fields: [{ name: 'id' }],
 				},
 				{
-					name: 'uq_course_group_signature_group_day',
+					name: 'uq_course_group_signature_group_day_number',
 					unique: true,
 					using: 'BTREE',
-					fields: [{ name: 'course_group_id' }, { name: 'day_number' }],
+					fields: [{ name: 'course_group_id' }, { name: 'day_number' }, { name: 'signature_number' }],
 				},
 				{
 					name: 'fk_course_group_signature_course_group_idx',
