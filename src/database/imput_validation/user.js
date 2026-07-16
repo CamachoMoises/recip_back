@@ -24,7 +24,7 @@ const createUserSchema = Joi.object({
 	is_superuser: Joi.boolean(),
 	is_staff: Joi.boolean(),
 	is_active: Joi.boolean(),
-});
+}).options({ stripUnknown: true });
 const updateUserSchema = Joi.object({
 	uuid: Joi.string().max(200).allow(null, ''),
 	id: Joi.number().required(),
