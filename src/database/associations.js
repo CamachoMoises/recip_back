@@ -40,6 +40,8 @@ export function setupAssociations(models) {
 		UserSuggestion,
 		EmailHistory,
 		CourseGroupSignature,
+		AttendanceSignature,
+		AssessmentSignature,
 	} = models;
 
 	// ========== ATTENDANCE ASSOCIATIONS ==========
@@ -54,6 +56,13 @@ export function setupAssociations(models) {
 	});
 	AttendanceStatus.hasMany(Attendance, {
 		foreignKey: 'attendance_status_id',
+	});
+
+	Attendance.hasOne(AttendanceSignature, {
+		foreignKey: 'attendance_id',
+	});
+	AttendanceSignature.belongsTo(Attendance, {
+		foreignKey: 'attendance_id',
 	});
 
 	// ========== ANSWER ASSOCIATIONS ==========
@@ -166,6 +175,12 @@ export function setupAssociations(models) {
 			foreignKey: 'course_student_assessment_day_id',
 		},
 	);
+	CourseStudentAssessmentDay.hasMany(AssessmentSignature, {
+		foreignKey: 'csad_id',
+	});
+	AssessmentSignature.belongsTo(CourseStudentAssessmentDay, {
+		foreignKey: 'csad_id',
+	});
 
 	// ========== COURSE STUDENT ASSESSMENT LESSON DETAIL ASSOCIATIONS ==========
 	CourseStudentAssessmentLessonDetail.belongsTo(Course, {

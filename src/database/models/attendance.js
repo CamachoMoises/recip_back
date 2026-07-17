@@ -32,10 +32,6 @@ export default (sequelize, DataTypes) => {
 			type: DataTypes.TEXT,
 			allowNull: true,
 		},
-		signature_url: {
-			type: DataTypes.STRING(500),
-			allowNull: true,
-		},
 		},
 		{
 			sequelize,

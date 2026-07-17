@@ -17,6 +17,11 @@ import {
 	updateAttendanceStatus,
 	deleteAttendanceStatus,
 } from '../database/repositories/attendance.js';
+import {
+	upsertAttendanceSignature,
+	getSignatureByAttendanceId,
+	deleteAttendanceSignature,
+} from '../database/repositories/attendanceSignature.js';
 import { cloudinaryApp } from '../app.js';
 
 export const ListAttendance = async (req, res) => {
@@ -202,17 +207,17 @@ export const SaveAttendanceSignature = async (req, res) => {
 			transformation: [{ quality: 'auto' }],
 		});
 
-		const attendance = await updateAttendance({
-			id: attendance_id,
-			signature_url: cloudinaryResult.secure_url,
-		});
+		const record = await upsertAttendanceSignature(
+			attendance_id,
+			cloudinaryResult.secure_url,
+		);
 
 		res.status(200).json({
 			success: true,
 			message: 'Firma guardada correctamente.',
 			data: {
 				signatureUrl: cloudinaryResult.secure_url,
-				attendance,
+				record,
 			},
 		});
 	} catch (error) {
@@ -220,6 +225,37 @@ export const SaveAttendanceSignature = async (req, res) => {
 		res.status(500).json({
 			success: false,
 			error: 'Error al procesar la firma.',
+		});
+	}
+};
+
+export const DeleteAttendanceSignature = async (req, res) => {
+	try {
+		const { id } = req.params;
+		const signature = await getSignatureByAttendanceId(id);
+
+		if (!signature) {
+			return res.status(404).json({
+				success: false,
+				error: 'Firma no encontrada.',
+			});
+		}
+
+		const publicId = `firmas/attendance_signature_${id}`;
+
+		await cloudinaryApp.uploader.destroy(publicId);
+
+		await deleteAttendanceSignature(id);
+
+		res.status(200).json({
+			success: true,
+			message: 'Firma eliminada correctamente.',
+		});
+	} catch (error) {
+		console.error('Error en DeleteAttendanceSignature:', error);
+		res.status(500).json({
+			success: false,
+			error: 'Error al eliminar la firma.',
 		});
 	}
 };

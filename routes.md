@@ -362,11 +362,12 @@ student_ids: number[] (array of course_student_id)
 **Response** `200`: Updated course group object.
 
 ### `POST /api/course_groups/signature`
-Save course group signature (base64 → Cloudinary).
+Save course group signature (base64 → Cloudinary). Auto-asigna signature_number (1-3) por día. Máximo 3 por día.
 
 **Request** (form-data):
 ```
 course_group_id: number
+day_number: number
 signature: string (base64 data-url)
 ```
 
@@ -377,9 +378,23 @@ signature: string (base64 data-url)
   "message": "Firma guardada correctamente.",
   "data": {
     "signatureUrl": "https://...",
-    "courseGroup": { ... }
+    "signature_number": 1,
+    "record": { ... }
   }
 }
+```
+
+### `GET /api/course_groups/:id/signatures`
+List signatures for a course group.
+
+**Response** `200`: Array of signature objects ordered by day_number, signature_number.
+
+### `DELETE /api/course_groups/:id/signatures/:signatureId`
+Delete a course group signature from Cloudinary and database.
+
+**Response** `200`:
+```json
+{ "success": true, "message": "Firma eliminada correctamente." }
 ```
 
 ---
@@ -604,7 +619,7 @@ day: number
 **Response** `200`: Updated subject with lesson details.
 
 ### `POST /api/assessment/saveSignatures`
-Save assessment signatures (base64 → Cloudinary).
+Save assessment signatures (base64 → Cloudinary). Guarda en BD tabla `assessment_signature`. Hasta 3 tipos (1=estudiante, 2=instructor, 3=FCAA) por CSAD.
 
 **Request** (form-data):
 ```
@@ -624,6 +639,16 @@ signature3: string (base64 data-url) (optional)
     ...
   }
 }
+```
+
+### `DELETE /api/assessment/signature?CSAD_id=X&type=1`
+Delete assessment signature from Cloudinary and database.
+
+**Query params**: `CSAD_id` (number, required), `type` (1|2|3, required)
+
+**Response** `200`:
+```json
+{ "success": true, "message": "Firma eliminada correctamente." }
 ```
 
 ---
@@ -1044,7 +1069,7 @@ Delete attendance status.
 **Errors**: `404` Attendance Status not found
 
 ### `POST /api/attendance/signature`
-Save attendance signature (base64 → Cloudinary).
+Save attendance signature (base64 → Cloudinary). Upsert: una firma por attendance.
 
 **Request** (form-data):
 ```
@@ -1059,12 +1084,20 @@ signature: string (base64 data-url)
   "message": "Firma guardada correctamente.",
   "data": {
     "signatureUrl": "https://...",
-    "attendance": { ... }
+    "record": { ... }
   }
 }
 ```
 
 **Errors**: `400` No signature provided / attendance_id required
+
+### `DELETE /api/attendance/:id/signature`
+Delete attendance signature from Cloudinary and database.
+
+**Response** `200`:
+```json
+{ "success": true, "message": "Firma eliminada correctamente." }
+```
 
 ---
 

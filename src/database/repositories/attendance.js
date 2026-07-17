@@ -1,7 +1,7 @@
 import { Op } from 'sequelize';
 import { models } from '../index.js';
 
-const { Attendance, AttendanceStatus, CourseStudent } = models;
+const { Attendance, AttendanceStatus, AttendanceSignature, CourseStudent } = models;
 
 const getAllAttendance = async (filters = {}) => {
 	const where = {};
@@ -37,6 +37,9 @@ const getAllAttendance = async (filters = {}) => {
 			{
 				model: AttendanceStatus,
 			},
+			{
+				model: AttendanceSignature,
+			},
 		],
 		order: [['date', 'DESC']],
 		limit: pageSize,
@@ -61,6 +64,9 @@ const getAttendanceById = async (id) => {
 			{
 				model: AttendanceStatus,
 			},
+			{
+				model: AttendanceSignature,
+			},
 		],
 	});
 	if (!attendance) throw new Error('Attendance not found');
@@ -73,6 +79,9 @@ const getAttendanceByCourseStudent = async (course_student_id) =>
 		include: [
 			{
 				model: AttendanceStatus,
+			},
+			{
+				model: AttendanceSignature,
 			},
 		],
 		order: [['date', 'DESC']],
@@ -92,17 +101,20 @@ const getAttendanceByDateRange = async (start_date, end_date) =>
 			{
 				model: AttendanceStatus,
 			},
+			{
+				model: AttendanceSignature,
+			},
 		],
 		order: [['date', 'DESC']],
 	});
 
-const createAttendance = async ({ course_student_id, date, attendance_status_id, comments, signature_url }) =>
-	await Attendance.create({ course_student_id, date, attendance_status_id, comments, signature_url });
+const createAttendance = async ({ course_student_id, date, attendance_status_id, comments }) =>
+	await Attendance.create({ course_student_id, date, attendance_status_id, comments });
 
-const updateAttendance = async ({ id, course_student_id, date, attendance_status_id, comments, signature_url }) => {
+const updateAttendance = async ({ id, course_student_id, date, attendance_status_id, comments }) => {
 	const attendance = await Attendance.findByPk(id);
 	if (!attendance) throw new Error('Attendance not found');
-	await attendance.update({ course_student_id, date, attendance_status_id, comments, signature_url });
+	await attendance.update({ course_student_id, date, attendance_status_id, comments });
 	return attendance;
 };
 

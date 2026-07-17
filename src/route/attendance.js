@@ -15,6 +15,7 @@ import {
 	UpdateAttendanceStatus,
 	DeleteAttendanceStatus,
 	SaveAttendanceSignature,
+	DeleteAttendanceSignature,
 } from '../controller/attendance.js';
 
 const upload = multer();
@@ -46,5 +47,6 @@ router.post('/', upload.none(), authenticateJWT, convertTypes, CreateAttendance)
 router.put('/', upload.none(), authenticateJWT, convertTypes, UpdateAttendance);
 router.delete('/:id', authenticateJWT, DeleteAttendance);
 router.post('/signature', upload.none(), authenticateJWT, convertTypes, SaveAttendanceSignature);
+router.delete('/:id/signature', authenticateJWT, DeleteAttendanceSignature);
 
 export default router;

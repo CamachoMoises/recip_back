@@ -5,7 +5,6 @@ const createAttendanceSchema = Joi.object({
 	date: Joi.date().required(),
 	attendance_status_id: Joi.number().integer().required(),
 	comments: Joi.any().allow('', null).optional(),
-	signature_url: Joi.string().uri().allow('', null).optional(),
 });
 
 const updateAttendanceSchema = Joi.object({
@@ -14,7 +13,6 @@ const updateAttendanceSchema = Joi.object({
 	date: Joi.date().optional(),
 	attendance_status_id: Joi.number().integer().optional(),
 	comments: Joi.any().allow('', null).optional(),
-	signature_url: Joi.string().uri().allow('', null).optional(),
 });
 
 const createAttendanceStatusSchema = Joi.object({

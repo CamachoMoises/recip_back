@@ -14,6 +14,10 @@ import {
 	updateCourseStudentAssessmentDay,
 	updateCourseStudentAssessmentLessonDay,
 } from '../database/repositories/assessment.js';
+import {
+	upsertAssessmentSignature,
+	deleteAssessmentSignature,
+} from '../database/repositories/assessmentSignature.js';
 import { cloudinaryApp } from '../app.js';
 export const CourseStudentAssessmentDetails = async (req, res) => {
 	try {
@@ -265,32 +269,31 @@ export const SaveSignatures = async (req, res) => {
 			});
 		}
 
-		const uploadPromises = [];
-		if (signature1)
-			uploadPromises.push(uploadSignature(signature1, '1', CSAD_id));
-		if (signature2)
-			uploadPromises.push(uploadSignature(signature2, '2', CSAD_id));
-		if (signature3)
-			uploadPromises.push(uploadSignature(signature3, '3', CSAD_id));
+		const uploadResults = await Promise.all([
+			signature1 ? uploadSignature(signature1, 1, CSAD_id) : null,
+			signature2 ? uploadSignature(signature2, 2, CSAD_id) : null,
+			signature3 ? uploadSignature(signature3, 3, CSAD_id) : null,
+		]);
 
-		const [
-			studentSignatureResult,
-			instructorSignatureResult,
-			fcaaSignatureResult,
-		] = await Promise.all(uploadPromises);
+		const dbPromises = uploadResults
+			.filter(Boolean)
+			.map(({ type, cloudinaryUrl }) =>
+				upsertAssessmentSignature(CSAD_id, type, cloudinaryUrl),
+			);
 
-		const uploadedSignatures = {
-			...(studentSignatureResult && {
-				studentSignatureUrl: studentSignatureResult.cloudinaryUrl,
-			}),
-			...(instructorSignatureResult && {
-				instructorSignatureUrl:
-					instructorSignatureResult.cloudinaryUrl,
-			}),
-			...(fcaaSignatureResult && {
-				fcaaSignatureUrl: fcaaSignatureResult.cloudinaryUrl,
-			}),
-		};
+		await Promise.all(dbPromises);
+
+		const uploadedSignatures = {};
+		uploadResults.forEach((result) => {
+			if (!result) return;
+			const key =
+				result.type === 1
+					? 'studentSignatureUrl'
+					: result.type === 2
+						? 'instructorSignatureUrl'
+						: 'fcaaSignatureUrl';
+			uploadedSignatures[key] = result.cloudinaryUrl;
+		});
 
 		res.status(200).json({
 			success: true,
@@ -302,6 +305,44 @@ export const SaveSignatures = async (req, res) => {
 		res.status(500).json({
 			success: false,
 			error: 'Error al procesar las firmas.',
+		});
+	}
+};
+
+export const DeleteAssessmentSignature = async (req, res) => {
+	try {
+		const { CSAD_id, type } = req.query;
+
+		if (!CSAD_id || !type) {
+			return res.status(400).json({
+				success: false,
+				error: 'CSAD_id y type son requeridos.',
+			});
+		}
+
+		const typeNum = parseInt(type);
+		if (![1, 2, 3].includes(typeNum)) {
+			return res.status(400).json({
+				success: false,
+				error: 'type debe ser 1, 2 o 3.',
+			});
+		}
+
+		const publicId = `firmas/signature_${typeNum}_${CSAD_id}`;
+
+		await cloudinaryApp.uploader.destroy(publicId);
+
+		await deleteAssessmentSignature(CSAD_id, typeNum);
+
+		res.status(200).json({
+			success: true,
+			message: 'Firma eliminada correctamente.',
+		});
+	} catch (error) {
+		console.error('Error en DeleteAssessmentSignature:', error);
+		res.status(500).json({
+			success: false,
+			error: 'Error al eliminar la firma.',
 		});
 	}
 };
@@ -324,6 +365,7 @@ const uploadSignature = async (
 	});
 
 	return {
+		type: signatureType,
 		cloudinaryUrl: cloudinaryResult.secure_url,
 	};
 };

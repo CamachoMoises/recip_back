@@ -12,6 +12,7 @@ import {
 	CourseStudentAssessmentData,
 	CourseStudentAssessmentApprove,
 	SaveSignatures,
+	DeleteAssessmentSignature,
 } from '../controller/assessment.js';
 
 const upload = multer();
@@ -77,5 +78,10 @@ router.post(
 	authenticateJWT,
 	convertTypes,
 	SaveSignatures
+);
+router.delete(
+	'/signature',
+	authenticateJWT,
+	DeleteAssessmentSignature,
 );
 export default router;

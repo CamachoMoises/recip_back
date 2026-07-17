@@ -46,19 +46,19 @@ MySQL with `underscored: true` naming (snake_case columns/timestamps). Sequelize
 
 Always use the skills in .opencode\skills\recip-backend
 
-### Models (35 models across tables)
+### Models (37 models across tables)
 
 **User domain:** User, UserGroup, UserPermission, UserDocType, Student, Instructor, UserSuggestion, Group, GroupPermission
 
 **Course domain:** Course, CourseType, CourseLevel, CourseStudent, CourseStudentTest, CourseStudentTestQuestion, CourseStudentTestAnswer, CourseGroup, CourseGroupSignature
 
-**Assessment domain:** CourseStudentAssessment, CourseStudentAssessmentDay, CourseStudentAssessmentLessonDetail
+**Assessment domain:** CourseStudentAssessment, CourseStudentAssessmentDay, CourseStudentAssessmentLessonDetail, AssessmentSignature
 
 **Subject domain:** Subject, SubjectDays, SubjectLesson, SubjectLessonDays
 
 **Test domain:** Test, QuestionType, TestQuestionType, Question, Answer
 
-**Other:** Schedule, Attendance, AttendanceStatus, Module, Permission, EmailHistory
+**Other:** Schedule, Attendance, AttendanceStatus, AttendanceSignature, Module, Permission, EmailHistory
 
 **Disconnected (defined but no associations):** Participant, Evaluation, Rating
 
@@ -74,7 +74,7 @@ Always use the skills in .opencode\skills\recip-backend
 | `/api/subjects` | Subject + lessons + days CRUD |
 | `/api/assessment` | Student assessments + signatures |
 | `/api/test` | Tests, questions, answers, Excel/CSV import |
-| `/api/attendance` | Attendance + statuses CRUD + signature upload |
+| `/api/attendance` | Attendance + statuses CRUD + signature upload + delete signature |
 | `/api/suggestions` | User suggestions CRUD |
 | `/api/module` | List modules (public) |
 | `/api/group` | List groups (public) |
