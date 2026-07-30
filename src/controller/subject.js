@@ -74,7 +74,7 @@ export const SubjectDetails = async (req, res) => {
 export const CreateSubject = async (req, res) => {
 	const data = req.body;
 	try {
-		const new_data = await createSubjectSchema.validateAsync(data);
+		const new_data = await createSubjectSchema.validateAsync(data, { stripUnknown: true });
 		const { name, hours, course_id, order, status, is_schedulable } =
 			new_data;
 		const new_subject = await createSubject({
