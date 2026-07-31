@@ -10,6 +10,13 @@ const {
 	CourseGroupSignature,
 	Student,
 	User,
+	Schedule,
+	Instructor,
+	Attendance,
+	AttendanceStatus,
+	AttendanceSignature,
+	Subject,
+	SubjectDays,
 } = models;
 
 const getAllCourseGroups = async (filters) => {
@@ -165,6 +172,82 @@ const removeCourseStudentsFromGroup = async (
 	return affectedCount;
 };
 
+const getAttendanceReport = async (filters = {}) => {
+	const whereClause = {};
+	if (filters.course_group_id) {
+		whereClause.id = filters.course_group_id;
+	}
+	if (filters.course_id) {
+		whereClause.course_id = filters.course_id;
+	}
+
+	const pageSize = parseInt(filters.pageSize) || 10;
+	const currentPage = parseInt(filters.currentPage) || 1;
+	const offset = (currentPage - 1) * pageSize;
+
+	const result = await CourseGroup.findAndCountAll({
+		distinct: true,
+		col: 'id',
+		where: whereClause,
+		include: [
+			{
+				model: Course,
+				include: [CourseType, CourseLevel],
+			},
+			{
+				model: CourseGroupSignature,
+				order: [
+					['day_number', 'ASC'],
+					['signature_number', 'ASC'],
+				],
+			},
+			{
+				model: CourseStudent,
+				include: [
+					{
+						model: Student,
+						include: [{ model: User }],
+					},
+					{
+						model: Course,
+					},
+					{
+						model: Schedule,
+						order: [['date', 'ASC']],
+						include: [
+							{
+								model: Instructor,
+								include: [{ model: User }],
+							},
+							{ model: Subject },
+							{ model: SubjectDays },
+						],
+					},
+					{
+						model: Attendance,
+						order: [['day', 'ASC']],
+						include: [
+							{ model: AttendanceStatus },
+							{ model: AttendanceSignature },
+						],
+					},
+				],
+			},
+		],
+		order: [['createdAt', 'DESC']],
+		limit: pageSize,
+		offset: offset,
+	});
+
+	return {
+		data: result.rows,
+		totalItems: result.count,
+		currentPage: currentPage,
+		pageSize: pageSize,
+		totalPages: Math.ceil(result.count / pageSize),
+	};
+};
+
 export {
 	getAllCourseGroups,
 	getCourseGroupById,
@@ -173,4 +256,5 @@ export {
 	deleteCourseGroup,
 	getCourseStudentsByGroupId,
 	removeCourseStudentsFromGroup,
+	getAttendanceReport,
 };

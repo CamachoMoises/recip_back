@@ -12,6 +12,7 @@ import {
 	RemoveCourseStudentsFromGroup,
 	ListCourseGroupSignatures,
 	DeleteCourseGroupSignature,
+	AttendanceReport,
 } from '../controller/courseGroup.js';
 import { authenticateJWT } from '../controller/authentication.js';
 
@@ -19,6 +20,7 @@ const upload = multer();
 const router = express.Router();
 
 router.get('/', authenticateJWT, ListCourseGroups);
+router.get('/report/attendance', authenticateJWT, AttendanceReport);
 router.get('/:id', authenticateJWT, CourseGroupDetails);
 router.post(
 	'/',

@@ -9,6 +9,7 @@ import {
 	getAttendanceById,
 	getAttendanceByCourseStudent,
 	getAttendanceByDateRange,
+	getCourseDaysByCourseStudent,
 	createAttendance,
 	updateAttendance,
 	deleteAttendance,
@@ -86,6 +87,12 @@ export const CreateAttendance = async (req, res) => {
 		return res.status(400).send(`Input Validation Error ${error.message}`);
 	}
 	try {
+		const courseDays = await getCourseDaysByCourseStudent(value.course_student_id);
+		if (courseDays != null && value.day > courseDays) {
+			return res
+				.status(400)
+				.send(`day (${value.day}) excede los días del curso (${courseDays}).`);
+		}
 		const attendance = await createAttendance(value);
 		const created = await getAttendanceById(attendance.id);
 		res.status(201).send(created);
@@ -100,6 +107,16 @@ export const UpdateAttendance = async (req, res) => {
 	const { error, value } = updateAttendanceSchema.validate(data);
 	if (error) return res.status(400).send(`Input Validation Error ${error.message}`);
 	try {
+		if (value.day !== undefined) {
+			const existing = await getAttendanceById(value.id);
+			const courseStudentId = value.course_student_id || existing.course_student_id;
+			const courseDays = await getCourseDaysByCourseStudent(courseStudentId);
+			if (courseDays != null && value.day > courseDays) {
+				return res
+					.status(400)
+					.send(`day (${value.day}) excede los días del curso (${courseDays}).`);
+			}
+		}
 		const attendance = await updateAttendance(value);
 		const updated = await getAttendanceById(attendance.id);
 		res.send(updated);

@@ -2,6 +2,7 @@ import Joi from 'joi';
 
 const createAttendanceSchema = Joi.object({
 	course_student_id: Joi.number().integer().required(),
+	day: Joi.number().integer().min(1).required(),
 	date: Joi.date().required(),
 	attendance_status_id: Joi.number().integer().required(),
 	comments: Joi.any().allow('', null).optional(),
@@ -10,6 +11,7 @@ const createAttendanceSchema = Joi.object({
 const updateAttendanceSchema = Joi.object({
 	id: Joi.number().integer().required(),
 	course_student_id: Joi.number().integer().optional(),
+	day: Joi.number().integer().min(1).optional(),
 	date: Joi.date().optional(),
 	attendance_status_id: Joi.number().integer().optional(),
 	comments: Joi.any().allow('', null).optional(),

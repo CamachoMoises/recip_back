@@ -1,13 +1,16 @@
 import { Op } from 'sequelize';
 import { models } from '../index.js';
 
-const { Attendance, AttendanceStatus, AttendanceSignature, CourseStudent } = models;
+const { Attendance, AttendanceStatus, AttendanceSignature, CourseStudent, Course } = models;
 
 const getAllAttendance = async (filters = {}) => {
 	const where = {};
 
 	if (filters.course_student_id) {
 		where.course_student_id = filters.course_student_id;
+	}
+	if (filters.day) {
+		where.day = filters.day;
 	}
 	if (filters.attendance_status_id) {
 		where.attendance_status_id = filters.attendance_status_id;
@@ -108,14 +111,48 @@ const getAttendanceByDateRange = async (start_date, end_date) =>
 		order: [['date', 'DESC']],
 	});
 
-const createAttendance = async ({ course_student_id, date, attendance_status_id, comments }) =>
-	await Attendance.create({ course_student_id, date, attendance_status_id, comments });
+const createAttendance = async ({
+	course_student_id,
+	day,
+	date,
+	attendance_status_id,
+	comments,
+}) =>
+	await Attendance.create({
+		course_student_id,
+		day,
+		date,
+		attendance_status_id,
+		comments,
+	});
 
-const updateAttendance = async ({ id, course_student_id, date, attendance_status_id, comments }) => {
+const updateAttendance = async ({
+	id,
+	course_student_id,
+	day,
+	date,
+	attendance_status_id,
+	comments,
+}) => {
 	const attendance = await Attendance.findByPk(id);
 	if (!attendance) throw new Error('Attendance not found');
-	await attendance.update({ course_student_id, date, attendance_status_id, comments });
+	await attendance.update({
+		course_student_id,
+		day,
+		date,
+		attendance_status_id,
+		comments,
+	});
 	return attendance;
+};
+
+const getCourseDaysByCourseStudent = async (course_student_id) => {
+	const courseStudent = await CourseStudent.findOne({
+		where: { id: course_student_id },
+		include: [{ model: Course }],
+	});
+	if (!courseStudent) throw new Error('CourseStudent not found');
+	return courseStudent.Course?.days;
 };
 
 const deleteAttendance = async (id) => {
@@ -150,6 +187,7 @@ export {
 	getAttendanceById,
 	getAttendanceByCourseStudent,
 	getAttendanceByDateRange,
+	getCourseDaysByCourseStudent,
 	createAttendance,
 	updateAttendance,
 	deleteAttendance,

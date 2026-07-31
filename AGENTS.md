@@ -70,7 +70,7 @@ Always use the skills in .opencode\skills\recip-backend
 | `/api/users` | User/student/instructor CRUD |
 | `/api/users/student/search` | Fast student search by name/email |
 | `/api/courses` | Course + enrollment + schedule CRUD |
-| `/api/course_groups` | Course groups CRUD + students list + remove students + signature upload + list signatures per group |
+| `/api/course_groups` | Course groups CRUD + students list + remove students + signature upload + list signatures per group + `GET /report/attendance` (attendance/signature report grouped by group with students/user, course, schedules/instructors) |
 | `/api/subjects` | Subject + lessons + days CRUD |
 | `/api/assessment` | Student assessments + signatures |
 | `/api/test` | Tests, questions, answers, Excel/CSV import |

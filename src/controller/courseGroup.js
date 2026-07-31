@@ -11,6 +11,7 @@ import {
 	getCourseGroupById,
 	getCourseStudentsByGroupId,
 	removeCourseStudentsFromGroup,
+	getAttendanceReport,
 } from '../database/repositories/courseGroup.js';
 import {
 	getNextSignatureNumber,
@@ -254,6 +255,17 @@ export const RemoveCourseStudentsFromGroup = async (req, res) => {
 		if (error.message === 'CourseGroup not found') {
 			return res.status(404).json({ error: error.message });
 		}
+		res.status(500).json({ error: 'Internal Server Error' });
+	}
+};
+
+export const AttendanceReport = async (req, res) => {
+	try {
+		const filters = req.query;
+		const result = await getAttendanceReport(filters);
+		res.send(result);
+	} catch (error) {
+		console.log(error);
 		res.status(500).json({ error: 'Internal Server Error' });
 	}
 };

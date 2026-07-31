@@ -16,6 +16,10 @@ export default (sequelize, DataTypes) => {
 					key: 'id',
 				},
 			},
+			day: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+			},
 			date: {
 				type: DataTypes.DATEONLY,
 				allowNull: false,
@@ -59,6 +63,12 @@ export default (sequelize, DataTypes) => {
 					unique: true,
 					using: 'BTREE',
 					fields: [{ name: 'course_student_id' }, { name: 'date' }],
+				},
+				{
+					name: 'uq_attendance_course_student_day',
+					unique: true,
+					using: 'BTREE',
+					fields: [{ name: 'course_student_id' }, { name: 'day' }],
 				},
 			],
 		}
