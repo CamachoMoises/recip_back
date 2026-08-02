@@ -534,15 +534,27 @@ Get assessment with subject data.
 **Response** `200`:
 ```json
 {
-  "CSA": { ... },
+  "CSA": {
+    "...": "...",
+    "course_score_average": 7.5,
+    "CourseStudentAssessmentDays": [
+      {
+        "id": 1,
+        "day": 1,
+        "...": "...",
+        "score_average": 7.8
+      }
+    ]
+  },
   "CASD": [ ... ]
 }
 ```
+`score_average` (por día) y `course_score_average` (toda la evaluación) usan el último valor por registro: `score_3` si existe, si no `score_2`, si no `score`. Redondeado a 1 decimal. `null` si no hay registros.
 
 ### `GET /api/assessment/courseStudentAssessmentDay`
 Get or create assessment day.
 
-**Query params**: `CSA_id`, `day`, `course_id`, `student_id`, `course_student_id`
+**Query params**: `CSA_id`, `day`, `course_id`, `student_id`, `course_student_id`, `takeoff_day`, `takeoff_night`, `landing_day`, `landing_night`, `training_time`, `check_time`, `type` (todos opcionales; se usan al crear)
 
 **Response** `200`: Assessment day object.
 
@@ -590,6 +602,13 @@ seat: text (optional)
 takeoff: number (optional)
 landing: number (optional)
 comments: text (optional)
+takeoff_day: number (optional)
+takeoff_night: number (optional)
+landing_day: number (optional)
+landing_night: number (optional)
+training_time: time string "HH:MM:SS" (optional)
+check_time: time string "HH:MM:SS" (optional)
+type: string (optional) — entrenamiento | reentrenamiento | chequeo | re-chequeo | experiencia_reciente
 ```
 
 **Response** `200`: Updated assessment day object.

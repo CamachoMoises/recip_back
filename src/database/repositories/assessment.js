@@ -103,6 +103,13 @@ const createCourseStudentAssessmentDay = async ({
 	course_student_id,
 	course_student_assessment_id,
 	day,
+	takeoff_day,
+	takeoff_night,
+	landing_day,
+	landing_night,
+	training_time,
+	check_time,
+	type,
 }) => {
 	const newCourseStudentAssessmentDay =
 		await CourseStudentAssessmentDay.create({
@@ -111,6 +118,13 @@ const createCourseStudentAssessmentDay = async ({
 			course_student_id,
 			course_student_assessment_id,
 			day,
+			takeoff_day,
+			takeoff_night,
+			landing_day,
+			landing_night,
+			training_time,
+			check_time,
+			type,
 		});
 	return newCourseStudentAssessmentDay;
 };
@@ -142,6 +156,13 @@ const updateCourseStudentAssessmentDay = async ({
 	takeoff,
 	landing,
 	comments,
+	takeoff_day,
+	takeoff_night,
+	landing_day,
+	landing_night,
+	training_time,
+	check_time,
+	type,
 }) => {
 	const courseStudentAssessmentDay =
 		await CourseStudentAssessmentDay.findByPk(id);
@@ -163,6 +184,13 @@ const updateCourseStudentAssessmentDay = async ({
 		takeoff,
 		landing,
 		comments,
+		takeoff_day,
+		takeoff_night,
+		landing_day,
+		landing_night,
+		training_time,
+		check_time,
+		type,
 	});
 	return courseStudentAssessmentDay;
 };
@@ -294,6 +322,37 @@ const updateCourseStudentAssessmentLessonDay = async ({
 	});
 	return courseStudentAssessmentLessonDetail;
 };
+const getAssessmentScoreAverages = async ({ CSA_id }) => {
+	const { fn, col } = CourseStudentAssessmentLessonDetail.sequelize;
+	const effectiveScore = fn(
+		'COALESCE',
+		col('score_3'),
+		col('score_2'),
+		col('score'),
+	);
+
+	const perDay = await CourseStudentAssessmentLessonDetail.findAll({
+		attributes: [
+			'course_student_assessment_day_id',
+			[fn('AVG', effectiveScore), 'score_average'],
+		],
+		where: { course_student_assessment_id: CSA_id },
+		group: ['course_student_assessment_day_id'],
+		raw: true,
+	});
+
+	const courseRow = await CourseStudentAssessmentLessonDetail.findOne({
+		attributes: [[fn('AVG', effectiveScore), 'score_average']],
+		where: { course_student_assessment_id: CSA_id },
+		raw: true,
+	});
+
+	return {
+		perDay,
+		course: courseRow ? courseRow.score_average : null,
+	};
+};
+
 const getSubjectBySubjectByCSA = async ({ CSA_id, course_id }) => {
 	const CSAD = await Subject.findAll({
 		where: { course_id, status: true, is_schedulable: false },
@@ -338,4 +397,5 @@ export {
 	createCourseStudentAssessmentLessonDay,
 	updateCourseStudentAssessmentLessonDay,
 	getSubjectBySubjectByCSA,
+	getAssessmentScoreAverages,
 };

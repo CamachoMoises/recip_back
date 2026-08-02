@@ -204,6 +204,34 @@ export const course_student_assessment_day = (
 				type: DataTypes.TEXT,
 				allowNull: true,
 			},
+			takeoff_day: {
+				type: DataTypes.INTEGER,
+				allowNull: true,
+			},
+			takeoff_night: {
+				type: DataTypes.INTEGER,
+				allowNull: true,
+			},
+			landing_day: {
+				type: DataTypes.INTEGER,
+				allowNull: true,
+			},
+			landing_night: {
+				type: DataTypes.INTEGER,
+				allowNull: true,
+			},
+			training_time: {
+				type: DataTypes.TIME,
+				allowNull: true,
+			},
+			check_time: {
+				type: DataTypes.TIME,
+				allowNull: true,
+			},
+			type: {
+				type: DataTypes.STRING(50),
+				allowNull: true,
+			},
 		},
 		{
 			sequelize,

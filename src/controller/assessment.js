@@ -10,6 +10,7 @@ import {
 	getSubjectBySubjectByCSA,
 	getSubjectBySubjectId,
 	getSubjectsByAssessment,
+	getAssessmentScoreAverages,
 	updateCourseStudentAssessmentApprove,
 	updateCourseStudentAssessmentDay,
 	updateCourseStudentAssessmentLessonDay,
@@ -19,6 +20,12 @@ import {
 	deleteAssessmentSignature,
 } from '../database/repositories/assessmentSignature.js';
 import { cloudinaryApp } from '../app.js';
+
+const round1 = (value) =>
+	value === null || value === undefined
+		? null
+		: Math.round(Number(value) * 10) / 10;
+
 export const CourseStudentAssessmentDetails = async (req, res) => {
 	try {
 		const courseStudentAssessmentId = req.params.id;
@@ -40,6 +47,13 @@ export const CourseStudentAssessmentDay = async (req, res) => {
 		const course_id = req.query.course_id;
 		const student_id = req.query.student_id;
 		const course_student_id = req.query.course_student_id;
+		const takeoff_day = req.query.takeoff_day;
+		const takeoff_night = req.query.takeoff_night;
+		const landing_day = req.query.landing_day;
+		const landing_night = req.query.landing_night;
+		const training_time = req.query.training_time;
+		const check_time = req.query.check_time;
+		const type = req.query.type;
 		const CSAD_prev = await getCourseStudentAssessmentDayByCSA({
 			CSA_id,
 			day,
@@ -56,6 +70,13 @@ export const CourseStudentAssessmentDay = async (req, res) => {
 				course_student_id,
 				course_student_assessment_id: CSA_id,
 				day,
+				takeoff_day,
+				takeoff_night,
+				landing_day,
+				landing_night,
+				training_time,
+				check_time,
+				type,
 			});
 			const CASD = await getCourseStudentAssessmentDayById({
 				id: CASD_created.id,
@@ -125,6 +146,13 @@ export const UpdateCourseStudentAssessmentDay = async (req, res) => {
 			takeoff,
 			landing,
 			comments,
+			takeoff_day,
+			takeoff_night,
+			landing_day,
+			landing_night,
+			training_time,
+			check_time,
+			type,
 		} = data;
 		const CSAD_update = await updateCourseStudentAssessmentDay({
 			id,
@@ -142,6 +170,13 @@ export const UpdateCourseStudentAssessmentDay = async (req, res) => {
 			takeoff,
 			landing,
 			comments,
+			takeoff_day,
+			takeoff_night,
+			landing_day,
+			landing_night,
+			training_time,
+			check_time,
+			type,
 		});
 
 		const CASD = await getCourseStudentAssessmentDayById({
@@ -250,7 +285,24 @@ export const CourseStudentAssessmentData = async (req, res) => {
 				'Cannot find Course Student Assessment Day for this Course Student Assessment',
 			);
 		}
-		res.send({ CSA: courseStudentAssessment, CASD });
+
+		const averages = await getAssessmentScoreAverages({ CSA_id });
+		const perDayMap = {};
+		averages.perDay.forEach((row) => {
+			perDayMap[row.course_student_assessment_day_id] = round1(
+				row.score_average,
+			);
+		});
+
+		const csaJSON = courseStudentAssessment.toJSON();
+		if (csaJSON.CourseStudentAssessmentDays) {
+			csaJSON.CourseStudentAssessmentDays.forEach((day) => {
+				day.score_average = perDayMap[day.id] ?? null;
+			});
+		}
+		csaJSON.course_score_average = round1(averages.course);
+
+		res.send({ CSA: csaJSON, CASD });
 	} catch (error) {
 		console.log(error);
 		res.status(500).send('Internal Server Error');
