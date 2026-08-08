@@ -51,6 +51,7 @@ const getCourseStudentAssessmentById = async ({ id }) => {
 			},
 			{
 				model: CourseStudentAssessmentDay,
+				as: 'CourseStudentAssessmentDays',
 			},
 		],
 	});

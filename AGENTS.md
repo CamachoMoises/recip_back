@@ -85,6 +85,15 @@ Always use the skills in .opencode\skills\recip-backend
 | `/api/email_history` | Email history CRUD (list, create, delete) |
 | `/status` | Health check (public) |
 
+## Endpoint Contracts
+
+`CONTRACTS.md` (repo root) is the **single source of truth** for the exact request/response shape of every endpoint. It must be kept in sync with the code.
+
+- **Every endpoint** is documented there: method, path, auth, query/params/body, response shape with exact JSON keys, and error formats.
+- **Response JSON keys are exact and contractual.** The key for an included model is the Sequelize association alias. If an association has no `as:`, the key is the default snake_case plural alias (e.g. `course_student_assessment_days`), which is **not** what the frontend expects.
+- **Always define an explicit `as:`** on associations whose results are exposed via includes, and document that alias in `CONTRACTS.md` (lesson learned: `CourseStudentAssessment.hasMany(CourseStudentAssessmentDay)` broke printing/email because the implicit alias `course_student_assessment_days` did not match the contracted `CourseStudentAssessmentDays`).
+- Any change to a route, controller, repository include, or model alias that affects a request/response **must** update `CONTRACTS.md` in the same change.
+
 ## Middleware Stack
 
 1. Morgan logging
@@ -120,3 +129,5 @@ Lint with `npx eslint .`
 ## Self-Update Requirement
 
 When you make changes that affect the project structure (new routes, models, dependencies, or architectural changes), you **must** update this `AGENTS.md` file to reflect those changes. This file is the single source of truth for all future agent sessions.
+
+Additionally, any change that alters an endpoint's request/response (routes, controllers, repository includes, association aliases) **must** update `CONTRACTS.md`; a stale contract is a defect.

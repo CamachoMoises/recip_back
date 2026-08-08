@@ -150,6 +150,7 @@ export function setupAssociations(models) {
 	});
 	CourseStudentAssessment.hasMany(CourseStudentAssessmentDay, {
 		foreignKey: 'course_student_assessment_id',
+		as: 'CourseStudentAssessmentDays',
 	});
 	CourseStudentAssessment.hasMany(
 		CourseStudentAssessmentLessonDetail,
