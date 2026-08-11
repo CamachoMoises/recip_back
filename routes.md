@@ -554,7 +554,7 @@ Get assessment with subject data.
 ### `GET /api/assessment/courseStudentAssessmentDay`
 Get or create assessment day.
 
-**Query params**: `CSA_id`, `day`, `course_id`, `student_id`, `course_student_id`, `takeoff_day`, `takeoff_night`, `landing_day`, `landing_night`, `training_time`, `check_time`, `type` (todos opcionales; se usan al crear)
+**Query params**: `CSA_id`, `day`, `course_id`, `student_id`, `course_student_id`, `takeoff_day`, `takeoff_night`, `landing_day`, `landing_night`, `training_time`, `check_time`, `type` (todos opcionales; se usan al crear). `training_time`/`check_time` son números decimales en horas (FLOAT).
 
 **Response** `200`: Assessment day object.
 
@@ -606,8 +606,8 @@ takeoff_day: number (optional)
 takeoff_night: number (optional)
 landing_day: number (optional)
 landing_night: number (optional)
-training_time: time string "HH:MM:SS" (optional)
-check_time: time string "HH:MM:SS" (optional)
+training_time: number (hours with decimals, e.g. 1.5 = 1h30m) (optional)
+check_time: number (hours with decimals, e.g. 1.5 = 1h30m) (optional)
 type: string (optional) — entrenamiento | reentrenamiento | chequeo | re-chequeo | experiencia_reciente
 ```
 

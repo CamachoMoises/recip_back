@@ -221,11 +221,11 @@ export const course_student_assessment_day = (
 				allowNull: true,
 			},
 			training_time: {
-				type: DataTypes.TIME,
+				type: DataTypes.FLOAT,
 				allowNull: true,
 			},
 			check_time: {
-				type: DataTypes.TIME,
+				type: DataTypes.FLOAT,
 				allowNull: true,
 			},
 			type: {
