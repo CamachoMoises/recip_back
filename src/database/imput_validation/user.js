@@ -16,6 +16,7 @@ const createUserSchema = Joi.object({
 		.email({ minDomainSegments: 2, tlds: { allow: ['com', 'net'] } })
 		.required(),
 	phone: Joi.alternatives().try(Joi.string().max(500), Joi.number()),
+	rank: Joi.alternatives().try(Joi.string(), Joi.number()).allow(null, ''),
 	password: Joi.alternatives().try(
 		Joi.string().max(200),
 		Joi.number()
@@ -44,6 +45,7 @@ const updateUserSchema = Joi.object({
 		.email({ minDomainSegments: 2, tlds: { allow: ['com', 'net'] } })
 		.required(),
 	phone: Joi.alternatives().try(Joi.string().max(500), Joi.number()),
+	rank: Joi.alternatives().try(Joi.string(), Joi.number()).allow(null, ''),
 	password: Joi.alternatives().try(
 		Joi.string().max(200).allow(null, ''),
 		Joi.number()

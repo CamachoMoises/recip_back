@@ -129,6 +129,7 @@ const createUser = async ({
 	last_name,
 	phone,
 	email,
+	rank,
 	is_active,
 	is_staff,
 	is_superuser,
@@ -144,6 +145,7 @@ const createUser = async ({
 		last_name,
 		phone,
 		email,
+		rank,
 		is_active,
 		is_staff,
 		is_superuser,
@@ -162,6 +164,7 @@ const editUser = async ({
 	last_name,
 	phone,
 	email,
+	rank,
 	is_active,
 	is_staff,
 	is_superuser,
@@ -179,6 +182,7 @@ const editUser = async ({
 		user.user_doc_type_id = user_doc_type_id;
 		user.phone = phone;
 		user.email = email;
+		user.rank = rank;
 		user.is_active = is_active;
 		user.is_staff = is_staff;
 		user.is_superuser = is_superuser;

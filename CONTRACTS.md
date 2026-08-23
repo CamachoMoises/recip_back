@@ -25,7 +25,7 @@ repositorios que afecte una petición/respuesta DEBE actualizar este archivo en 
 
 | Modelo | Claves |
 |---|---|
-| User | `id, uuid, name, doc_number, user_doc_type_id, flag, country_name, phone, last_name, password, email, is_superuser, is_staff, is_active` |
+| User | `id, uuid, name, doc_number, user_doc_type_id, flag, country_name, phone, last_name, password, email, rank, is_superuser, is_staff, is_active` |
 | Student | `id, user_id, status` |
 | Instructor | `id, user_id, status` |
 | UserDocType | `id, name, symbol` |
@@ -114,7 +114,7 @@ repositorios que afecte una petición/respuesta DEBE actualizar este archivo en 
 
 ### POST /api/users/
 - Body (Joi): `doc_number` (requerido), `email` (requerido, TLD .com/.net), `name`, `last_name`,
-  `country_name`, `flag`, `phone`, `password`, `user_doc_type_id`, `is_superuser`, `is_staff`, `is_active`
+  `country_name`, `flag`, `phone`, `rank` (TEXT, opcional), `password`, `user_doc_type_id`, `is_superuser`, `is_staff`, `is_active`
 - `201` → User (sin includes)
 - `400` texto plano `Input Validation Error <msg>`
 
@@ -129,7 +129,7 @@ repositorios que afecte una petición/respuesta DEBE actualizar este archivo en 
 ### PUT /api/users/
 - Body (Joi): `id` (requerido), `doc_number` (requerido), `email` (requerido), `uuid` (requerido de
   facto, busca al usuario por uuid), `name`, `last_name`, `country_name`, `flag`, `phone`,
-  `password`, `user_doc_type_id`, `is_superuser`, `is_staff`, `is_active`, `createdAt`, `updatedAt`
+  `rank` (TEXT, opcional), `password`, `user_doc_type_id`, `is_superuser`, `is_staff`, `is_active`, `createdAt`, `updatedAt`
 - `201` → User con `student`, `instructor`, `user_doc_type`
 - `404` texto plano `User not found`; `400` `Input Validation Error <msg>`
 

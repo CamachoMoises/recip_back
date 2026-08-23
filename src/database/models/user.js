@@ -73,6 +73,11 @@ export default (sequelize, DataTypes) => {
 				allowNull: true,
 				defaultValue: 1,
 			},
+			rank: {
+				type: DataTypes.TEXT,
+				allowNull: true,
+				defaultValue: null,
+			},
 		},
 		{
 			sequelize,
