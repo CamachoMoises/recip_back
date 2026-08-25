@@ -1,4 +1,6 @@
+import { Op } from 'sequelize';
 import { models } from '../index.js';
+import { getCourseStudentIdsByInstructor } from './instructor.js';
 
 const {
 	Course,
@@ -384,6 +386,67 @@ const getSubjectBySubjectByCSA = async ({ CSA_id, course_id }) => {
 	});
 	return CSAD;
 };
+
+const getAssessmentsByInstructor = async (filters = {}) => {
+	const whereClause = {};
+
+	if (filters.course_id) {
+		whereClause.course_id = filters.course_id;
+	}
+
+	if (filters.instructor_id) {
+		const csIds = await getCourseStudentIdsByInstructor(
+			filters.instructor_id,
+		);
+		if (csIds.length === 0) {
+			return {
+				data: [],
+				totalItems: 0,
+				currentPage: parseInt(filters.currentPage) || 1,
+				pageSize: parseInt(filters.pageSize) || 10,
+				totalPages: 0,
+			};
+		}
+		whereClause.course_student_id = { [Op.in]: csIds };
+	}
+
+	const pageSize = parseInt(filters.pageSize) || 10;
+	const currentPage = parseInt(filters.currentPage) || 1;
+	const offset = (currentPage - 1) * pageSize;
+
+	const result = await CourseStudentAssessment.findAndCountAll({
+		distinct: true,
+		col: 'id',
+		where: whereClause,
+		include: [
+			{
+				model: CourseStudent,
+				include: [
+					{
+						model: Student,
+						include: [{ model: User }],
+					},
+				],
+			},
+			{
+				model: Course,
+				include: [CourseType, CourseLevel],
+			},
+		],
+		order: [['createdAt', 'DESC']],
+		limit: pageSize,
+		offset: offset,
+	});
+
+	return {
+		data: result.rows,
+		totalItems: result.count,
+		currentPage,
+		pageSize,
+		totalPages: Math.ceil(result.count / pageSize),
+	};
+};
+
 export {
 	getAllAssessment,
 	createCourseStudentAssessment,
@@ -399,4 +462,5 @@ export {
 	updateCourseStudentAssessmentLessonDay,
 	getSubjectBySubjectByCSA,
 	getAssessmentScoreAverages,
+	getAssessmentsByInstructor,
 };

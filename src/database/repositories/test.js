@@ -2,6 +2,7 @@ import moment from 'moment';
 import { models } from '../index.js';
 import { getCourseStudentById } from './course.js';
 import { Op, Sequelize } from 'sequelize';
+import { getCourseStudentIdsByInstructor } from './instructor.js';
 
 const {
 	Test,
@@ -541,6 +542,74 @@ const getAllCourseStudentTestByStudentId = async (
 	return data;
 };
 
+const getTestsByInstructor = async (filters = {}) => {
+	const whereClause = {};
+
+	if (filters.course_id) {
+		whereClause.course_id = filters.course_id;
+	}
+	if (typeof filters.finished !== 'undefined') {
+		whereClause.finished = filters.finished;
+	}
+
+	if (filters.instructor_id) {
+		const csIds = await getCourseStudentIdsByInstructor(
+			filters.instructor_id,
+		);
+		if (csIds.length === 0) {
+			return {
+				data: [],
+				totalItems: 0,
+				currentPage: parseInt(filters.currentPage) || 1,
+				pageSize: parseInt(filters.pageSize) || 10,
+				totalPages: 0,
+			};
+		}
+		whereClause.course_student_id = { [Op.in]: csIds };
+	}
+
+	const pageSize = parseInt(filters.pageSize) || 10;
+	const currentPage = parseInt(filters.currentPage) || 1;
+	const offset = (currentPage - 1) * pageSize;
+
+	const result = await CourseStudentTest.findAndCountAll({
+		distinct: true,
+		col: 'id',
+		where: whereClause,
+		include: [
+			{ model: Test },
+			{
+				model: CourseStudent,
+				include: [
+					{
+						model: models.Student,
+						include: [{ model: models.User }],
+					},
+				],
+			},
+			{
+				model: CourseStudentTestQuestion,
+				include: [
+					{
+						model: CourseStudentTestAnswer,
+					},
+				],
+			},
+		],
+		order: [['createdAt', 'DESC']],
+		limit: pageSize,
+		offset: offset,
+	});
+
+	return {
+		data: result.rows,
+		totalItems: result.count,
+		currentPage,
+		pageSize,
+		totalPages: Math.ceil(result.count / pageSize),
+	};
+};
+
 export {
 	getAllTest,
 	getTestById,
@@ -570,4 +639,5 @@ export {
 	createCourseStudentTestAnswer,
 	getTotalScore,
 	getAllCourseStudentTestByStudentId,
+	getTestsByInstructor,
 };

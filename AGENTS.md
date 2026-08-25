@@ -34,6 +34,7 @@ Migration files live in `migrations/` (`.cjs` — CommonJS for CLI compat) and s
 - `src/database/models/` — One file per DB table, model definitions
 - `src/database/associations.js` — All model relationships (exported `setupAssociations(models)`)
 - `src/database/repositories/` — Data access layer (Sequelize queries)
+- `src/database/repositories/instructor.js` — Shared helper for instructor-based filtering (used by course, courseGroup, assessment, test, attendance repositories)
 - `src/database/imput_validation/` — Joi schemas (note: typo in directory name "imput")
 
 ## Database
@@ -69,12 +70,13 @@ Always use the skills in .opencode\skills\recip-backend
 | `/auth` | Login (public) |
 | `/api/users` | User/student/instructor CRUD |
 | `/api/users/student/search` | Fast student search by name/email |
-| `/api/courses` | Course + enrollment + schedule CRUD |
-| `/api/course_groups` | Course groups CRUD + students list + remove students + signature upload + list signatures per group + `GET /report/attendance` (attendance/signature report grouped by group with students/user, course, schedules/instructors) |
+| `/api/courses` | Course + enrollment + schedule CRUD (includes `instructor_id` filter on `coursesStudents`) |
+| `/api/course_groups` | Course groups CRUD + students list + remove students + signature upload + list signatures per group + `GET /report/attendance` (attendance/signature report grouped by group with students/user, course, schedules/instructors). Supports `instructor_id` filter. |
 | `/api/subjects` | Subject + lessons + days CRUD |
 | `/api/assessment` | Student assessments + signatures |
 | `/api/test` | Tests, questions, answers, Excel/CSV import |
-| `/api/attendance` | Attendance + statuses CRUD + signature upload + delete signature |
+| `/api/attendance` | Attendance + statuses CRUD + signature upload + delete signature. Supports `instructor_id` filter. |
+| `/api/instructor` | Instructor dashboard: schedules, assessments, tests filtered by instructor_id |
 | `/api/suggestions` | User suggestions CRUD |
 | `/api/module` | List modules (public) |
 | `/api/group` | List groups (public) |

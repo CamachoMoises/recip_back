@@ -16,6 +16,7 @@ import suggestionRoutes from './route/suggestion.js';
 import attendanceRoutes from './route/attendance.js';
 import courseGroupRoutes from './route/courseGroup.js';
 import emailHistoryRoutes from './route/emailHistory.js';
+import instructorRoutes from './route/instructor.js';
 import { v2 as cloudinaryApp } from 'cloudinary';
 import { dbHealthMiddleware } from './middleware/dbHealth.js';
 
@@ -70,6 +71,7 @@ app.use('/api/suggestions', suggestionRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/course_groups', courseGroupRoutes);
 app.use('/api/email_history', emailHistoryRoutes);
+app.use('/api/instructor', instructorRoutes);
 
 export { cloudinaryApp };
 export default app;

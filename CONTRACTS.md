@@ -166,13 +166,15 @@ repositorios que afecte una petición/respuesta DEBE actualizar este archivo en 
 - `200` → Course con `course_type`, `course_level`
 
 ### GET /coursesStudents
-- Query: `course_type_id`, `status`, `course_group_id`, `course_id`, `student_id` (opcionales),
+- Query: `course_type_id`, `status`, `course_group_id`, `course_id`, `student_id`, `instructor_id` (opcionales),
   `pageSize` (default 10), `currentPage` (default 1)
 - `200` → `{ data: CourseStudent[], totalItems, currentPage, pageSize, totalPages }`
   Cada fila: claves de CourseStudent + `highest_score` (calculado) + alias
   `student` (con `user`), `course_group`, `course` (con `course_type`, `course_level`),
   `course_student_tests`, `course_student_assessment`, `schedules` (cada uno con `subject`
   e `instructor` con `user`)
+- Nota: cuando `instructor_id` está presente, filtra solo los CourseStudent cuyos schedules
+  pertenecen al instructor indicado. Si no hay resultados, retorna `{ data: [], totalItems: 0, ... }`
 
 ### GET /courseStudent/:id
 - Params: `id`
@@ -224,10 +226,13 @@ repositorios que afecte una petición/respuesta DEBE actualizar este archivo en 
 ## Course Groups — `/api/course_groups`
 
 ### GET /
-- Query: `title`, `course_id`, `user_code`, `status` (opcionales), `pageSize` (default 10),
+- Query: `title`, `course_id`, `user_code`, `status`, `instructor_id` (opcionales), `pageSize` (default 10),
   `currentPage` (default 1)
 - `200` → `{ data: CourseGroup[], totalItems, currentPage, pageSize, totalPages }`
   Cada fila con `course` (con `course_type`, `course_level`)
+- Nota: cuando `instructor_id` está presente, filtra grupos por los cursos del instructor
+  y cada grupo incluye `course_students[]` con `student.user` anidados.
+  Si no hay resultados, retorna `{ data: [], totalItems: 0, ... }`
 
 ### GET /:id
 - Params: `id`
@@ -520,10 +525,12 @@ repositorios que afecte una petición/respuesta DEBE actualizar este archivo en 
 ## Attendance — `/api/attendance`
 
 ### GET /
-- Query: `course_student_id`, `day`, `attendance_status_id`, `date_from`, `date_to` (opcionales),
+- Query: `course_student_id`, `day`, `attendance_status_id`, `date_from`, `date_to`, `instructor_id` (opcionales),
   `pageSize` (default 10), `currentPage` (default 1)
 - `200` → `{ data: Attendance[], totalItems, currentPage, pageSize, totalPages }`
   Cada fila con `course_student`, `attendance_status`, `attendance_signature`
+- Nota: cuando `instructor_id` está presente, filtra asistencias de los CourseStudent
+  del instructor indicado. Si no hay resultados, retorna `{ data: [], totalItems: 0, ... }`
 
 ### GET /:id
 - Params: `id`
@@ -580,6 +587,37 @@ repositorios que afecte una petición/respuesta DEBE actualizar este archivo en 
 - Params: `id` (attendance_id)
 - `200` → `{ success: true, message: 'Firma eliminada correctamente.' }`
 - `404` JSON `{ success: false, error: 'Firma no encontrada.' }`
+
+---
+
+## Instructor — `/api/instructor`
+
+> Endpoints para el dashboard del instructor. Filtran datos por `instructor_id` a través
+> de la tabla `Schedule` (Instructor → Schedule → CourseStudent → datos).
+
+### GET /schedule/:instructor_id
+- Params: `instructor_id` (requerido)
+- Auth: sí
+- `200` → array de Schedule (order date/hora ASC) con `student` (con `user`), `instructor` (con `user`),
+  `course_student`, `subject_days`, `subject`
+- `400` JSON `{ error: 'Parámetro instructor_id inválido' }`
+
+### GET /assessments
+- Query: `instructor_id` (requerido), `course_id` (opcional), `pageSize` (default 10),
+  `currentPage` (default 1)
+- Auth: sí
+- `200` → `{ data: CourseStudentAssessment[], totalItems, currentPage, pageSize, totalPages }`
+  Cada fila con `course_student` (con `student.user`) y `course` (con `course_type`, `course_level`)
+- `400` JSON `{ error: 'Parámetro instructor_id inválido' }`
+
+### GET /tests
+- Query: `instructor_id` (requerido), `course_id` (opcional), `finished` (opcional),
+  `pageSize` (default 10), `currentPage` (default 1)
+- Auth: sí
+- `200` → `{ data: CourseStudentTest[], totalItems, currentPage, pageSize, totalPages }`
+  Cada fila con `test`, `course_student` (con `student.user`), y `course_student_test_questions`
+  (cada uno con `course_student_test_answer`)
+- `400` JSON `{ error: 'Parámetro instructor_id inválido' }`
 
 ---
 

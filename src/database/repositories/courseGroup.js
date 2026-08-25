@@ -1,5 +1,6 @@
 import { Op } from 'sequelize';
 import { models } from '../index.js';
+import { getCourseIdsByInstructor } from './instructor.js';
 
 const {
 	CourseGroup,
@@ -34,18 +35,51 @@ const getAllCourseGroups = async (filters) => {
 		whereClause.status = filters.status === 'true' ? true : false;
 	}
 
+	let instructorCourseIds = null;
+	if (filters.instructor_id) {
+		instructorCourseIds = await getCourseIdsByInstructor(
+			filters.instructor_id,
+		);
+		if (instructorCourseIds.length === 0) {
+			return {
+				data: [],
+				totalItems: 0,
+				currentPage: parseInt(filters.currentPage) || 1,
+				pageSize: parseInt(filters.pageSize) || 10,
+				totalPages: 0,
+			};
+		}
+		whereClause.course_id = {
+			[Op.in]: instructorCourseIds,
+		};
+	}
+
 	const pageSize = parseInt(filters.pageSize) || 10;
 	const currentPage = parseInt(filters.currentPage) || 1;
 	const offset = (currentPage - 1) * pageSize;
 
+	const includes = [
+		{
+			model: Course,
+			include: [CourseType, CourseLevel],
+		},
+	];
+
+	if (filters.instructor_id) {
+		includes.push({
+			model: CourseStudent,
+			include: [
+				{
+					model: Student,
+					include: [{ model: User }],
+				},
+			],
+		});
+	}
+
 	const result = await CourseGroup.findAndCountAll({
 		where: whereClause,
-		include: [
-			{
-				model: Course,
-				include: [CourseType, CourseLevel],
-			},
-		],
+		include: includes,
 		order: [['createdAt', 'DESC']],
 		limit: pageSize,
 		offset: offset,

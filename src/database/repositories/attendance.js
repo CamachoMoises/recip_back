@@ -1,5 +1,6 @@
 import { Op } from 'sequelize';
 import { models } from '../index.js';
+import { getCourseStudentIdsByInstructor } from './instructor.js';
 
 const { Attendance, AttendanceStatus, AttendanceSignature, CourseStudent, Course } = models;
 
@@ -23,6 +24,23 @@ const getAllAttendance = async (filters = {}) => {
 		where.date = { [Op.gte]: filters.date_from };
 	} else if (filters.date_to) {
 		where.date = { [Op.lte]: filters.date_to };
+	}
+	if (filters.instructor_id) {
+		const csIds = await getCourseStudentIdsByInstructor(
+			filters.instructor_id,
+		);
+		if (csIds.length === 0) {
+			return {
+				data: [],
+				totalItems: 0,
+				currentPage: parseInt(filters.currentPage) || 1,
+				pageSize: parseInt(filters.pageSize) || 10,
+				totalPages: 0,
+			};
+		}
+		where.course_student_id = {
+			[Op.in]: csIds,
+		};
 	}
 
 	const pageSize = parseInt(filters.pageSize) || 10;

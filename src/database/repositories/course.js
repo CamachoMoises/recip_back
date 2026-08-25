@@ -1,5 +1,6 @@
 import { Op, Sequelize } from 'sequelize';
 import { models } from '../index.js';
+import { getCourseStudentIdsByInstructor } from './instructor.js';
 
 const {
 	Course,
@@ -59,6 +60,21 @@ const getAllCoursesStudent = async (filters) => {
 	}
 	if (filters.student_id) {
 		courseStudentWhere.student_id = filters.student_id;
+	}
+	if (filters.instructor_id) {
+		const csIds = await getCourseStudentIdsByInstructor(
+			filters.instructor_id,
+		);
+		if (csIds.length === 0) {
+			return {
+				data: [],
+				totalItems: 0,
+				currentPage: parseInt(filters.currentPage) || 1,
+				pageSize: parseInt(filters.pageSize) || 10,
+				totalPages: 0,
+			};
+		}
+		courseStudentWhere.id = { [Op.in]: csIds };
 	}
 	// Calculamos el offset basado en currentPage y pageSize
 	const pageSize = parseInt(filters.pageSize) || 10; // Valor por defecto 10
@@ -457,6 +473,36 @@ const updateCourseStudentMaxAttempts = async (id, max_attempts) => {
 	return record;
 };
 
+const getScheduleByInstructor = async (instructor_id) => {
+	const data = await Schedule.findAll({
+		where: { instructor_id },
+		include: [
+			{
+				model: Student,
+				include: [{ model: User }],
+			},
+			{
+				model: Instructor,
+				include: [{ model: User }],
+			},
+			{
+				model: CourseStudent,
+			},
+			{
+				model: SubjectDays,
+			},
+			{
+				model: Subject,
+			},
+		],
+		order: [
+			['date', 'ASC'],
+			['hour', 'ASC'],
+		],
+	});
+	return data;
+};
+
 export {
 	getAllCourses,
 	getAllCoursesStudent,
@@ -477,4 +523,5 @@ export {
 	createSchedule,
 	updateSchedule,
 	updateCourseStudentMaxAttempts,
+	getScheduleByInstructor,
 };
