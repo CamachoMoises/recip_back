@@ -91,6 +91,7 @@ export const CreateCourse = async (req, res) => {
 	const course_level_id = data.level;
 	delete data.type;
 	delete data.level;
+	delete data.id;
 	delete data.course_type;
 	delete data.course_level;
 	data.course_type_id = course_type_id;
