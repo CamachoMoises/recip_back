@@ -53,6 +53,8 @@ export const CourseStudentAssessmentDay = async (req, res) => {
 		const landing_night = req.query.landing_night;
 		const training_time = req.query.training_time;
 		const check_time = req.query.check_time;
+		const ifr_time = req.query.ifr_time;
+		const vfr_time = req.query.vfr_time;
 		const type = req.query.type;
 		const CSAD_prev = await getCourseStudentAssessmentDayByCSA({
 			CSA_id,
@@ -76,6 +78,8 @@ export const CourseStudentAssessmentDay = async (req, res) => {
 				landing_night,
 				training_time,
 				check_time,
+				ifr_time,
+				vfr_time,
 				type,
 			});
 			const CASD = await getCourseStudentAssessmentDayById({
@@ -152,6 +156,8 @@ export const UpdateCourseStudentAssessmentDay = async (req, res) => {
 			landing_night,
 			training_time,
 			check_time,
+			ifr_time,
+			vfr_time,
 			type,
 		} = data;
 		const CSAD_update = await updateCourseStudentAssessmentDay({
@@ -176,6 +182,8 @@ export const UpdateCourseStudentAssessmentDay = async (req, res) => {
 			landing_night,
 			training_time,
 			check_time,
+			ifr_time,
+			vfr_time,
 			type,
 		});
 

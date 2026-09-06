@@ -368,8 +368,9 @@ repositorios que afecte una petición/respuesta DEBE actualizar este archivo en 
 
 ### GET /courseStudentAssessmentDay
 - Query: `CSA_id`, `day`, `course_id`, `student_id`, `course_student_id`, `takeoff_day`,
-  `takeoff_night`, `landing_day`, `landing_night`, `training_time`, `check_time`, `type`
-  (`training_time`/`check_time`: números decimales en horas)
+  `takeoff_night`, `landing_day`, `landing_night`, `training_time`, `check_time`, `ifr_time`,
+  `vfr_time`, `type`
+  (`training_time`/`check_time`/`ifr_time`/`vfr_time`: números decimales en horas)
 - `200` → CourseStudentAssessmentDay (si no existe el día, lo crea y lo devuelve)
 
 ### POST /createCourseStudentAssessment
@@ -384,8 +385,9 @@ repositorios que afecte una petición/respuesta DEBE actualizar este archivo en 
 ### PUT /updateCourseStudentAssessmentDay
 - Body: `id` (requerido), `airport`, `airstrip`, `elevation`, `meteorology`, `temperature`, `qnh`,
   `wind`, `weight`, `flaps`, `power`, `seat`, `takeoff`, `landing`, `comments`, `takeoff_day`,
-  `takeoff_night`, `landing_day`, `landing_night`, `training_time`, `check_time`, `type`
-  (`training_time`/`check_time`: números decimales en horas)
+  `takeoff_night`, `landing_day`, `landing_night`, `training_time`, `check_time`, `ifr_time`,
+  `vfr_time`, `type`
+  (`training_time`/`check_time`/`ifr_time`/`vfr_time`: números decimales en horas)
 - `200` → CourseStudentAssessmentDay
 
 ### GET /fetchSubjectAssessment

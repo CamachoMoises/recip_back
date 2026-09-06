@@ -112,6 +112,8 @@ const createCourseStudentAssessmentDay = async ({
 	landing_night,
 	training_time,
 	check_time,
+	ifr_time,
+	vfr_time,
 	type,
 }) => {
 	const newCourseStudentAssessmentDay =
@@ -127,6 +129,8 @@ const createCourseStudentAssessmentDay = async ({
 			landing_night,
 			training_time,
 			check_time,
+			ifr_time,
+			vfr_time,
 			type,
 		});
 	return newCourseStudentAssessmentDay;
@@ -165,6 +169,8 @@ const updateCourseStudentAssessmentDay = async ({
 	landing_night,
 	training_time,
 	check_time,
+	ifr_time,
+	vfr_time,
 	type,
 }) => {
 	const courseStudentAssessmentDay =
@@ -193,6 +199,8 @@ const updateCourseStudentAssessmentDay = async ({
 		landing_night,
 		training_time,
 		check_time,
+		ifr_time,
+		vfr_time,
 		type,
 	});
 	return courseStudentAssessmentDay;
