@@ -219,7 +219,7 @@ const getCourseTypeById = async (id) =>
 	await CourseType.findOne({ where: { id: id } });
 
 const getCourseLevelById = async (id) =>
-	await CourseType.findOne({ where: { id: id } });
+	await CourseLevel.findOne({ where: { id: id } });
 
 const createCourse = async ({
 	name,

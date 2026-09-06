@@ -42,7 +42,7 @@ repositorios que afecte una petición/respuesta DEBE actualizar este archivo en 
 | SubjectLesson | `id, subject_id, course_id, name, order, status` |
 | SubjectLessonDays | `id, course_id, subject_id, subject_lesson_id, subject_days_id, day, classTime, status` |
 | CourseStudentAssessment | `id, course_id, student_id, course_student_id, score, approve, date, code, status, finished, comments` |
-| CourseStudentAssessmentDay | `id, course_id, student_id, course_student_id, course_student_assessment_id, day, airport, airstrip, elevation, meteorology, temperature, qnh, wind, weight, flaps, power, seat, takeoff, landing, comments, takeoff_day, takeoff_night, landing_day, landing_night, training_time, check_time, type` — `training_time`/`check_time` son `FLOAT` (horas decimales, ej. `1.5` = 1h30m) |
+| CourseStudentAssessmentDay | `id, course_id, student_id, course_student_id, course_student_assessment_id, day, airport, airstrip, elevation, meteorology, temperature, qnh, wind, weight, flaps, power, seat, takeoff, landing, comments, takeoff_day, takeoff_night, landing_day, landing_night, training_time, check_time, ifr_time, vfr_time, type` — `training_time`/`check_time`/`ifr_time`/`vfr_time` son `FLOAT` (horas decimales, ej. `1.5` = 1h30m) |
 | CourseStudentAssessmentLessonDetail | `id, course_id, student_id, course_student_id, course_student_assessment_id, course_student_assessment_day_id, subject_id, subject_lesson_id, subject_days_id, subject_lesson_days_id, item, score, score_2, score_3` |
 | Test | `id, course_id, min_score, duration, code, status` |
 | QuestionType | `id, value, max_answer, name` |

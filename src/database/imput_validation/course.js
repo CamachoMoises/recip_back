@@ -16,23 +16,19 @@ const createCourseSchema = Joi.object({
 	days: Joi.number().required(),
 	course_type_id: Joi.number()
 		.required()
-		.external(async (value, helpers) => {
+		.external(async (value) => {
 			const record = await getCourseTypeById(value);
 			if (!record) {
-				return helpers.error('custom', {
-					message: 'Course type not found',
-				});
+				throw new Error('Course type not found');
 			}
 			return value;
 		}),
 	course_level_id: Joi.number()
 		.required()
-		.external(async (value, helpers) => {
+		.external(async (value) => {
 			const record = await getCourseLevelById(value);
 			if (!record) {
-				return helpers.error('custom', {
-					message: 'Course level not found',
-				});
+				throw new Error('Course level not found');
 			}
 			return value;
 		}),
@@ -52,23 +48,19 @@ const updateCourseSchema = Joi.object({
 
 	course_type_id: Joi.number()
 		.required()
-		.external(async (value, helpers) => {
+		.external(async (value) => {
 			const record = await getCourseTypeById(value);
 			if (!record) {
-				return helpers.error('custom', {
-					message: 'Course type not found',
-				});
+				throw new Error('Course type not found');
 			}
 			return value;
 		}),
 	course_level_id: Joi.number()
 		.required()
-		.external(async (value, helpers) => {
+		.external(async (value) => {
 			const record = await getCourseLevelById(value);
 			if (!record) {
-				return helpers.error('custom', {
-					message: 'Course level not found',
-				});
+				throw new Error('Course level not found');
 			}
 			return value;
 		}),

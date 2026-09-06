@@ -228,6 +228,14 @@ export const course_student_assessment_day = (
 				type: DataTypes.FLOAT,
 				allowNull: true,
 			},
+			ifr_time: {
+				type: DataTypes.FLOAT,
+				allowNull: true,
+			},
+			vfr_time: {
+				type: DataTypes.FLOAT,
+				allowNull: true,
+			},
 			type: {
 				type: DataTypes.STRING(50),
 				allowNull: true,

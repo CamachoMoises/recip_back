@@ -125,8 +125,10 @@ export const CreateCourse = async (req, res) => {
 		const course = await getCourseById(new_course.id);
 		res.status(201).send(course);
 	} catch (error) {
-		console.log(error);
-		res.status(500).send(`Internal Server Error ${error}`);
+		console.error('Error en la validación:', error.message);
+		return res
+			.status(400)
+			.send(`Input Validation Error ${error.message}`);
 	}
 };
 
@@ -189,8 +191,10 @@ export const UpdateCourse = async (req, res) => {
 		const course = await getCourseById(id);
 		res.send(course);
 	} catch (error) {
-		console.log(error);
-		res.status(500).send(`Internal Server Error ${error}`);
+		console.error('Error en la validación:', error.message);
+		return res
+			.status(400)
+			.send(`Input Validation Error ${error.message}`);
 	}
 };
 
