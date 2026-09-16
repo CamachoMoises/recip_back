@@ -201,7 +201,11 @@ export const course_student = (sequelize, DataTypes) => {
 				allowNull: true,
 				defaultValue: 5,
 			},
-			instructor_code: {
+instructor_code: {
+				type: DataTypes.TEXT,
+				allowNull: true,
+			},
+			client: {
 				type: DataTypes.TEXT,
 				allowNull: true,
 			},

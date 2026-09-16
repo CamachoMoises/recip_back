@@ -307,8 +307,9 @@ const EDITABLE_COURSE_STUDENT_FIELDS = {
 	type_trip: 'typeTrip',
 	license: 'license',
 	regulation: 'regulation',
-	instructor_code: 'instructorCode',
+instructor_code: 'instructorCode',
 	course_group_id: 'courseGroupId',
+	client: 'client',
 };
 
 const editCourseStudent = async (course_student_id, data) => {
