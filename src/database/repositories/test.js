@@ -215,9 +215,9 @@ const updateQuestionTest = async ({ id, header, status }) => {
 const createAnswerQuestionTest = async ({
 	course_id,
 	test_id,
-	question_type_id,
 	question_id,
 	value,
+	is_correct = false,
 }) => {
 	const course = await Course.findByPk(course_id);
 	if (!course) {
@@ -234,10 +234,9 @@ const createAnswerQuestionTest = async ({
 	const answer = await Answer.create({
 		course_id,
 		test_id,
-		question_type_id,
 		question_id,
 		value,
-		is_correct: false,
+		is_correct,
 		status: true,
 	});
 	return answer;

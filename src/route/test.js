@@ -35,11 +35,11 @@ const upload = multer({
 		if (
 			file.mimetype ===
 				'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-			file.mimetype === 'application/vnd.ms-excel'
+			file.originalname.toLowerCase().endsWith('.xlsx')
 		) {
 			cb(null, true);
 		} else {
-			cb(new Error('Only Excel files are allowed'), false);
+			cb(new Error('Only .xlsx Excel files are allowed'), false);
 		}
 	},
 	limits: {
@@ -48,15 +48,22 @@ const upload = multer({
 });
 
 // Configure multer for CSV uploads
+const isCsvFile = (file) => {
+	const byExt = file.originalname.toLowerCase().endsWith('.csv');
+	const byMime = [
+		'text/csv',
+		'application/csv',
+		'text/plain',
+		'application/vnd.ms-excel',
+		'application/octet-stream',
+	].includes(file.mimetype);
+	return byExt || byMime;
+};
+
 const uploadCSV = multer({
 	storage: storage,
 	fileFilter: (req, file, cb) => {
-		if (
-			file.mimetype === 'text/csv' ||
-			file.mimetype === 'application/csv' ||
-			file.mimetype === 'text/plain' ||
-			file.originalname.endsWith('.csv')
-		) {
+		if (isCsvFile(file)) {
 			cb(null, true);
 		} else {
 			cb(new Error('Only CSV files are allowed'), false);
@@ -188,7 +195,7 @@ router.post(
 router.post(
 	'/import-csv',
 	uploadCSV.single('csv_file'),
-	// authenticateJWT,
+	authenticateJWT,
 	ImportQuestionsFromCSV,
 );
 

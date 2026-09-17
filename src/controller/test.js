@@ -1,5 +1,6 @@
 import moment from 'moment';
-import readXlsxFile from 'read-excel-file';
+import readXlsxFile from 'read-excel-file/node';
+import { parse as parseCsvSync } from 'csv-parse/sync';
 import {
 	createAnswerQuestionTest,
 	createCourseStudentTest,
@@ -37,6 +38,217 @@ import {
 } from './utilities.js';
 import { getCourseStudentById } from '../database/repositories/course.js';
 
+const normalizeImportHeaders = (headers) =>
+	headers.map((header) => String(header ?? '').trim());
+
+const rowsToImportObjects = (rows) => {
+	const headers = normalizeImportHeaders(rows[0]);
+	return rows.slice(1).map((row) => {
+		const obj = {};
+		headers.forEach((header, index) => {
+			obj[header] = row[index];
+		});
+		return obj;
+	});
+};
+
+const parseImportRows = async (buffer, format) => {
+	let rawRows;
+	if (format === 'csv') {
+		rawRows = parseCsvSync(buffer, {
+			bom: true,
+			skip_empty_lines: true,
+			relax_column_count: true,
+			trim: true,
+		});
+	} else {
+		rawRows = await readXlsxFile(buffer);
+	}
+
+	if (!Array.isArray(rawRows) || rawRows.length === 0) {
+		throw new Error('El archivo está vacío o no tiene filas');
+	}
+	return rowsToImportObjects(rawRows);
+};
+
+const isCorrectValue = (value) =>
+	value === true ||
+	value === 1 ||
+	value === 'true' ||
+	value === '1' ||
+	value === 'yes' ||
+	value === 'si' ||
+	value === 'sí' ||
+	value === 'verdadero' ||
+	value === 'correcto';
+
+const ANSWER_KEY_RE = /^Respuesta(\d+)$/;
+
+const normalizeCorrectIndex = (value) => {
+	if (value === undefined || value === null || value === '') {
+		return null;
+	}
+	const normalized = String(value).trim().toLowerCase();
+	if (/^[a-z]$/.test(normalized)) {
+		return normalized.charCodeAt(0) - 96;
+	}
+	const number = parseInt(normalized, 10);
+	return Number.isNaN(number) ? null : number;
+};
+
+const parseQuestionRow = (row) => {
+	// Plantilla en español (frontend): Pregunta + RespuestaN + RespuestaCorrecta
+	if ('Pregunta' in row) {
+		const answers = Object.keys(row)
+			.filter((key) => ANSWER_KEY_RE.test(key))
+			.sort(
+				(a, b) =>
+					parseInt(a.match(ANSWER_KEY_RE)[1], 10) -
+					parseInt(b.match(ANSWER_KEY_RE)[1], 10),
+			)
+			.map((key) => row[key])
+			.filter(
+				(value) =>
+					value !== undefined &&
+					value !== null &&
+					String(value).trim() !== '',
+			)
+			.map((value) => String(value).trim());
+
+		const correctIndex = normalizeCorrectIndex(row.RespuestaCorrecta);
+
+		return {
+			header: row.Pregunta,
+			answers: answers.map((value, index) => ({
+				value,
+				is_correct: correctIndex !== null && index + 1 === correctIndex,
+			})),
+		};
+	}
+
+	// Plantilla en inglés (legado): header + answer_N + answer_N_correct
+	if ('header' in row) {
+		const answers = [];
+		for (let i = 1; i <= 5; i++) {
+			const value = row[`answer_${i}`];
+			if (
+				value !== undefined &&
+				value !== null &&
+				String(value).trim() !== ''
+			) {
+				answers.push({
+					value: String(value).trim(),
+					is_correct: isCorrectValue(row[`answer_${i}_correct`]),
+				});
+			}
+		}
+		return { header: row.header, answers };
+	}
+
+	return null;
+};
+
+const processImportedRows = async (rows, metadata) => {
+	const test_id = parseInt(metadata.test_id);
+
+	try {
+		await getTestById(test_id);
+	} catch {
+		throw new Error('Test not found');
+	}
+
+	let questionsImported = 0;
+	let answersImported = 0;
+	let skippedRows = 0;
+
+	for (const row of rows) {
+		try {
+			const parsed = parseQuestionRow(row);
+			if (!parsed) {
+				continue;
+			}
+
+			const usesSpanish = 'Pregunta' in row;
+
+			const course_id = parseInt(
+				usesSpanish ? metadata.course_id : row.course_id,
+			);
+			let question_type_id = parseInt(
+				usesSpanish
+					? metadata.question_type_id
+					: row.question_type_id,
+			);
+			const test_question_type_id = parseInt(
+				usesSpanish
+					? metadata.test_question_type_id
+					: row.test_question_type_id,
+			);
+
+			if (!course_id || !test_question_type_id) {
+				console.warn('Skipping row with missing metadata:', row);
+				skippedRows++;
+				continue;
+			}
+
+			if (!question_type_id) {
+				if (!usesSpanish) {
+					console.warn(
+						'Skipping row with missing question_type_id:',
+						row,
+					);
+					skippedRows++;
+					continue;
+				}
+				question_type_id = 1; // selección única por defecto
+			}
+
+			if (!parsed.header || String(parsed.header).trim() === '') {
+				console.warn('Skipping row with empty question:', row);
+				skippedRows++;
+				continue;
+			}
+
+			const question = await createQuestionTest({
+				course_id,
+				test_id,
+				question_type_id,
+				test_question_type_id,
+				header: parsed.header.toString().trim(),
+			});
+
+			questionsImported++;
+
+			for (const answer of parsed.answers) {
+				await createAnswerQuestionTest({
+					course_id,
+					test_id,
+					question_id: question.id,
+					value: answer.value,
+					is_correct: answer.is_correct,
+				});
+				answersImported++;
+			}
+		} catch (rowError) {
+			console.error(
+				'Error processing row:',
+				rowError.message,
+				'Row data:',
+				row,
+			);
+			skippedRows++;
+		}
+	}
+
+	return { questionsImported, answersImported, skippedRows };
+};
+
+const importMetadataFromRequest = (req, test_id) => ({
+	test_id,
+	course_id: req.body.course_id,
+	question_type_id: req.body.question_type_id,
+	test_question_type_id: req.body.test_question_type_id,
+});
+
 export const ImportQuestionsFromCSV = async (req, res) => {
 	try {
 		const test_id = parseInt(req.query.test_id);
@@ -51,125 +263,15 @@ export const ImportQuestionsFromCSV = async (req, res) => {
 			return res.status(400).json({ error: 'No file uploaded' });
 		}
 
-		// Read CSV file
-		const data = await readXlsxFile(req.file.buffer);
-		// Skip header row and convert to objects with appropriate keys
-		const headers = data[0];
-		const jsonData = data.slice(1).map((row) => {
-			const obj = {};
-			headers.forEach((header, index) => {
-				obj[header] = row[index];
-			});
-			return obj;
-		});
-
-		let questionsImported = 0;
-		let answersImported = 0;
-
-		for (const row of jsonData) {
-			try {
-				// Extract question data
-				const {
-					course_id,
-					question_type_id,
-					test_question_type_id,
-					header,
-					answer_1,
-					answer_1_correct,
-					answer_2,
-					answer_2_correct,
-					answer_3,
-					answer_3_correct,
-					answer_4,
-					answer_4_correct,
-					answer_5,
-					answer_5_correct,
-				} = row;
-
-				// Validate required fields
-				if (
-					!course_id ||
-					!question_type_id ||
-					!test_question_type_id ||
-					!header
-				) {
-					console.warn(
-						'Skipping row with missing required fields:',
-						row,
-					);
-					continue;
-				}
-
-				// Create question
-				const question = await createQuestionTest({
-					course_id: parseInt(course_id),
-					test_id,
-					question_type_id: parseInt(question_type_id),
-					test_question_type_id: parseInt(test_question_type_id),
-					header: header.toString().trim(),
-				});
-
-				questionsImported++;
-
-				// Create answers if they exist
-				const answers = [
-					{ value: answer_1, is_correct: answer_1_correct },
-					{ value: answer_2, is_correct: answer_2_correct },
-					{ value: answer_3, is_correct: answer_3_correct },
-					{ value: answer_4, is_correct: answer_4_correct },
-					{ value: answer_5, is_correct: answer_5_correct },
-				];
-
-				for (const answer of answers) {
-					if (answer.value && answer.value.toString().trim() !== '') {
-						await createAnswerQuestionTest({
-							course_id: parseInt(course_id),
-							test_id,
-							question_type_id: parseInt(question_type_id),
-							question_id: question.id,
-							value: answer.value.toString().trim(),
-						});
-
-						// Update answer to set correct flag if needed
-						if (
-							answer.is_correct === true ||
-							answer.is_correct === 'true' ||
-							answer.is_correct === 1 ||
-							answer.is_correct === '1'
-						) {
-							// Get the created answer to update it
-							const createdAnswers = await getAnswerQuestion(
-								question.id,
-							);
-							const lastAnswer =
-								createdAnswers[createdAnswers.length - 1];
-
-							await updateAnswerQuestionTest({
-								id: lastAnswer.id,
-								value: answer.value.toString().trim(),
-								is_correct: true,
-								status: true,
-							});
-						}
-
-						answersImported++;
-					}
-				}
-			} catch (rowError) {
-				console.error(
-					'Error processing row:',
-					rowError.message,
-					'Row data:',
-					row,
-				);
-				continue;
-			}
-		}
+		const rows = await parseImportRows(req.file.buffer, 'csv');
+		const result = await processImportedRows(
+			rows,
+			importMetadataFromRequest(req, test_id),
+		);
 
 		res.status(201).json({
 			message: 'CSV import completed',
-			questionsImported,
-			answersImported,
+			...result,
 		});
 	} catch (error) {
 		console.error('Error importing from CSV:', error.message);
@@ -183,130 +285,25 @@ export const ImportQuestionsFromCSV = async (req, res) => {
 export const ImportQuestionsFromExcel = async (req, res) => {
 	try {
 		const test_id = parseInt(req.params.test_id);
+		if (!test_id || isNaN(test_id)) {
+			return res.status(400).json({
+				error: 'test_id parameter is required and must be a valid number',
+			});
+		}
 
 		if (!req.file) {
 			return res.status(400).send('No file uploaded');
 		}
 
-		// Read Excel file
-		const data = await readXlsxFile(req.file.buffer);
-		// Skip header row and convert to objects with appropriate keys
-		const headers = data[0];
-		const jsonData = data.slice(1).map((row) => {
-			const obj = {};
-			headers.forEach((header, index) => {
-				obj[header] = row[index];
-			});
-			return obj;
-		});
-
-		let questionsImported = 0;
-		let answersImported = 0;
-
-		for (const row of jsonData) {
-			try {
-				// Extract question data
-				const {
-					course_id,
-					question_type_id,
-					test_question_type_id,
-					header,
-					answer_1,
-					answer_1_correct,
-					answer_2,
-					answer_2_correct,
-					answer_3,
-					answer_3_correct,
-					answer_4,
-					answer_4_correct,
-					answer_5,
-					answer_5_correct,
-				} = row;
-
-				// Validate required fields
-				if (
-					!course_id ||
-					!question_type_id ||
-					!test_question_type_id ||
-					!header
-				) {
-					console.warn(
-						'Skipping row with missing required fields:',
-						row,
-					);
-					continue;
-				}
-
-				// Create question
-				const question = await createQuestionTest({
-					course_id: parseInt(course_id),
-					test_id,
-					question_type_id: parseInt(question_type_id),
-					test_question_type_id: parseInt(test_question_type_id),
-					header: header.toString().trim(),
-				});
-
-				questionsImported++;
-
-				// Create answers if they exist
-				const answers = [
-					{ value: answer_1, is_correct: answer_1_correct },
-					{ value: answer_2, is_correct: answer_2_correct },
-					{ value: answer_3, is_correct: answer_3_correct },
-					{ value: answer_4, is_correct: answer_4_correct },
-					{ value: answer_5, is_correct: answer_5_correct },
-				];
-
-				for (const answer of answers) {
-					if (answer.value && answer.value.toString().trim() !== '') {
-						await createAnswerQuestionTest({
-							course_id: parseInt(course_id),
-							test_id,
-							question_type_id: parseInt(question_type_id),
-							question_id: question.id,
-							value: answer.value.toString().trim(),
-						});
-
-						// Update answer to set correct flag if needed
-						if (
-							answer.is_correct === true ||
-							answer.is_correct === 'true' ||
-							answer.is_correct === 1 ||
-							answer.is_correct === '1'
-						) {
-							// Get the created answer to update it
-							const createdAnswers = await getAnswerQuestion(
-								question.id,
-							);
-							const lastAnswer =
-								createdAnswers[createdAnswers.length - 1];
-
-							await updateAnswerQuestionTest({
-								id: lastAnswer.id,
-								value: answer.value.toString().trim(),
-								is_correct: true,
-								status: true,
-							});
-						}
-
-						answersImported++;
-					}
-				}
-			} catch (rowError) {
-				console.error(
-					'Error processing row:',
-					rowError.message,
-					'Row data:',
-					row,
-				);
-				continue;
-			}
-		}
+		const rows = await parseImportRows(req.file.buffer, 'excel');
+		const result = await processImportedRows(
+			rows,
+			importMetadataFromRequest(req, test_id),
+		);
 
 		res.status(201).json({
 			message: 'Excel import completed',
-			questionsImported,
-			answersImported,
+			...result,
 		});
 	} catch (error) {
 		console.error('Error importing from Excel:', error.message);
