@@ -16,6 +16,13 @@ import {
 	ListQuestionsByTest,
 	ListTest,
 	ListTestCourse,
+	ReportListTests,
+	ReportTestAttemptAnswers,
+	ReportTestAttemptDetail,
+	ReportTestAttemptQuestions,
+	ReportTestCorrectAnswers,
+	ReportTestQuestions,
+	ReportTestResults,
 	TestCourseDetail,
 	UpdateAnswerQuestionTest,
 	UpdateQuestionTest,
@@ -75,6 +82,44 @@ const uploadCSV = multer({
 });
 
 const router = express.Router();
+
+// -----------------------------------------------------------------------------
+// Reportes de examen (solo lectura) — /api/test/reports
+// Se registran primero: el prefijo /reports no colisiona con /test/:test_id,
+// /answers/:id ni /student/:student_id, pero se documenta el orden.
+// Contrato completo en CONTRACTS.md.
+// -----------------------------------------------------------------------------
+router.get('/reports/tests', authenticateJWT, ReportListTests);
+router.get(
+	'/reports/tests/:test_id/questions',
+	authenticateJWT,
+	ReportTestQuestions,
+);
+router.get(
+	'/reports/tests/:test_id/correct-answers',
+	authenticateJWT,
+	ReportTestCorrectAnswers,
+);
+router.get(
+	'/reports/tests/:test_id/results',
+	authenticateJWT,
+	ReportTestResults,
+);
+router.get(
+	'/reports/tests/:test_id/attempts/:course_student_test_id',
+	authenticateJWT,
+	ReportTestAttemptDetail,
+);
+router.get(
+	'/reports/tests/:test_id/attempts/:course_student_test_id/answers',
+	authenticateJWT,
+	ReportTestAttemptAnswers,
+);
+router.get(
+	'/reports/tests/:test_id/attempts/:course_student_test_id/questions',
+	authenticateJWT,
+	ReportTestAttemptQuestions,
+);
 
 router.get('/', authenticateJWT, ListTest);
 router.get('/tests/:course_id', authenticateJWT, ListTestCourse);

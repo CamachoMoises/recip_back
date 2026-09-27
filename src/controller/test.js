@@ -37,6 +37,15 @@ import {
 	redondear,
 } from './utilities.js';
 import { getCourseStudentById } from '../database/repositories/course.js';
+import {
+	getTestAttemptAnswers,
+	getTestAttemptDetail,
+	getTestAttemptQuestions,
+	getTestCorrectAnswers,
+	getTestQuestionSheet,
+	getTestResults,
+	getTestSummaries,
+} from '../database/repositories/testReport.js';
 
 const normalizeImportHeaders = (headers) =>
 	headers.map((header) => String(header ?? '').trim());
@@ -1009,6 +1018,235 @@ export const ListAllTestsByStudent = async (req, res) => {
 		res.status(200).json(tests);
 	} catch (error) {
 		console.error('Error al obtener exámenes del estudiante:', error);
+		res.status(500).json({ error: 'Error interno del servidor' });
+	}
+};
+
+// =============================================================================
+// Reportes de examen — /api/test/reports
+//
+// Todos son de solo lectura: nunca recalculan ni escriben scores. La respuesta
+// de `resp` la deserializa `resolveStudentResponse` y el veredicto por pregunta
+// lo deriva `deriveAnswerResult` a partir del score ya almacenado.
+// Contrato completo en CONTRACTS.md.
+// =============================================================================
+
+const parseOptionalStatus = (status) => {
+	if (typeof status === 'undefined') return undefined;
+	return status === 'true' ? true : status === 'false' ? false : undefined;
+};
+
+const isPositiveInt = (value) => {
+	if (value === undefined || value === null || value === '') return false;
+	const n = Number(value);
+	return Number.isInteger(n) && n > 0;
+};
+
+/**
+ * Valida los ids de la ruta de reportes. Ojo: `Number(undefined)` es `NaN`, no
+ * `undefined`, así que hay que comprobar la presencia del param antes de
+ * convertirlo, o los endpoints sin `:course_student_test_id` fallarían siempre.
+ * `invalid` nombra el param concreto que provoked el 400.
+ */
+const readReportParams = (req) => {
+	const { test_id, course_student_test_id } = req.params;
+	const hasCst =
+		course_student_test_id !== undefined &&
+		course_student_test_id !== '';
+
+	if (!isPositiveInt(test_id)) return { ok: false, invalid: 'test_id' };
+	if (hasCst && !isPositiveInt(course_student_test_id)) {
+		return { ok: false, invalid: 'course_student_test_id' };
+	}
+
+	return {
+		ok: true,
+		testId: Number(test_id),
+		cstId: hasCst ? Number(course_student_test_id) : undefined,
+	};
+};
+
+const respondInvalidId = (res, name) =>
+	res.status(400).json({ error: `Parámetro ${name} inválido` });
+
+export const ReportListTests = async (req, res) => {
+	try {
+		const { status, course_id } = req.query;
+
+		if (course_id && isNaN(course_id)) {
+			return respondInvalidId(res, 'course_id');
+		}
+
+		const tests = await getTestSummaries({
+			status: parseOptionalStatus(status),
+			course_id: course_id ? parseInt(course_id) : undefined,
+		});
+
+		res.status(200).json(tests);
+	} catch (error) {
+		console.error('Error al obtener el resumen de exámenes:', error);
+		res.status(500).json({ error: 'Error interno del servidor' });
+	}
+};
+
+const respondTestReport = async (res, loader, testId, filters) => {
+	const payload = await loader(testId, filters);
+	if (!payload) {
+		return res.status(404).json({ error: 'Test not found' });
+	}
+	return res.status(200).json(payload);
+};
+
+export const ReportTestQuestions = async (req, res) => {
+	try {
+		const { ok, testId } = readReportParams(req);
+		if (!ok) return respondInvalidId(res, 'test_id');
+
+		const { status, question_type_id } = req.query;
+		if (question_type_id && isNaN(question_type_id)) {
+			return respondInvalidId(res, 'question_type_id');
+		}
+
+		return await respondTestReport(res, getTestQuestionSheet, testId, {
+			status: parseOptionalStatus(status),
+			question_type_id: question_type_id
+				? parseInt(question_type_id)
+				: undefined,
+		});
+	} catch (error) {
+		console.error('Error al obtener la hoja de preguntas:', error);
+		res.status(500).json({ error: 'Error interno del servidor' });
+	}
+};
+
+export const ReportTestCorrectAnswers = async (req, res) => {
+	try {
+		const { ok, testId } = readReportParams(req);
+		if (!ok) return respondInvalidId(res, 'test_id');
+
+		const { status, question_type_id } = req.query;
+		if (question_type_id && isNaN(question_type_id)) {
+			return respondInvalidId(res, 'question_type_id');
+		}
+
+		return await respondTestReport(res, getTestCorrectAnswers, testId, {
+			status: parseOptionalStatus(status),
+			question_type_id: question_type_id
+				? parseInt(question_type_id)
+				: undefined,
+		});
+	} catch (error) {
+		console.error('Error al obtener las respuestas correctas:', error);
+		res.status(500).json({ error: 'Error interno del servidor' });
+	}
+};
+
+/** Común a los 3 reportes de intento: valida ids y devuelve los filtros. */
+const respondAttemptReport = async (res, loader, params, req) => {
+	if (!params.ok) return respondInvalidId(res, params.invalid);
+
+	const { status, question_type_id } = req.query;
+	if (question_type_id && isNaN(question_type_id)) {
+		return respondInvalidId(res, 'question_type_id');
+	}
+
+	const payload = await loader(params.testId, params.cstId, {
+		status: parseOptionalStatus(status),
+		question_type_id: question_type_id
+			? parseInt(question_type_id)
+			: undefined,
+	});
+
+	if (!payload) {
+		return res.status(404).json({ error: 'CourseStudentTest not found' });
+	}
+	return res.status(200).json(payload);
+};
+
+export const ReportTestAttemptDetail = async (req, res) => {
+	try {
+		return await respondAttemptReport(
+			res,
+			getTestAttemptDetail,
+			readReportParams(req),
+			req,
+		);
+	} catch (error) {
+		console.error('Error al obtener el detalle del intento:', error);
+		res.status(500).json({ error: 'Error interno del servidor' });
+	}
+};
+
+export const ReportTestAttemptAnswers = async (req, res) => {
+	try {
+		return await respondAttemptReport(
+			res,
+			getTestAttemptAnswers,
+			readReportParams(req),
+			req,
+		);
+	} catch (error) {
+		console.error('Error al obtener las respuestas del intento:', error);
+		res.status(500).json({ error: 'Error interno del servidor' });
+	}
+};
+
+export const ReportTestAttemptQuestions = async (req, res) => {
+	try {
+		return await respondAttemptReport(
+			res,
+			getTestAttemptQuestions,
+			readReportParams(req),
+			req,
+		);
+	} catch (error) {
+		console.error(
+			'Error al obtener las preguntas del intento:',
+			error,
+		);
+		res.status(500).json({ error: 'Error interno del servidor' });
+	}
+};
+
+export const ReportTestResults = async (req, res) => {
+	try {
+		const { ok, testId } = readReportParams(req);
+		if (!ok) return respondInvalidId(res, 'test_id');
+
+		const { student_id, finished, pageSize, currentPage } = req.query;
+
+		if (student_id && isNaN(student_id)) {
+			return respondInvalidId(res, 'student_id');
+		}
+		if (finished && finished !== 'true' && finished !== 'false') {
+			return respondInvalidId(res, 'finished');
+		}
+		// `pageSize` admite -1 (= todos) o >= 1. `currentPage` siempre >= 1.
+		// Cualquier otro valor generaría un LIMIT/OFFSET negativo, que MySQL
+		// rechaza con error de sintaxis.
+		if (pageSize) {
+			const size = Number(pageSize);
+			if (!Number.isInteger(size) || (size !== -1 && size < 1)) {
+				return respondInvalidId(res, 'pageSize');
+			}
+		}
+		if (currentPage) {
+			const page = Number(currentPage);
+			if (!Number.isInteger(page) || page < 1) {
+				return respondInvalidId(res, 'currentPage');
+			}
+		}
+
+		const results = await getTestResults(testId, {
+			student_id: student_id ? parseInt(student_id) : undefined,
+			finished: parseOptionalStatus(finished),
+			pageSize: pageSize ? parseInt(pageSize) : 10,
+			currentPage: currentPage ? parseInt(currentPage) : 1,
+		});
+
+		res.status(200).json(results);
+	} catch (error) {
+		console.error('Error al obtener los resultados del examen:', error);
 		res.status(500).json({ error: 'Error interno del servidor' });
 	}
 };

@@ -35,6 +35,7 @@ Migration files live in `migrations/` (`.cjs` — CommonJS for CLI compat) and s
 - `src/database/associations.js` — All model relationships (exported `setupAssociations(models)`)
 - `src/database/repositories/` — Data access layer (Sequelize queries)
 - `src/database/repositories/instructor.js` — Shared helper for instructor-based filtering (used by course, courseGroup, assessment, test, attendance repositories)
+- `src/database/repositories/testReport.js` — Read-only exam reports (question sheets, correct answers, per-attempt responses, student results)
 - `src/database/imput_validation/` — Joi schemas (note: typo in directory name "imput")
 
 ## Database
@@ -75,6 +76,7 @@ Always use the skills in .opencode\skills\recip-backend
 | `/api/subjects` | Subject + lessons + days CRUD |
 | `/api/assessment` | Student assessments + signatures |
 | `/api/test` | Tests, questions, answers, Excel/CSV import |
+| `/api/test/reports` | Reportes de examen **solo lectura**: listar exámenes, hoja de preguntas con la correcta marcada, solo correctas, detalle/respuestas/preguntas sorteadas por intento de alumno, y resultado global por alumno (paginado, `pageSize=-1` = todos). Repositorio dedicado: `src/database/repositories/testReport.js` |
 | `/api/attendance` | Attendance + statuses CRUD + signature upload + delete signature. Supports `instructor_id` filter. |
 | `/api/instructor` | Instructor dashboard: schedules, assessments, tests filtered by instructor_id |
 | `/api/suggestions` | User suggestions CRUD |
