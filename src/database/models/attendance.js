@@ -59,10 +59,20 @@ export default (sequelize, DataTypes) => {
 					fields: [{ name: 'attendance_status_id' }],
 				},
 				{
-					name: 'uq_attendance_course_student_date',
-					unique: true,
+					name: 'idx_attendance_course_student_date',
+					unique: false,
 					using: 'BTREE',
 					fields: [{ name: 'course_student_id' }, { name: 'date' }],
+				},
+				{
+					name: 'uq_attendance_course_student_date_day',
+					unique: true,
+					using: 'BTREE',
+					fields: [
+						{ name: 'course_student_id' },
+						{ name: 'date' },
+						{ name: 'day' },
+					],
 				},
 				{
 					name: 'uq_attendance_course_student_day',

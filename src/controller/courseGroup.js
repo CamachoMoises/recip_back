@@ -114,7 +114,13 @@ export const SaveCourseGroupSignature = async (req, res) => {
 	try {
 		const validated =
 			await saveCourseGroupSignatureSchema.validateAsync(req.body);
-		const { course_group_id, day_number, signature } = validated;
+		const {
+			course_group_id,
+			day_number,
+			session_number,
+			signature,
+		} = validated;
+		const ordinal = session_number ?? day_number;
 
 		const courseGroup = await getCourseGroupById(course_group_id);
 		if (!courseGroup) {
@@ -125,18 +131,24 @@ export const SaveCourseGroupSignature = async (req, res) => {
 		}
 
 		const course = courseGroup.Course || await Course.findByPk(courseGroup.course_id);
-		if (course && day_number > course.days) {
-			return res.status(400).json({
-				success: false,
-				error: `day_number (${day_number}) excede los días del curso (${course.days}).`,
-			});
+		if (course) {
+			const uses_sessions = !!course.uses_sessions;
+			const total = uses_sessions ? course.sessions : course.days;
+			if (total != null && ordinal > total) {
+				return res.status(400).json({
+					success: false,
+					error: uses_sessions
+						? `session_number (${ordinal}) excede las sesiones del curso (${total}).`
+						: `day_number (${ordinal}) excede los días del curso (${total}).`,
+				});
+			}
 		}
 
 		let signature_number;
 		try {
 			signature_number = await getNextSignatureNumber(
 				course_group_id,
-				day_number,
+				ordinal,
 			);
 		} catch (err) {
 			return res.status(400).json({
@@ -145,7 +157,7 @@ export const SaveCourseGroupSignature = async (req, res) => {
 			});
 		}
 
-		const publicId = `firmas/course_group_${course_group_id}_day_${day_number}_${signature_number}`;
+		const publicId = `firmas/course_group_${course_group_id}_day_${ordinal}_${signature_number}`;
 
 		const cloudinaryResult = await cloudinaryApp.uploader.upload(signature, {
 			public_id: publicId,
@@ -157,7 +169,7 @@ export const SaveCourseGroupSignature = async (req, res) => {
 
 		const record = await createSignature(
 			course_group_id,
-			day_number,
+			ordinal,
 			signature_number,
 			cloudinaryResult.secure_url,
 		);

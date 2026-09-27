@@ -29,7 +29,7 @@ repositorios que afecte una petición/respuesta DEBE actualizar este archivo en 
 | Student | `id, user_id, status` |
 | Instructor | `id, user_id, status` |
 | UserDocType | `id, name, symbol` |
-| Course | `id, name, description, code, hours, plane_model, days, status, course_type_id, course_level_id` |
+| Course | `id, name, description, code, hours, plane_model, days, uses_sessions, sessions, status, course_type_id, course_level_id` |
 | CourseType | `id, name` |
 | CourseLevel | `id, name` |
 | CourseStudent | `id, course_id, date, score, approve, student_id, code, type_trip, license, regulation, status, max_attempts, instructor_code, client` |
@@ -51,7 +51,7 @@ repositorios que afecte una petición/respuesta DEBE actualizar este archivo en 
 | Answer | `id, value, course_id, question_id, test_id, is_correct, status` |
 | CourseStudentTestQuestion | `id, course_id, test_id, course_student_id, course_student_test_id, question_id, Answered, status` |
 | CourseStudentTestAnswer | `id, course_id, test_id, course_student_id, resp, course_student_test_id, course_student_test_question_id, question_id, score, status` |
-| Attendance | `id, course_student_id, day, date, attendance_status_id, comments` |
+| Attendance | `id, course_student_id, day, date, attendance_status_id, comments` — `day` es el **número de sesión** cuando el curso tiene `uses_sessions = 1`, y el número de día cuando `uses_sessions = 0` |
 | AttendanceStatus | `id, name, description` |
 | AttendanceSignature | `id, attendance_id, signature_url` |
 | Module | `id, name` |
@@ -60,6 +60,41 @@ repositorios que afecte una petición/respuesta DEBE actualizar este archivo en 
 | Rating | `id, instructor_id, student_id, subject_days_id, subject_id, course_student_id, value` |
 | UserSuggestion | `id, user_id, title, description` |
 | EmailHistory | `id, email, user_id, nombre_archivo, fecha, tipo, descripcion, modulo` |
+
+---
+
+## Días vs. Sesiones
+
+Un curso programado puede trabajar en dos modos, discriminados por `course.uses_sessions`.
+Las filas existentes nunca se reinterpretan: todo curso con `uses_sessions = 0` se comporta
+exactamente como antes de esta funcionalidad.
+
+| | `uses_sessions = 0` (legacy, default) | `uses_sessions = 1` |
+|---|---|---|
+| Significado del ordinal (`subject_days.day`, `attendance.day`, `course_group_signature.day_number`) | número de **día** | número de **sesión** |
+| Techo del programa | `course.days` | `course.sessions` |
+| Relación ordinal ↔ fecha calendario | 1 sesión por día | **N sesiones pueden compartir fecha** |
+| Validación de `POST /api/attendance` | `day` requerido, `day <= course.days` | `session_number` requerido, `session_number <= course.sessions` |
+| Validación de `POST /api/course_groups/signature` | `day_number` contra `course.days` | `session_number` contra `course.sessions` |
+| Validación de `POST /api/subjects/subjects_days` | sin bound check | `day <= course.sessions` |
+
+Claves de la implementación:
+
+- **No hay columnas `session_number` en la base.** El ordinal vive en las columnas `day` /
+  `day_number` que ya existían. `session_number` es un **alias de entrada/salida** que el
+  backend mapea a `day` / `day_number`, para que la API hable de sesiones sin duplicar el dato.
+- `course.sessions` se rellena con `course.days` en todos los cursos existentes y en los cursos
+  nuevos que no lo envíen, así que nunca es `NULL`. El discriminador es el **flag**, no el `NULL`.
+- La unicidad de asistencia es `(course_student_id, date, day)`: dos sesiones de la misma fecha
+  se distinguen por su número de sesión. Antes era `(course_student_id, date)`.
+- `schedule` nunca tuvo restricción de unicidad, por lo que varias sesiones en la misma fecha
+  ya eran aceptables; el bloqueo era solo del cliente.
+- Fuente de verdad del techo: `getCourseProgramSizeByCourseStudent()` en
+  `src/database/repositories/course.js`, que devuelve `{ uses_sessions, days, sessions, total }`.
+
+Migraciones: `20260927000000-add-sessions-to-course.cjs`, `20260927000001-relax-attendance-unique-date.cjs`.
+Al ser columnas nuevas, la app requiere que se corran **antes** de desplegar (el `sync` de
+arranque usa `alter: false` y no las crea).
 
 ---
 
@@ -144,12 +179,14 @@ repositorios que afecte una petición/respuesta DEBE actualizar este archivo en 
 
 ### GET /
 - Query: `name`, `description`, `course_type_id`, `course_level_id` (todos opcionales)
-- `200` → array de Course con alias `course_type`, `course_level`
+- `200` → array de Course con alias `course_type`, `course_level` (incluye `uses_sessions` y `sessions`)
 
 ### POST /
 - Body (Joi; `type`→`course_type_id`, `level`→`course_level_id`): `name`, `description`, `code`,
   `days` (requeridos); `type`, `level` (requeridos); `plane_model`, `status` (opcionales)
-- `201` → Course con `course_type`, `course_level`
+- `uses_sessions` (bool, default `false`) y `sessions` (int ≥ 1) son opcionales — ver
+  [Días vs. Sesiones](#días-vs-sesiones). Si `sessions` no viene, se persiste `sessions = days`.
+- `201` → Course con `course_type`, `course_level` (incluye `uses_sessions` y `sessions`)
 
 ### PUT /
 - Body (Joi, mismo que POST + `id` requerido; se ignora `hours`)
@@ -171,8 +208,8 @@ repositorios que afecte una petición/respuesta DEBE actualizar este archivo en 
 - `200` → `{ data: CourseStudent[], totalItems, currentPage, pageSize, totalPages }`
   Cada fila: claves de CourseStudent + `highest_score` (calculado) + alias
   `student` (con `user`), `course_group`, `course` (con `course_type`, `course_level`),
-  `course_student_tests`, `course_student_assessment`, `schedules` (cada uno con `subject`
-  e `instructor` con `user`)
+  `course_student_tests`, `course_student_assessment`, `schedules` (cada uno con `subject`,
+  `instructor` con `user` y **`subject_day`**)
 - Nota: cuando `instructor_id` está presente, filtra solo los CourseStudent cuyos schedules
   pertenecen al instructor indicado. Si no hay resultados, retorna `{ data: [], totalItems: 0, ... }`
 
@@ -210,11 +247,16 @@ repositorios que afecte una petición/respuesta DEBE actualizar este archivo en 
 - Params: `id` (course_student_id)
 - `200` → array de Schedule (order date/hora) con `student` (con `user`), `instructor` (con `user`),
   `course_student`, `subject_day`, `subject`
+- Varias sesiones pueden compartir la misma `date`: el endpoint no las agrupa, las devuelve
+  ordenadas por `date` y `hour`.
 
 ### POST /schedule
 - Body: `instructor_id`, `course_id`, `subject_days_id`, `student_id`, `subject_id`,
   `course_student_id`, `date`, `hour`, `classTime`
 - `200` → Schedule (mismo shape que GET /schedule/:id)
+- Nota: `course_id` no es una columna de `schedule`; se ignora. El curso se deduce de
+  `course_student.course_id`. El ordinal (día o sesión) del schedule se deduce de
+  `subject_days_id → subject_day.day`.
 
 ### PUT /schedule
 - Auth: **no**
@@ -273,10 +315,13 @@ repositorios que afecte una petición/respuesta DEBE actualizar este archivo en 
 - `404` JSON `{ success: false, error: 'Firma no encontrada.' }`
 
 ### POST /signature
-- Body (Joi): `course_group_id` (requerido), `day_number` (int ≥1, requerido), `signature`
-  (base64, requerido)
+- Body (Joi): `course_group_id` (requerido), `signature` (base64, requerido) y **exactamente uno**
+  de `day_number` / `session_number` (int ≥1) — `session_number` es el alias del número de
+  sesión y tiene prioridad sobre `day_number`
 - `200` → `{ success: true, message: 'Firma guardada correctamente.', data: { signatureUrl, signature_number, record } }`
 - `404`/`400` JSON `{ success: false, error: <msg> }`
+- El ordinal se persiste en `course_group_signature.day_number` (columna `NOT NULL`).
+  Con `uses_sessions = 1` el techo validado es `course.sessions`; con `uses_sessions = 0`, `course.days`.
 
 ### GET /report/attendance
 - Query: `course_group_id`, `course_id` (opcionales), `pageSize`, `currentPage`
@@ -330,13 +375,15 @@ repositorios que afecte una petición/respuesta DEBE actualizar este archivo en 
 ### POST /subjects_days
 - Body: `subject_id`, `course_id`, `day`, `status` (upsert de SubjectDays + recalcula horas)
 - `201` → texto plano `OK`
-- `400` `Input Validation Error <msg>`
+- `400` `Input Validation Error <msg>` | `day (X) excede las sesiones del curso (Y).`
+- `day` es el **número de sesión** cuando el curso tiene `uses_sessions = 1`. El techo solo se
+  valida en ese modo; con `uses_sessions = 0` no hay bound check (comportamiento previo).
 
 ### POST /subjects_lesson_days
 - Body: `subject_id`, `subject_lesson_id`, `subject_lesson_days_id`, `course_id`, `day`,
   `status_lesson` (opcional; upsert de SubjectDays + SubjectLessonDays)
 - `201` → texto plano `OK`
-- `400` `Input Validation Error <msg>`
+- `400` `Input Validation Error <msg>` | `day (X) excede las sesiones del curso (Y).`
 
 ---
 
@@ -668,10 +715,12 @@ repositorios que afecte una petición/respuesta DEBE actualizar este archivo en 
 ## Attendance — `/api/attendance`
 
 ### GET /
-- Query: `course_student_id`, `day`, `attendance_status_id`, `date_from`, `date_to`, `instructor_id` (opcionales),
+- Query: `course_student_id`, `day`, `session_number`, `attendance_status_id`, `date_from`, `date_to`, `instructor_id` (opcionales),
   `pageSize` (default 10), `currentPage` (default 1)
 - `200` → `{ data: Attendance[], totalItems, currentPage, pageSize, totalPages }`
   Cada fila con `course_student`, `attendance_status`, `attendance_signature`
+- Orden: `date` DESC, `day` ASC (desempata varias sesiones de la misma fecha)
+- Nota: `day` y `session_number` filtran la misma columna `day`; `session_number` tiene prioridad
 - Nota: cuando `instructor_id` está presente, filtra asistencias de los CourseStudent
   del instructor indicado. Si no hay resultados, retorna `{ data: [], totalItems: 0, ... }`
 
@@ -682,7 +731,7 @@ repositorios que afecte una petición/respuesta DEBE actualizar este archivo en 
 
 ### GET /by-course-student
 - Query: `course_student_id` (requerido)
-- `200` → array de Attendance con `attendance_status`, `attendance_signature`
+- `200` → array de Attendance con `attendance_status`, `attendance_signature` (orden `date` DESC, `day` ASC)
 - `400` texto plano `course_student_id is required`
 
 ### GET /by-date-range
@@ -692,14 +741,23 @@ repositorios que afecte una petición/respuesta DEBE actualizar este archivo en 
 
 ### POST /
 - Body (Joi): `course_student_id` (req), `day` (int ≥1, req), `date` (req), `attendance_status_id`
-  (req), `comments`
+  (req), `comments`, `session_number` (int ≥1, opcional)
 - `201` → Attendance con includes
 - `400` texto plano `Input Validation Error <msg>` | `day (X) excede los días del curso (Y).`
+  | `session_number es requerido para cursos programados por sesiones.`
+  | `session_number (X) excede las sesiones del curso (Y).`
+- Regla de validación (ver [Días vs. Sesiones](#días-vs-sesiones)): con `uses_sessions = 0` valida
+  `day <= course.days`; con `uses_sessions = 1` exige `session_number` y valida
+  `session_number <= course.sessions`. En ambos casos el ordinal se guarda en `attendance.day`.
+- Varias asistencias del mismo `course_student` pueden compartir `date`: la unicidad es
+  `(course_student_id, date, day)`.
 
 ### PUT /
-- Body: `id` (req), `course_student_id`, `day`, `date`, `attendance_status_id`, `comments`
+- Body: `id` (req), `course_student_id`, `day`, `session_number`, `date`, `attendance_status_id`, `comments`
 - `200` → Attendance con includes
 - `404` texto plano `Attendance not found`
+- La validación de `day`/`session_number` es idéntica a `POST /` y solo corre si se envía alguno
+  de los dos.
 
 ### DELETE /:id
 - Params: `id`

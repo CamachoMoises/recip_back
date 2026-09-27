@@ -34,6 +34,16 @@ export default (sequelize, DataTypes) => {
 				allowNull: true,
 				defaultValue: 0,
 			},
+			uses_sessions: {
+				type: DataTypes.BOOLEAN,
+				allowNull: false,
+				defaultValue: false,
+			},
+			sessions: {
+				type: DataTypes.INTEGER,
+				allowNull: true,
+				defaultValue: null,
+			},
 			status: {
 				type: DataTypes.BOOLEAN,
 				allowNull: true,

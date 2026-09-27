@@ -156,6 +156,10 @@ const getAllCoursesStudent = async (filters) => {
 						model: Instructor,
 						include: [{ model: User }],
 					},
+					{
+						model: SubjectDays,
+						required: false,
+					},
 				],
 			},
 		],
@@ -221,12 +225,34 @@ const getCourseTypeById = async (id) =>
 const getCourseLevelById = async (id) =>
 	await CourseLevel.findOne({ where: { id: id } });
 
+const getCourseProgramSizeByCourseStudent = async (course_student_id) => {
+	const courseStudent = await CourseStudent.findOne({
+		where: { id: course_student_id },
+		include: [{ model: Course }],
+	});
+	if (!courseStudent) throw new Error('CourseStudent not found');
+
+	const course = courseStudent.Course;
+	if (!course) return null;
+
+	const uses_sessions = !!course.uses_sessions;
+
+	return {
+		uses_sessions,
+		days: course.days,
+		sessions: course.sessions,
+		total: uses_sessions ? course.sessions : course.days,
+	};
+};
+
 const createCourse = async ({
 	name,
 	description,
 	code,
 	// hours,
 	days,
+	uses_sessions,
+	sessions,
 	course_type_id,
 	course_level_id,
 	plane_model,
@@ -238,6 +264,8 @@ const createCourse = async ({
 		code,
 		// hours,
 		days,
+		uses_sessions,
+		sessions,
 		plane_model,
 		course_type_id,
 		course_level_id,
@@ -251,6 +279,8 @@ const editCourse = async ({
 	code,
 	// hours,
 	days,
+	uses_sessions,
+	sessions,
 	plane_model,
 	course_type_id,
 	course_level_id,
@@ -266,6 +296,8 @@ const editCourse = async ({
 		code,
 		// hours,
 		days,
+		uses_sessions,
+		sessions,
 		course_type_id,
 		course_level_id,
 		plane_model,
@@ -512,6 +544,7 @@ export {
 	getCourseById,
 	getCourseTypeById,
 	getCourseLevelById,
+	getCourseProgramSizeByCourseStudent,
 	getCourseStudentById,
 	createCourse,
 	editCourse,

@@ -18,6 +18,12 @@ export const updateCourseGroupSchema = Joi.object({
 
 export const saveCourseGroupSignatureSchema = Joi.object({
 	course_group_id: Joi.number().integer().required(),
-	day_number: Joi.number().integer().min(1).required(),
+	day_number: Joi.number().integer().min(1).optional(),
+	session_number: Joi.number().integer().min(1).optional(),
 	signature: Joi.string().required(),
-});
+})
+	.or('day_number', 'session_number')
+	.messages({
+		'object.missing':
+			'day_number o session_number es requerido (alias del numero de dia/sesion del grupo).',
+	});

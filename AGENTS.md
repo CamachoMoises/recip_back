@@ -64,6 +64,38 @@ Always use the skills in .opencode\skills\recip-backend
 
 **Disconnected (defined but no associations):** Participant, Evaluation, Rating
 
+## Days vs. Sessions (cursos programados)
+
+A scheduled course works in one of two modes, discriminated by `course.uses_sessions`. Existing
+rows are never reinterpreted: every course with `uses_sessions = 0` behaves exactly as before.
+
+| | `uses_sessions = 0` (legacy, default) | `uses_sessions = 1` |
+|---|---|---|
+| Ordinal in `subject_days.day`, `attendance.day`, `course_group_signature.day_number` | day number | **session number** |
+| Program ceiling | `course.days` | `course.sessions` |
+| Ordinal ↔ calendar date | 1 session per day | **N sessions may share a date** |
+| `POST /api/attendance` validation | `day` required, `day <= course.days` | `session_number` required, `session_number <= course.sessions` |
+
+Rules to respect when touching this domain:
+
+- **There are no `session_number` columns in the DB.** The ordinal lives in the pre-existing
+  `day` / `day_number` columns. `session_number` is an input/output alias that the backend maps
+  onto them, so the API can speak "sesiones" without duplicating the value.
+- `course.sessions` is backfilled from `course.days` and defaulted to `days` on create/update, so
+  it is never `NULL`. The **flag** is the discriminator, not the `NULL` — never add NULL fallbacks.
+- Attendance uniqueness is `(course_student_id, date, day)`, not `(course_student_id, date)`,
+  which is what allows several sessions on one calendar date.
+- `schedule` has **no** unique constraint, so several schedules on the same date were always
+  accepted server-side; any 1-per-day assumption lives in the frontend, not here.
+- Single source of truth for the program ceiling: `getCourseProgramSizeByCourseStudent()` in
+  `src/database/repositories/course.js` → `{ uses_sessions, days, sessions, total }`. Do not read
+  `course.days` directly for a ceiling check.
+- Migrations `20260927000000-add-sessions-to-course.cjs` and
+  `20260927000001-relax-attendance-unique-date.cjs` add real columns, and startup `sync` uses
+  `alter: false`, so **the migrations must be run before deploying** this code.
+
+See the "Días vs. Sesiones" section of `CONTRACTS.md` for the full endpoint matrix.
+
 ## API Routes
 
 | Prefix | Purpose |

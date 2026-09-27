@@ -53,6 +53,19 @@ index.js                  # Entry point
 | Other | Schedule, Attendance, AttendanceStatus, Module, Permission |
 | Disconnected | Participant, Evaluation, Rating |
 
+## Days vs. Sessions
+
+Courses are programmed in **days** (`uses_sessions = 0`, default) or **sessions**
+(`uses_sessions = 1`). In session mode the ordinal in `subject_days.day` / `attendance.day` /
+`course_group_signature.day_number` is a session number, the ceiling is `course.sessions`, and
+several sessions may share a calendar date.
+
+- No `session_number` column exists in the DB — it is an input/output alias of `day` / `day_number`.
+- `course.sessions` is backfilled from `days` and never `NULL`; the **flag** is the discriminator.
+- Attendance uniqueness is `(course_student_id, date, day)`.
+- Ceiling source of truth: `getCourseProgramSizeByCourseStudent()` in `repositories/course.js`.
+- Migrations `20260927000000-*` and `20260927000001-*` must be run before deploying.
+
 ## Routes
 
 | Prefix | Auth | Purpose |

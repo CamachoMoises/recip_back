@@ -19,6 +19,7 @@ import {
 	updateSubjectDay,
 	updateSubjectLessonDay,
 } from '../database/repositories/subject.js';
+import { getCourseById } from '../database/repositories/course.js';
 import { calculateCourseTotalHours } from './course.js';
 
 export const ListSubjects = async (req, res) => {
@@ -284,6 +285,15 @@ export const ChangeStatusDayFunc = async (
 	day,
 	status,
 ) => {
+	const course = await getCourseById(course_id);
+	if (course?.uses_sessions) {
+		if (course.sessions != null && day > course.sessions) {
+			throw new Error(
+				`day (${day}) excede las sesiones del curso (${course.sessions}).`,
+			);
+		}
+	}
+
 	const validate = await getSubjectsDaysByFull(
 		subject_id,
 		course_id,

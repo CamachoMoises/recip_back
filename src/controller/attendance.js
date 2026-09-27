@@ -9,7 +9,6 @@ import {
 	getAttendanceById,
 	getAttendanceByCourseStudent,
 	getAttendanceByDateRange,
-	getCourseDaysByCourseStudent,
 	createAttendance,
 	updateAttendance,
 	deleteAttendance,
@@ -18,6 +17,7 @@ import {
 	updateAttendanceStatus,
 	deleteAttendanceStatus,
 } from '../database/repositories/attendance.js';
+import { getCourseProgramSizeByCourseStudent } from '../database/repositories/course.js';
 import {
 	upsertAttendanceSignature,
 	getSignatureByAttendanceId,
@@ -78,21 +78,50 @@ export const GetAttendanceByDateRange = async (req, res) => {
 	}
 };
 
+const resolveAttendanceOrdinal = async ({
+	course_student_id,
+	day,
+	session_number,
+}) => {
+	const program = await getCourseProgramSizeByCourseStudent(course_student_id);
+	const total = program?.total ?? null;
+
+	if (program?.uses_sessions) {
+		if (session_number === undefined) {
+			return {
+				error: 'session_number es requerido para cursos programados por sesiones.',
+			};
+		}
+		if (total != null && session_number > total) {
+			return {
+				error: `session_number (${session_number}) excede las sesiones del curso (${total}).`,
+			};
+		}
+		return { ordinal: session_number, total };
+	}
+
+	if (total != null && day > total) {
+		return { error: `day (${day}) excede los días del curso (${total}).` };
+	}
+	return { ordinal: day, total };
+};
+
 export const CreateAttendance = async (req, res) => {
 	const data = req.body;
-	console.log('CreateAttendance body:', JSON.stringify(data));
 	const { error, value } = createAttendanceSchema.validate(data);
 	if (error) {
-		console.log('CreateAttendance validation error:', error.message);
 		return res.status(400).send(`Input Validation Error ${error.message}`);
 	}
 	try {
-		const courseDays = await getCourseDaysByCourseStudent(value.course_student_id);
-		if (courseDays != null && value.day > courseDays) {
-			return res
-				.status(400)
-				.send(`day (${value.day}) excede los días del curso (${courseDays}).`);
+		const resolution = await resolveAttendanceOrdinal({
+			course_student_id: value.course_student_id,
+			day: value.day,
+			session_number: value.session_number,
+		});
+		if (resolution.error) {
+			return res.status(400).send(resolution.error);
 		}
+		value.day = resolution.ordinal;
 		const attendance = await createAttendance(value);
 		const created = await getAttendanceById(attendance.id);
 		res.status(201).send(created);
@@ -107,15 +136,18 @@ export const UpdateAttendance = async (req, res) => {
 	const { error, value } = updateAttendanceSchema.validate(data);
 	if (error) return res.status(400).send(`Input Validation Error ${error.message}`);
 	try {
-		if (value.day !== undefined) {
+		if (value.day !== undefined || value.session_number !== undefined) {
 			const existing = await getAttendanceById(value.id);
 			const courseStudentId = value.course_student_id || existing.course_student_id;
-			const courseDays = await getCourseDaysByCourseStudent(courseStudentId);
-			if (courseDays != null && value.day > courseDays) {
-				return res
-					.status(400)
-					.send(`day (${value.day}) excede los días del curso (${courseDays}).`);
+			const resolution = await resolveAttendanceOrdinal({
+				course_student_id: courseStudentId,
+				day: value.day,
+				session_number: value.session_number,
+			});
+			if (resolution.error) {
+				return res.status(400).send(resolution.error);
 			}
+			value.day = resolution.ordinal;
 		}
 		const attendance = await updateAttendance(value);
 		const updated = await getAttendanceById(attendance.id);

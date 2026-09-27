@@ -14,6 +14,8 @@ const createCourseSchema = Joi.object({
 	plane_model: Joi.string().max(500),
 	// hours: Joi.number().required(),
 	days: Joi.number().required(),
+	uses_sessions: Joi.boolean().default(false),
+	sessions: Joi.number().integer().min(1).allow(null),
 	course_type_id: Joi.number()
 		.required()
 		.external(async (value) => {
@@ -34,6 +36,7 @@ const createCourseSchema = Joi.object({
 		}),
 	status: Joi.boolean(),
 });
+
 const updateCourseSchema = Joi.object({
 	id: Joi.number().required(),
 	name: Joi.alternatives().try(Joi.string().max(500), Joi.number()),
@@ -45,6 +48,8 @@ const updateCourseSchema = Joi.object({
 	plane_model: Joi.string().max(500),
 	// hours: Joi.number().required(),
 	days: Joi.number().required(),
+	uses_sessions: Joi.boolean().default(false),
+	sessions: Joi.number().integer().min(1).allow(null),
 
 	course_type_id: Joi.number()
 		.required()

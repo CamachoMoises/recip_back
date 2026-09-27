@@ -2,7 +2,7 @@ import { Op } from 'sequelize';
 import { models } from '../index.js';
 import { getCourseStudentIdsByInstructor } from './instructor.js';
 
-const { Attendance, AttendanceStatus, AttendanceSignature, CourseStudent, Course } = models;
+const { Attendance, AttendanceStatus, AttendanceSignature, CourseStudent } = models;
 
 const getAllAttendance = async (filters = {}) => {
 	const where = {};
@@ -12,6 +12,9 @@ const getAllAttendance = async (filters = {}) => {
 	}
 	if (filters.day) {
 		where.day = filters.day;
+	}
+	if (filters.session_number) {
+		where.day = filters.session_number;
 	}
 	if (filters.attendance_status_id) {
 		where.attendance_status_id = filters.attendance_status_id;
@@ -62,7 +65,10 @@ const getAllAttendance = async (filters = {}) => {
 				model: AttendanceSignature,
 			},
 		],
-		order: [['date', 'DESC']],
+		order: [
+			['date', 'DESC'],
+			['day', 'ASC'],
+		],
 		limit: pageSize,
 		offset,
 	});
@@ -105,7 +111,10 @@ const getAttendanceByCourseStudent = async (course_student_id) =>
 				model: AttendanceSignature,
 			},
 		],
-		order: [['date', 'DESC']],
+		order: [
+			['date', 'DESC'],
+			['day', 'ASC'],
+		],
 	});
 
 const getAttendanceByDateRange = async (start_date, end_date) =>
@@ -132,13 +141,14 @@ const getAttendanceByDateRange = async (start_date, end_date) =>
 const createAttendance = async ({
 	course_student_id,
 	day,
+	session_number,
 	date,
 	attendance_status_id,
 	comments,
 }) =>
 	await Attendance.create({
 		course_student_id,
-		day,
+		day: session_number ?? day,
 		date,
 		attendance_status_id,
 		comments,
@@ -148,6 +158,7 @@ const updateAttendance = async ({
 	id,
 	course_student_id,
 	day,
+	session_number,
 	date,
 	attendance_status_id,
 	comments,
@@ -156,21 +167,12 @@ const updateAttendance = async ({
 	if (!attendance) throw new Error('Attendance not found');
 	await attendance.update({
 		course_student_id,
-		day,
+		day: session_number ?? day,
 		date,
 		attendance_status_id,
 		comments,
 	});
 	return attendance;
-};
-
-const getCourseDaysByCourseStudent = async (course_student_id) => {
-	const courseStudent = await CourseStudent.findOne({
-		where: { id: course_student_id },
-		include: [{ model: Course }],
-	});
-	if (!courseStudent) throw new Error('CourseStudent not found');
-	return courseStudent.Course?.days;
 };
 
 const deleteAttendance = async (id) => {
@@ -205,7 +207,6 @@ export {
 	getAttendanceById,
 	getAttendanceByCourseStudent,
 	getAttendanceByDateRange,
-	getCourseDaysByCourseStudent,
 	createAttendance,
 	updateAttendance,
 	deleteAttendance,
