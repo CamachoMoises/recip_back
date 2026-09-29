@@ -26,6 +26,33 @@ const round1 = (value) =>
 		? null
 		: Math.round(Number(value) * 10) / 10;
 
+const ASSESSMENT_DAY_OPTIONAL_FIELDS = [
+	'takeoff_day',
+	'takeoff_night',
+	'landing_day',
+	'landing_night',
+	'landing_precision',
+	'landing_non_precision',
+	'landing_gps',
+	'landing_circuit',
+	'landing_visual',
+	'training_time',
+	'check_time',
+	'ifr_time',
+	'vfr_time',
+	'type',
+];
+
+const pickAssessmentDayFields = (source = {}) => {
+	const fields = {};
+	for (const field of ASSESSMENT_DAY_OPTIONAL_FIELDS) {
+		const value = source[field];
+		if (value === undefined) continue;
+		fields[field] = value === '' ? null : value;
+	}
+	return fields;
+};
+
 export const CourseStudentAssessmentDetails = async (req, res) => {
 	try {
 		const courseStudentAssessmentId = req.params.id;
@@ -47,20 +74,18 @@ export const CourseStudentAssessmentDay = async (req, res) => {
 		const course_id = req.query.course_id;
 		const student_id = req.query.student_id;
 		const course_student_id = req.query.course_student_id;
-		const takeoff_day = req.query.takeoff_day;
-		const takeoff_night = req.query.takeoff_night;
-		const landing_day = req.query.landing_day;
-		const landing_night = req.query.landing_night;
-		const training_time = req.query.training_time;
-		const check_time = req.query.check_time;
-		const ifr_time = req.query.ifr_time;
-		const vfr_time = req.query.vfr_time;
-		const type = req.query.type;
+		const dayFields = pickAssessmentDayFields(req.query);
 		const CSAD_prev = await getCourseStudentAssessmentDayByCSA({
 			CSA_id,
 			day,
 		});
 		if (CSAD_prev) {
+			if (Object.keys(dayFields).length > 0) {
+				await updateCourseStudentAssessmentDay({
+					id: CSAD_prev.id,
+					...dayFields,
+				});
+			}
 			const CASD = await getCourseStudentAssessmentDayById({
 				id: CSAD_prev.id,
 			});
@@ -72,15 +97,7 @@ export const CourseStudentAssessmentDay = async (req, res) => {
 				course_student_id,
 				course_student_assessment_id: CSA_id,
 				day,
-				takeoff_day,
-				takeoff_night,
-				landing_day,
-				landing_night,
-				training_time,
-				check_time,
-				ifr_time,
-				vfr_time,
-				type,
+				...dayFields,
 			});
 			const CASD = await getCourseStudentAssessmentDayById({
 				id: CASD_created.id,
@@ -150,15 +167,6 @@ export const UpdateCourseStudentAssessmentDay = async (req, res) => {
 			takeoff,
 			landing,
 			comments,
-			takeoff_day,
-			takeoff_night,
-			landing_day,
-			landing_night,
-			training_time,
-			check_time,
-			ifr_time,
-			vfr_time,
-			type,
 		} = data;
 		const CSAD_update = await updateCourseStudentAssessmentDay({
 			id,
@@ -176,15 +184,7 @@ export const UpdateCourseStudentAssessmentDay = async (req, res) => {
 			takeoff,
 			landing,
 			comments,
-			takeoff_day,
-			takeoff_night,
-			landing_day,
-			landing_night,
-			training_time,
-			check_time,
-			ifr_time,
-			vfr_time,
-			type,
+			...pickAssessmentDayFields(data),
 		});
 
 		const CASD = await getCourseStudentAssessmentDayById({

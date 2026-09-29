@@ -552,9 +552,16 @@ Get assessment with subject data.
 `score_average` (por día) y `course_score_average` (toda la evaluación) usan el último valor por registro: `score_3` si existe, si no `score_2`, si no `score`. Redondeado a 1 decimal. `null` si no hay registros.
 
 ### `GET /api/assessment/courseStudentAssessmentDay`
-Get or create assessment day.
+Get, create **or update** assessment day (upsert por `(course_student_assessment_id, day)`).
 
-**Query params**: `CSA_id`, `day`, `course_id`, `student_id`, `course_student_id`, `takeoff_day`, `takeoff_night`, `landing_day`, `landing_night`, `training_time`, `check_time`, `type` (todos opcionales; se usan al crear). `training_time`/`check_time` son números decimales en horas (FLOAT).
+**Query params**: `CSA_id`, `day`, `course_id`, `student_id`, `course_student_id`, `takeoff_day`, `takeoff_night`, `landing_day`, `landing_night`, `landing_precision`, `landing_non_precision`, `landing_gps`, `landing_circuit`, `landing_visual`, `training_time`, `check_time`, `ifr_time`, `vfr_time`, `type`. `training_time`/`check_time`/`ifr_time`/`vfr_time` son números decimales en horas (FLOAT).
+
+Comportamiento:
+
+- **Día no existe** → lo crea con los campos opcionales enviados.
+- **Día ya existe** → aplica **update parcial** solo con los campos opcionales que llegan en el query. Si no llega ninguno, no escribe nada.
+- Solo se leen los campos opcionales listados; cualquier otro query param se ignora.
+- Query param vacío (`?landing_gps=`) → se guarda como `null` (limpia la columna). `0` sí se guarda.
 
 **Response** `200`: Assessment day object.
 
@@ -583,7 +590,7 @@ approve: boolean
 **Response** `200`: Updated assessment.
 
 ### `PUT /api/assessment/updateCourseStudentAssessmentDay`
-Update assessment day.
+Update assessment day. **Partial update**: los campos ausentes en el body no se tocan. Un valor vacío (`''`) se guarda como `null` para limpiar la columna; `0` sí se guarda.
 
 **Request** (form-data):
 ```
@@ -606,8 +613,15 @@ takeoff_day: number (optional)
 takeoff_night: number (optional)
 landing_day: number (optional)
 landing_night: number (optional)
+landing_precision: number (optional) — aterrizajes de precisión
+landing_non_precision: number (optional) — aterrizajes de no precisión
+landing_gps: number (optional) — aterrizajes GPS
+landing_circuit: number (optional) — aterrizajes de circuito
+landing_visual: number (optional) — aterrizajes visuales
 training_time: number (hours with decimals, e.g. 1.5 = 1h30m) (optional)
 check_time: number (hours with decimals, e.g. 1.5 = 1h30m) (optional)
+ifr_time: number (hours with decimals, e.g. 1.5 = 1h30m) (optional)
+vfr_time: number (hours with decimals, e.g. 1.5 = 1h30m) (optional)
 type: string (optional) — entrenamiento | reentrenamiento | chequeo | re-chequeo | experiencia_reciente
 ```
 

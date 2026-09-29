@@ -220,6 +220,26 @@ export const course_student_assessment_day = (
 				type: DataTypes.INTEGER,
 				allowNull: true,
 			},
+			landing_precision: {
+				type: DataTypes.INTEGER,
+				allowNull: true,
+			},
+			landing_non_precision: {
+				type: DataTypes.INTEGER,
+				allowNull: true,
+			},
+			landing_gps: {
+				type: DataTypes.INTEGER,
+				allowNull: true,
+			},
+			landing_circuit: {
+				type: DataTypes.INTEGER,
+				allowNull: true,
+			},
+			landing_visual: {
+				type: DataTypes.INTEGER,
+				allowNull: true,
+			},
 			training_time: {
 				type: DataTypes.FLOAT,
 				allowNull: true,
