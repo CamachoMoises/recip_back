@@ -9,6 +9,7 @@ import {
 	CreateCourse,
 	CreateCourseStudent,
 	CreateSchedule,
+	DeleteSchedule,
 	ListCourses,
 	ListCoursesLevel,
 	ListCoursesStudent,
@@ -89,6 +90,7 @@ router.post(
 	CreateSchedule,
 );
 router.put('/schedule', upload.none(), convertTypes, UpdateSchedule);
+router.delete('/schedule/:id', authenticateJWT, DeleteSchedule);
 
 router.put(
 	'/courseStudentMaxAttempts',

@@ -6,6 +6,7 @@ import {
 	createCourse,
 	createCourseStudent,
 	createSchedule,
+	deleteScheduleById,
 	editCourse,
 	editCourseStudent,
 	getAllCourses,
@@ -323,6 +324,30 @@ export const UpdateSchedule = async (req, res) => {
 		res.send(SC);
 	} catch (error) {
 		console.log(error);
+		res.status(500).send(`Internal Server Error ${error}`);
+	}
+};
+
+export const DeleteSchedule = async (req, res) => {
+	const { id } = req.params;
+	try {
+		if (!id || isNaN(id)) {
+			return res.status(400).json({ error: 'Parámetro id inválido' });
+		}
+
+		const result = await deleteScheduleById(parseInt(id));
+
+		res.status(200).json({
+			message: `${result.deleted_count} schedule(s) deleted`,
+			deleted_count: result.deleted_count,
+			deleted_attendance_count: result.deleted_attendance_count,
+			deleted_signature_count: result.deleted_signature_count,
+		});
+	} catch (error) {
+		console.log(error);
+		if (error.message === 'Schedule not found') {
+			return res.status(404).send(error.message);
+		}
 		res.status(500).send(`Internal Server Error ${error}`);
 	}
 };
