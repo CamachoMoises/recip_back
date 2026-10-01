@@ -10,6 +10,7 @@ import {
 	CreateCourseStudent,
 	CreateSchedule,
 	DeleteSchedule,
+	DeleteSchedulesByCourseStudent,
 	ListCourses,
 	ListCoursesLevel,
 	ListCoursesStudent,
@@ -90,6 +91,11 @@ router.post(
 	CreateSchedule,
 );
 router.put('/schedule', upload.none(), convertTypes, UpdateSchedule);
+router.delete(
+	'/schedule/course-student/:course_student_id',
+	authenticateJWT,
+	DeleteSchedulesByCourseStudent,
+);
 router.delete('/schedule/:id', authenticateJWT, DeleteSchedule);
 
 router.put(

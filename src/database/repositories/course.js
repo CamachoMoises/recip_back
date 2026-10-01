@@ -498,6 +498,59 @@ const updateSchedule = async (
 	return editSchedule;
 };
 
+const buildSessionPairs = (schedules) => {
+	const seen = new Set();
+	const pairs = [];
+
+	for (const schedule of schedules) {
+		const ordinal = schedule.SubjectDays?.day ?? null;
+		if (!schedule.date || ordinal === null) continue;
+
+		const key = `${schedule.date}|${ordinal}`;
+		if (seen.has(key)) continue;
+		seen.add(key);
+
+		pairs.push({ date: schedule.date, day: ordinal });
+	}
+
+	return pairs;
+};
+
+const deleteAttendanceForSchedulePairs = async (
+	courseStudentId,
+	pairs,
+	transaction,
+) => {
+	if (pairs.length === 0) {
+		return { deletedAttendanceCount: 0, deletedSignatureCount: 0 };
+	}
+
+	const attendances = await Attendance.findAll({
+		attributes: ['id'],
+		where: {
+			course_student_id: courseStudentId,
+			[Op.or]: pairs.map(({ date, day }) => ({ date, day })),
+		},
+		transaction,
+	});
+
+	const attendanceIds = attendances.map((a) => a.id);
+	if (attendanceIds.length === 0) {
+		return { deletedAttendanceCount: 0, deletedSignatureCount: 0 };
+	}
+
+	const deletedSignatureCount = await AttendanceSignature.destroy({
+		where: { attendance_id: attendanceIds },
+		transaction,
+	});
+	const deletedAttendanceCount = await Attendance.destroy({
+		where: { id: attendanceIds },
+		transaction,
+	});
+
+	return { deletedAttendanceCount, deletedSignatureCount };
+};
+
 const deleteScheduleById = async (id) => {
 	const schedule = await Schedule.findByPk(id, {
 		include: [{ model: SubjectDays }],
@@ -506,42 +559,53 @@ const deleteScheduleById = async (id) => {
 		throw new Error('Schedule not found');
 	}
 
-	const ordinal = schedule.SubjectDays?.day ?? null;
-	const canCascade = Boolean(schedule.date) && ordinal !== null;
-
 	return sequelize.transaction(async (transaction) => {
-		let deletedAttendanceCount = 0;
-		let deletedSignatureCount = 0;
-
-		if (canCascade) {
-			const attendances = await Attendance.findAll({
-				attributes: ['id'],
-				where: {
-					course_student_id: schedule.course_student_id,
-					date: schedule.date,
-					day: ordinal,
-				},
+		const { deletedAttendanceCount, deletedSignatureCount } =
+			await deleteAttendanceForSchedulePairs(
+				schedule.course_student_id,
+				buildSessionPairs([schedule]),
 				transaction,
-			});
-
-			const attendanceIds = attendances.map((a) => a.id);
-
-			if (attendanceIds.length > 0) {
-				deletedSignatureCount = await AttendanceSignature.destroy({
-					where: { attendance_id: attendanceIds },
-					transaction,
-				});
-				deletedAttendanceCount = await Attendance.destroy({
-					where: { id: attendanceIds },
-					transaction,
-				});
-			}
-		}
+			);
 
 		await schedule.destroy({ transaction });
 
 		return {
 			deleted_count: 1,
+			deleted_attendance_count: deletedAttendanceCount,
+			deleted_signature_count: deletedSignatureCount,
+		};
+	});
+};
+
+const deleteSchedulesByCourseStudent = async (course_student_id) => {
+	return sequelize.transaction(async (transaction) => {
+		const courseStudent = await CourseStudent.findByPk(course_student_id, {
+			transaction,
+		});
+		if (!courseStudent) {
+			throw new Error('CourseStudent not found');
+		}
+
+		const schedules = await Schedule.findAll({
+			where: { course_student_id },
+			include: [{ model: SubjectDays }],
+			transaction,
+		});
+
+		const { deletedAttendanceCount, deletedSignatureCount } =
+			await deleteAttendanceForSchedulePairs(
+				course_student_id,
+				buildSessionPairs(schedules),
+				transaction,
+			);
+
+		const deletedCount = await Schedule.destroy({
+			where: { course_student_id },
+			transaction,
+		});
+
+		return {
+			deleted_count: deletedCount,
 			deleted_attendance_count: deletedAttendanceCount,
 			deleted_signature_count: deletedSignatureCount,
 		};
@@ -609,6 +673,7 @@ export {
 	createSchedule,
 	updateSchedule,
 	deleteScheduleById,
+	deleteSchedulesByCourseStudent,
 	updateCourseStudentMaxAttempts,
 	getScheduleByInstructor,
 };
