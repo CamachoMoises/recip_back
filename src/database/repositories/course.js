@@ -636,6 +636,8 @@ const getScheduleByInstructor = async (instructor_id) => {
 			},
 			{
 				model: CourseStudent,
+				required: true,
+				where: { status: true },
 			},
 			{
 				model: SubjectDays,
