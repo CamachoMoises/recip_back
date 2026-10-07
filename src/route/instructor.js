@@ -10,6 +10,7 @@ import {
 	ListTestsByInstructorWithParticipation,
 	ListAttendanceByInstructorGrouped,
 	ListEvaluationsByInstructorGrouped,
+	listSignatureGroupsByInstructor,
 } from '../controller/instructor.js';
 
 const upload = multer();
@@ -77,6 +78,14 @@ router.get(
 	authenticateJWT,
 	convertTypes,
 	ListEvaluationsByInstructorGrouped,
+);
+
+router.get(
+	'/signature_groups/:instructor_id',
+	upload.none(),
+	authenticateJWT,
+	convertTypes,
+	listSignatureGroupsByInstructor,
 );
 
 router.get(

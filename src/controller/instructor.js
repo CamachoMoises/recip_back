@@ -10,6 +10,7 @@ import {
 	getTestsByInstructorWithParticipation,
 	getAttendanceByInstructorGroupedByCourseStudent,
 	getEvaluationsByInstructorGroupedByCourseStudent,
+	listSignatureGroupsByInstructor as listSignatureGroupsByInstructorRepo,
 } from '../database/repositories/instructor.js';
 
 export const ListScheduleByInstructor = async (req, res) => {
@@ -130,6 +131,26 @@ export const ListEvaluationsByInstructorGrouped = async (req, res) => {
 		res.send(result);
 	} catch (error) {
 		console.log(error);
+		res.status(500).send('Internal Server Error');
+	}
+};
+
+export const listSignatureGroupsByInstructor = async (req, res) => {
+	try {
+		const instructor_id = req.params.instructor_id;
+		if (!instructor_id || isNaN(instructor_id)) {
+			console.log('[listSignatureGroupsByInstructor] Invalid instructor_id:', instructor_id);
+			return res
+				.status(400)
+				.json({ error: 'Parámetro instructor_id inválido' });
+		}
+		const result = await listSignatureGroupsByInstructorRepo(
+			parseInt(instructor_id),
+		);
+		console.log('[listSignatureGroupsByInstructor] Success for instructor_id:', instructor_id, 'groups:', result.length);
+		res.json({ data: result });
+	} catch (error) {
+		console.log('[listSignatureGroupsByInstructor] Error:', error);
 		res.status(500).send('Internal Server Error');
 	}
 };

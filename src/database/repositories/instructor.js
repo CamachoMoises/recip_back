@@ -16,6 +16,8 @@ const {
 	AttendanceStatus,
 	AttendanceSignature,
 	Subject,
+	CourseGroup,
+	CourseGroupSignature,
 } = models;
 
 const getCourseStudentIdsByInstructor = async (instructor_id) => {
@@ -456,6 +458,100 @@ const getEvaluationsByInstructorGroupedByCourseStudent = async (
 	};
 };
 
+const isWithinProgram = (course, day) => {
+	const uses_sessions = !!course.uses_sessions;
+	if (uses_sessions) {
+		return day >= 1 && day <= course.sessions;
+	}
+	return day >= 1 && day <= course.days;
+};
+
+const listSignatureGroupsByInstructor = async (instructor_id) => {
+	const courseIds = await getCourseIdsByInstructor(instructor_id);
+	if (!courseIds.length) return [];
+
+	const groups = await CourseGroup.findAll({
+		where: { course_id: { [Op.in]: courseIds }, status: true },
+		include: [
+			{ model: Course, required: true, where: { course_type_id: 1 }, include: [CourseType, CourseLevel] },
+			{ model: CourseStudent, required: false, where: { status: true }, include: [{ model: Student, include: [User] }] },
+			{ model: CourseGroupSignature, required: false, order: [['day_number', 'ASC'], ['signature_number', 'ASC']] }
+		],
+		order: [['id', 'ASC']]
+	});
+
+	const studentIds = groups.flatMap(g => {
+		const csList = g.CourseStudents || g.course_students || g.courseStudents || [];
+		return csList.map(cs => cs.id);
+	});
+	
+	const schedules = studentIds.length
+		? await Schedule.findAll({
+				where: { instructor_id, course_student_id: { [Op.in]: studentIds } },
+				include: [
+					{ model: SubjectDays, required: true, attributes: ['day'], where: { status: true } },
+					{ model: Subject, required: true, attributes: ['status'] }
+				]
+			})
+		: [];
+
+	const csToDays = new Map();
+	schedules.forEach(s => {
+		const day = s.SubjectDays?.day;
+		if (day !== undefined && day !== null) {
+			if (!csToDays.has(s.course_student_id)) csToDays.set(s.course_student_id, new Set());
+			csToDays.get(s.course_student_id).add(day);
+		}
+	});
+
+	const result = groups.map(g => {
+		const course = g.Course || g.course;
+		const csList = g.CourseStudents || g.course_students || g.courseStudents || [];
+		const sigs = g.CourseGroupSignatures || g.course_group_signatures || g.courseGroupSignatures || g.CourseGroupSignatures || [];
+		const days = [...new Set(
+			csList
+				.filter(cs => csToDays.has(cs.id))
+				.flatMap(cs => [...csToDays.get(cs.id)])
+				.filter(day => isWithinProgram(course, day))
+		)].sort((a,b) => a - b);
+		
+		return {
+			course_group_id: g.id,
+			title: g.title,
+			code: g.code,
+			course: {
+				id: course.id,
+				name: course.name,
+				code: course.code,
+				uses_sessions: course.uses_sessions,
+				days: course.days,
+				sessions: course.sessions,
+				course_type: { id: course.course_type_id, name: course.CourseType?.name },
+				course_level: course.CourseLevel?.name
+			},
+			course_students: csList.map(cs => {
+				const student = cs.Student || cs.student;
+				const user = student?.User || student?.user;
+				return {
+					id: cs.id,
+					code: cs.code,
+					student: { name: user?.name, last_name: user?.last_name }
+				};
+			}),
+			days: days,
+			signatures: sigs.map(sig => ({
+				id: sig.id,
+				day_number: sig.day_number,
+				signature_number: sig.signature_number,
+				signature_url: sig.signature_url
+			}))
+		};
+	});
+	return result;
+};
+
+
+
 export {
 	getCourseStudentIdsByInstructor,
 	getCourseIdsByInstructor,
@@ -463,4 +559,5 @@ export {
 	getTestsByInstructorWithParticipation,
 	getAttendanceByInstructorGroupedByCourseStudent,
 	getEvaluationsByInstructorGroupedByCourseStudent,
+	listSignatureGroupsByInstructor,
 };
