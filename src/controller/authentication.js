@@ -23,13 +23,13 @@ export const Login = async (req, res) => {
 		}
 		const is_correct_password = bcrypt.compareSync(
 			`${password}`,
-			user.password
+			user.password,
 		);
 		if (!is_correct_password) {
 			throw new Error('invalid_password');
 		}
 		const token = jwt.sign({ id: user.id }, SECRET_KEY, {
-			expiresIn: '3h',
+			expiresIn: '6h',
 		});
 		res.send({ email, user, token });
 	} catch (error) {
