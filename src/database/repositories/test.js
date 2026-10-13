@@ -1,5 +1,5 @@
 import moment from 'moment';
-import { models } from '../index.js';
+import { models, sequelize } from '../index.js';
 import { getCourseStudentById } from './course.js';
 import { Op, Sequelize } from 'sequelize';
 import { getCourseStudentIdsByInstructor } from './instructor.js';
@@ -211,6 +211,73 @@ const updateQuestionTest = async ({ id, header, status }) => {
 	await question.update({ header, status });
 	return question;
 };
+
+const deleteQuestionById = async (id) =>
+	sequelize.transaction(async (transaction) => {
+		const question = await Question.findByPk(id, { transaction });
+		if (!question) {
+			throw new Error('Question not found');
+		}
+
+		const attempts = await CourseStudentTestQuestion.count({
+			where: { question_id: id },
+			transaction,
+		});
+		if (attempts > 0) {
+			throw new Error('Question has attempts');
+		}
+
+		const deletedAnswers = await Answer.destroy({
+			where: { question_id: id },
+			transaction,
+		});
+		await question.destroy({ transaction });
+
+		return {
+			deleted_count: 1,
+			deleted_answers_count: deletedAnswers,
+		};
+	});
+
+const deleteQuestionsByTestId = async (test_id) =>
+	sequelize.transaction(async (transaction) => {
+		const test = await Test.findByPk(test_id, { transaction });
+		if (!test) {
+			throw new Error('Test not found');
+		}
+
+		const questions = await Question.findAll({
+			attributes: ['id'],
+			where: { test_id },
+			transaction,
+		});
+		const questionIds = questions.map((question) => question.id);
+		if (questionIds.length === 0) {
+			return { deleted_count: 0, deleted_answers_count: 0 };
+		}
+
+		const attempts = await CourseStudentTestQuestion.count({
+			where: { question_id: { [Op.in]: questionIds } },
+			transaction,
+		});
+		if (attempts > 0) {
+			throw new Error('Questions have attempts');
+		}
+
+		const deletedAnswers = await Answer.destroy({
+			where: { question_id: { [Op.in]: questionIds } },
+			transaction,
+		});
+		const deletedQuestions = await Question.destroy({
+			where: { id: { [Op.in]: questionIds } },
+			transaction,
+		});
+
+		return {
+			deleted_count: deletedQuestions,
+			deleted_answers_count: deletedAnswers,
+		};
+	});
 
 const createAnswerQuestionTest = async ({
 	course_id,
@@ -621,6 +688,8 @@ export {
 	updateTest,
 	createQuestionTest,
 	updateQuestionTest,
+	deleteQuestionById,
+	deleteQuestionsByTestId,
 	createAnswerQuestionTest,
 	updateAnswerQuestionTest,
 	updateTestQuestionType,

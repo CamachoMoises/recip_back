@@ -8,6 +8,8 @@ import {
 	CreateAnswerQuestionTest,
 	CreateQuestionTest,
 	CreateTest,
+	DeleteQuestionTest,
+	DeleteQuestionsByTest,
 	ImportQuestionsFromCSV,
 	ImportQuestionsFromExcel,
 	ListAnswerQuestion,
@@ -129,6 +131,12 @@ router.get(
 	authenticateJWT,
 	ListQuestionsByTest,
 );
+router.delete(
+	'/questions/by-test/:test_id',
+	authenticateJWT,
+	DeleteQuestionsByTest,
+);
+router.delete('/questions/:question_id', authenticateJWT, DeleteQuestionTest);
 router.get('/questionTypes', authenticateJWT, ListQuestionTypes);
 router.get('/answers/:id', authenticateJWT, ListAnswerQuestion);
 router.get(

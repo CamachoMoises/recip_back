@@ -9,6 +9,8 @@ import {
 	createQuestionTest,
 	createTest,
 	createTestQuestionType,
+	deleteQuestionById,
+	deleteQuestionsByTestId,
 	getAllCourseStudentTestAnswer,
 	getAllCourseStudentTestByStudentId,
 	getAllTest,
@@ -502,6 +504,58 @@ export const UpdateQuestionTest = async (req, res) => {
 	} catch (error) {
 		console.log(error);
 		res.status(500).send('Internal Server Error');
+	}
+};
+
+export const DeleteQuestionTest = async (req, res) => {
+	try {
+		const question_id = parseInt(req.params.question_id);
+		if (!question_id || isNaN(question_id)) {
+			return res
+				.status(400)
+				.json({ error: 'Parámetro question_id inválido' });
+		}
+
+		await deleteQuestionById(question_id);
+		res.status(204).send();
+	} catch (error) {
+		if (error.message === 'Question not found') {
+			return res.status(404).json({ error: error.message });
+		}
+		if (error.message === 'Question has attempts') {
+			return res.status(409).json({
+				error:
+					'La pregunta ya fue usada en un intento de examen y no puede eliminarse',
+			});
+		}
+		console.error('Error al eliminar la pregunta:', error);
+		res.status(500).json({ error: 'Error interno del servidor' });
+	}
+};
+
+export const DeleteQuestionsByTest = async (req, res) => {
+	try {
+		const test_id = parseInt(req.params.test_id);
+		if (!test_id || isNaN(test_id)) {
+			return res
+				.status(400)
+				.json({ error: 'Parámetro test_id inválido' });
+		}
+
+		const result = await deleteQuestionsByTestId(test_id);
+		res.status(200).json(result);
+	} catch (error) {
+		if (error.message === 'Test not found') {
+			return res.status(404).json({ error: error.message });
+		}
+		if (error.message === 'Questions have attempts') {
+			return res.status(409).json({
+				error:
+					'Una o más preguntas ya fueron usadas en un intento de examen y no pueden eliminarse',
+			});
+		}
+		console.error('Error al eliminar las preguntas del test:', error);
+		res.status(500).json({ error: 'Error interno del servidor' });
 	}
 };
 
