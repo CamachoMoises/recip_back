@@ -11,6 +11,8 @@ const {
 	CourseStudentAssessment,
 	CourseGroup,
 	SubjectDays,
+	SubjectLesson,
+	SubjectLessonDays,
 	Subject,
 	Student,
 	Test,
@@ -315,6 +317,179 @@ const updateCourseHours = async (id, hours) => {
 	await course.update({
 		id,
 		hours,
+	});
+};
+
+const COURSE_CODE_MAX_LENGTH = 50;
+
+const buildUniqueCourseCode = async (baseCode, transaction) => {
+	const base = String(baseCode).slice(0, COURSE_CODE_MAX_LENGTH);
+	let candidate = base;
+	let suffix = 2;
+
+	while (await Course.count({ where: { code: candidate }, transaction })) {
+		const suffixStr = `-${suffix}`;
+		candidate = `${base.slice(
+			0,
+			COURSE_CODE_MAX_LENGTH - suffixStr.length,
+		)}${suffixStr}`;
+		suffix += 1;
+	}
+
+	return candidate;
+};
+
+const cloneCourse = async (course_id, overrides = {}) => {
+	return sequelize.transaction(async (transaction) => {
+		const source = await Course.findByPk(course_id, { transaction });
+		if (!source) {
+			throw new Error('Course not found');
+		}
+
+		const code =
+			overrides.code !== undefined && overrides.code !== null
+				? String(overrides.code)
+				: await buildUniqueCourseCode(
+						`${source.code}-COPIA`,
+						transaction,
+					);
+
+		const newCourse = await Course.create(
+			{
+				name:
+					overrides.name !== undefined &&
+					overrides.name !== null
+						? overrides.name
+						: `${source.name} (copia)`,
+				description:
+					overrides.description !== undefined &&
+					overrides.description !== null
+						? overrides.description
+						: source.description,
+				code,
+				hours: source.hours,
+				plane_model: source.plane_model,
+				days: source.days,
+				uses_sessions: source.uses_sessions,
+				sessions: source.sessions ?? source.days,
+				status:
+					overrides.status !== undefined
+						? overrides.status
+						: source.status,
+				course_type_id: source.course_type_id,
+				course_level_id: source.course_level_id,
+			},
+			{ transaction },
+		);
+
+		const subjects = await Subject.findAll({
+			where: { course_id },
+			transaction,
+		});
+		const subjectDays = await SubjectDays.findAll({
+			where: { course_id },
+			transaction,
+		});
+		const lessons = await SubjectLesson.findAll({
+			where: { course_id },
+			transaction,
+		});
+		const lessonDays = await SubjectLessonDays.findAll({
+			where: { course_id },
+			transaction,
+		});
+
+		const subjectIdMap = new Map();
+		for (const subject of subjects) {
+			const created = await Subject.create(
+				{
+					order: subject.order,
+					name: subject.name,
+					hours: subject.hours,
+					is_schedulable: subject.is_schedulable,
+					status: subject.status,
+					course_id: newCourse.id,
+				},
+				{ transaction },
+			);
+			subjectIdMap.set(subject.id, created.id);
+		}
+
+		const subjectDayIdMap = new Map();
+		for (const subjectDay of subjectDays) {
+			const newSubjectId = subjectIdMap.get(subjectDay.subject_id);
+			if (newSubjectId === undefined) continue;
+
+			const created = await SubjectDays.create(
+				{
+					subject_id: newSubjectId,
+					course_id: newCourse.id,
+					day: subjectDay.day,
+					classTime: subjectDay.classTime,
+					status: subjectDay.status,
+				},
+				{ transaction },
+			);
+			subjectDayIdMap.set(subjectDay.id, created.id);
+		}
+
+		const lessonIdMap = new Map();
+		for (const lesson of lessons) {
+			const newSubjectId = subjectIdMap.get(lesson.subject_id);
+			if (newSubjectId === undefined) continue;
+
+			const created = await SubjectLesson.create(
+				{
+					subject_id: newSubjectId,
+					course_id: newCourse.id,
+					name: lesson.name,
+					order: lesson.order,
+					status: lesson.status,
+				},
+				{ transaction },
+			);
+			lessonIdMap.set(lesson.id, created.id);
+		}
+
+		let clonedLessonDays = 0;
+		for (const lessonDay of lessonDays) {
+			const newSubjectId = subjectIdMap.get(lessonDay.subject_id);
+			const newLessonId = lessonIdMap.get(lessonDay.subject_lesson_id);
+			const newSubjectDayId = subjectDayIdMap.get(
+				lessonDay.subject_days_id,
+			);
+			if (
+				newSubjectId === undefined ||
+				newLessonId === undefined ||
+				newSubjectDayId === undefined
+			) {
+				continue;
+			}
+
+			await SubjectLessonDays.create(
+				{
+					course_id: newCourse.id,
+					subject_id: newSubjectId,
+					subject_lesson_id: newLessonId,
+					subject_days_id: newSubjectDayId,
+					day: lessonDay.day,
+					classTime: lessonDay.classTime,
+					status: lessonDay.status,
+				},
+				{ transaction },
+			);
+			clonedLessonDays += 1;
+		}
+
+		return {
+			course: newCourse,
+			counts: {
+				subjects: subjectIdMap.size,
+				subject_days: subjectDayIdMap.size,
+				subject_lessons: lessonIdMap.size,
+				subject_lesson_days: clonedLessonDays,
+			},
+		};
 	});
 };
 
@@ -665,6 +840,7 @@ export {
 	getCourseProgramSizeByCourseStudent,
 	getCourseStudentById,
 	createCourse,
+	cloneCourse,
 	editCourse,
 	updateCourseHours,
 	editCourseStudent,

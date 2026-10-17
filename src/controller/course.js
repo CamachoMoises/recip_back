@@ -1,8 +1,10 @@
 import {
+	cloneCourseSchema,
 	createCourseSchema,
 	updateCourseSchema,
 } from '../database/imput_validation/course.js';
 import {
+	cloneCourse,
 	createCourse,
 	createCourseStudent,
 	createSchedule,
@@ -135,6 +137,47 @@ export const CreateCourse = async (req, res) => {
 		return res
 			.status(400)
 			.send(`Input Validation Error ${error.message}`);
+	}
+};
+
+export const CloneCourse = async (req, res) => {
+	const { course_id } = req.params;
+
+	if (!course_id || isNaN(course_id)) {
+		return res.status(400).json({ error: 'Parámetro course_id inválido' });
+	}
+
+	try {
+		const data = await cloneCourseSchema.validateAsync(req.body ?? {});
+
+		let result;
+		try {
+			result = await cloneCourse(parseInt(course_id), data);
+		} catch (error) {
+			if (error.message === 'Course not found') {
+				return res.status(404).send('Curso no encontrado');
+			}
+			throw error;
+		}
+
+		const { course, counts } = result;
+		const courseDetails = await getCourseById(course.id);
+
+		res.status(201).send({
+			...(courseDetails ?? course).toJSON(),
+			subjects_cloned: counts.subjects,
+			subject_days_cloned: counts.subject_days,
+			subject_lessons_cloned: counts.subject_lessons,
+			subject_lesson_days_cloned: counts.subject_lesson_days,
+		});
+	} catch (error) {
+		console.error('Error en el clonado:', error.message);
+		if (error.isJoi) {
+			return res
+				.status(400)
+				.send(`Input Validation Error ${error.message}`);
+		}
+		res.status(500).send(`Internal Server Error ${error}`);
 	}
 };
 

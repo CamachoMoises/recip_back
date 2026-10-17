@@ -72,4 +72,14 @@ const updateCourseSchema = Joi.object({
 	status: Joi.boolean(),
 });
 
-export { createCourseSchema, updateCourseSchema };
+const cloneCourseSchema = Joi.object({
+	name: Joi.alternatives().try(Joi.string().max(500), Joi.number()),
+	description: Joi.alternatives().try(
+		Joi.string().max(500),
+		Joi.number(),
+	),
+	code: Joi.alternatives().try(Joi.string().max(50), Joi.number()),
+	status: Joi.boolean(),
+});
+
+export { createCourseSchema, updateCourseSchema, cloneCourseSchema };

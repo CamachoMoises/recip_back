@@ -4,6 +4,7 @@ import convertTypes from '../middleware/convertTypes.js';
 
 // import multer from 'multer';
 import {
+	CloneCourse,
 	CourseDetails,
 	CourseStudentDetails,
 	CreateCourse,
@@ -47,6 +48,13 @@ router.put(
 );
 router.get('/courseTypes', authenticateJWT, ListCoursesTypes);
 router.get('/courseLevel', authenticateJWT, ListCoursesLevel);
+router.post(
+	'/clone/:course_id',
+	upload.none(),
+	authenticateJWT,
+	convertTypes,
+	CloneCourse,
+);
 router.post(
 	'/courseStudent/:course_id',
 	upload.none(),
