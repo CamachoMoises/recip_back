@@ -201,6 +201,7 @@ name: string
 description: string
 code: string
 plane_model: string
+color: string (max 50, opcional)
 days: number
 type: number (course_type_id)
 level: number (course_level_id)

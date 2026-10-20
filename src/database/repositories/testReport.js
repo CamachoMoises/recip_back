@@ -198,7 +198,7 @@ const getTestSummaries = async ({ status, course_id } = {}) => {
 			{
 				model: Course,
 				as: 'course',
-				attributes: ['id', 'name', 'code'],
+				attributes: ['id', 'name', 'code', 'color'],
 			},
 		],
 		order: [['id', 'ASC']],

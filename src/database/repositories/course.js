@@ -260,6 +260,7 @@ const createCourse = async ({
 	course_type_id,
 	course_level_id,
 	plane_model,
+	color,
 	status,
 }) =>
 	await Course.create({
@@ -271,6 +272,7 @@ const createCourse = async ({
 		uses_sessions,
 		sessions,
 		plane_model,
+		color,
 		course_type_id,
 		course_level_id,
 		status,
@@ -286,6 +288,7 @@ const editCourse = async ({
 	uses_sessions,
 	sessions,
 	plane_model,
+	color,
 	course_type_id,
 	course_level_id,
 	status,
@@ -305,6 +308,7 @@ const editCourse = async ({
 		course_type_id,
 		course_level_id,
 		plane_model,
+		color,
 		status,
 	});
 	return course;
@@ -369,6 +373,7 @@ const cloneCourse = async (course_id, overrides = {}) => {
 				code,
 				hours: source.hours,
 				plane_model: source.plane_model,
+				color: source.color,
 				days: source.days,
 				uses_sessions: source.uses_sessions,
 				sessions: source.sessions ?? source.days,

@@ -100,6 +100,9 @@ export const CreateCourse = async (req, res) => {
 	delete data.course_level;
 	data.course_type_id = course_type_id;
 	data.course_level_id = course_level_id;
+	if (data.color !== undefined && data.color !== null) {
+		data.color = String(data.color);
+	}
 
 	try {
 		const new_data = await createCourseSchema.validateAsync(data);
@@ -109,6 +112,7 @@ export const CreateCourse = async (req, res) => {
 			code,
 			// hours,
 			plane_model,
+			color,
 			days,
 			uses_sessions,
 			sessions,
@@ -126,6 +130,7 @@ export const CreateCourse = async (req, res) => {
 			uses_sessions,
 			sessions: sessions ?? days,
 			plane_model,
+			color,
 			course_type_id,
 			course_level_id,
 			status,
@@ -211,6 +216,9 @@ export const UpdateCourse = async (req, res) => {
 	delete data.course_level;
 	data.course_type_id = course_type_id;
 	data.course_level_id = course_level_id;
+	if (data.color !== undefined && data.color !== null) {
+		data.color = String(data.color);
+	}
 	try {
 		const new_data = await updateCourseSchema.validateAsync(data);
 		const {
@@ -220,6 +228,7 @@ export const UpdateCourse = async (req, res) => {
 			code,
 			// hours,
 			plane_model,
+			color,
 			days,
 			uses_sessions,
 			sessions,
@@ -234,6 +243,7 @@ export const UpdateCourse = async (req, res) => {
 			code,
 			// hours,
 			plane_model,
+			color,
 			days,
 			uses_sessions,
 			sessions: sessions ?? days,

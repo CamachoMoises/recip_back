@@ -29,6 +29,11 @@ export default (sequelize, DataTypes) => {
 				type: DataTypes.TEXT,
 				allowNull: true,
 			},
+			color: {
+				type: DataTypes.STRING(50),
+				allowNull: true,
+				defaultValue: null,
+			},
 			days: {
 				type: DataTypes.INTEGER,
 				allowNull: true,
