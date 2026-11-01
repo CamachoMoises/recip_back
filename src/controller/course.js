@@ -21,6 +21,7 @@ import {
 	getCourseById,
 	getCourseStudentById,
 	getScheduleById,
+	reorderCourses,
 	restoreCourse,
 	softDeleteCourse,
 	updateCourseHours,
@@ -99,6 +100,9 @@ export const CreateCourse = async (req, res) => {
 	delete data.type;
 	delete data.level;
 	delete data.id;
+	// El orden es responsabilidad del backend (se asigna al final). Joi rechaza
+	// claves desconocidas, así que se descarta explícitamente.
+	delete data.row_order;
 	delete data.course_type;
 	delete data.course_level;
 	data.course_type_id = course_type_id;
@@ -214,6 +218,8 @@ export const UpdateCourse = async (req, res) => {
 	delete data.type;
 	delete data.level;
 	delete data.hours;
+	// Un PUT normal NUNCA reordena: solo `PUT /api/courses/order` cambia el orden.
+	delete data.row_order;
 	delete data.course_type;
 	delete data.course_level;
 	data.course_type_id = course_type_id;
@@ -299,7 +305,8 @@ export const DeleteCourse = async (req, res) => {
 /*
  * POST /api/courses/:id/restore
  * Reactiva el curso y limpia `deleted_at` / `deleted_by`. Idempotente: un curso
- * activo se devuelve sin cambios.
+ * activo se devuelve sin cambios. No toca `row_order`: el curso vuelve a su
+ * posición original en la lista.
  */
 export const RestoreCourse = async (req, res) => {
 	const { id } = req.params;
@@ -312,6 +319,31 @@ export const RestoreCourse = async (req, res) => {
 		res.send(course);
 	} catch (error) {
 		console.error('Error al reactivar el curso:', error.message);
+		if (error.status) {
+			return res.status(error.status).json({ message: error.message });
+		}
+		return res
+			.status(400)
+			.send(`Input Validation Error ${error.message}`);
+	}
+};
+
+/*
+ * PUT /api/courses/order
+ * Body: `{ ids: number[] }` con los cursos en el orden final.
+ *
+ * Reasigna `row_order` = 1..N en una transacción y devuelve el listado completo
+ * (incluye eliminados, igual que la pantalla de configuración) ya ordenado, para
+ * que el front reemplace su `courseList` sin un segundo GET.
+ */
+export const ReorderCourses = async (req, res) => {
+	const { ids } = req.body ?? {};
+	try {
+		await reorderCourses(ids);
+		const courses = await getAllCourses({ include_inactive: true });
+		res.send(courses);
+	} catch (error) {
+		console.error('Error al reordenar los cursos:', error.message);
 		if (error.status) {
 			return res.status(error.status).json({ message: error.message });
 		}

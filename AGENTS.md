@@ -163,6 +163,33 @@ sin filtrar (historial y ficha del curso).
 `deleteCourse`/`restoreCourse`, `include_inactive` solo en configuración, quitar el switch de
 `status` del modal y manejar `error.response.data.message`).
 
+## Orden de cursos (`course.row_order`)
+
+El orden de presentación de cursos es manual, igual que `subject.order`, pero **global** (la lista
+de cursos no cuelga de otro registro).
+
+- Columna `course.row_order` (INT NOT NULL, 1..N). Se llama `row_order` y no `order` para no
+  depender de comillas en SQL crudo (`ORDER` es palabra reservada en MySQL).
+- `GET /api/courses` ordena **`row_order ASC, id ASC`** (el `id` es el desempate determinista).
+- `POST /api/courses` y `POST /clone/:course_id` agregan al final (`MAX(row_order) + 1`) e
+  **ignoran** `row_order` del body (el controller lo descarta antes de Joi).
+- `PUT /api/courses` **no** reordena: `row_order` se descarta antes de Joi.
+- `PUT /api/courses/order` con `{ ids: [..] }` reasigna `1..N` en una transacción. Duplicados o no
+  numéricos → `400` JSON; id inexistente → `404` JSON; los ids faltantes se agregan al final.
+  Devuelve el listado completo (con eliminados) ya ordenado.
+- `DELETE /:id` y `POST /:id/restore` **no** tocan `row_order`: al reactivar, el curso vuelve a su
+  posición original. Los cursos eliminados participan del orden.
+- Helper `reorderCourses(ids)` en `src/database/repositories/course.js`.
+- El índice `idx_course_row_order` se crea **solo en la migración**, no en el modelo: `sync`
+  (`alter: false`) procesa los `indexes` declarados y un `CREATE INDEX` sobre una columna
+  inexistente rompería el arranque si falta migrar.
+
+**Migración obligatoria antes de desplegar:** `migrations/20261201000000-add-row-order-to-course.cjs`
+(agrega la columna NOT NULL con backfill `id ASC` 1..N + índice). Sin ella, cualquier SELECT sobre
+`course` falla con `Unknown column 'course.row_order'`.
+
+Instrucciones de front: `FRONT_ORDEN_CURSOS.md`.
+
 ## API Routes
 
 | Prefix | Purpose |
@@ -170,7 +197,7 @@ sin filtrar (historial y ficha del curso).
 | `/auth` | Login (public) |
 | `/api/users` | User/student/instructor CRUD |
 | `/api/users/student/search` | Fast student search by name/email |
-| `/api/courses` | Course + enrollment + schedule CRUD (includes `instructor_id` filter on `coursesStudents`). Lifecycle: `DELETE /:id` (soft delete) + `POST /:id/restore` (reactivar), ver sección "Soft delete de curso". `DELETE /schedule/:id` borra un schedule **y en cascada** su `attendance` + `attendance_signature` (match `course_student_id` + `date` + `subject_days.day`); `DELETE /schedule/course-student/:course_student_id` borra todos los schedules del alumno con la misma cascada (solo los pares `(date, day)` que tenían schedule). Ambos en una transacción. |
+| `/api/courses` | Course + enrollment + schedule CRUD (includes `instructor_id` filter on `coursesStudents`). Lifecycle: `DELETE /:id` (soft delete) + `POST /:id/restore` (reactivar), ver sección "Soft delete de curso". Orden manual: `PUT /order` (`{ ids }` → 1..N) + `row_order` en `GET /`, ver sección "Orden de cursos". `DELETE /schedule/:id` borra un schedule **y en cascada** su `attendance` + `attendance_signature` (match `course_student_id` + `date` + `subject_days.day`); `DELETE /schedule/course-student/:course_student_id` borra todos los schedules del alumno con la misma cascada (solo los pares `(date, day)` que tenían schedule). Ambos en una transacción. |
 | `/api/course_groups` | Course groups CRUD + students list + remove students + signature upload + list signatures per group + `GET /report/attendance` (attendance/signature report grouped by group with students/user, course, schedules/instructors). Supports `instructor_id` filter. |
 | `/api/subjects` | Subject + lessons + days CRUD |
 | `/api/assessment` | Student assessments + signatures |

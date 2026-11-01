@@ -34,7 +34,7 @@ repositorios que afecte una petición/respuesta DEBE actualizar este archivo en 
 | Student | `id, user_id, status` |
 | Instructor | `id, user_id, status` |
 | UserDocType | `id, name, symbol` |
-| Course | `id, name, description, code, hours, plane_model, color, days, uses_sessions, sessions, status, deleted_at, deleted_by, course_type_id, course_level_id` |
+| Course | `id, name, description, code, hours, plane_model, color, days, uses_sessions, sessions, row_order, status, deleted_at, deleted_by, course_type_id, course_level_id` |
 | CourseType | `id, name` |
 | CourseLevel | `id, name` |
 | CourseStudent | `id, course_id, date, score, approve, student_id, code, type_trip, license, regulation, status, max_attempts, instructor_code, client` |
@@ -209,13 +209,23 @@ arranque usa `alter: false` y no las crea).
 > `status` es el único predicado. `deleted_at` (fecha) y `deleted_by` (`user.id`, sin FK) son
 > **solo auditoría** de la eliminación vigente: no filtran queries y se limpian al reactivar.
 > No se usa `paranoid` de Sequelize. Instrucciones de front: `FRONT_SOFT_DELETE_CURSO.md`.
+>
+> **Orden de cursos.** `course.row_order` (INT NOT NULL, 1..N) es el orden de presentación y es
+> **global** (no cuelga de un tipo ni de un nivel). Solo lo cambia `PUT /api/courses/order`:
+> `POST /`, `POST /clone/:course_id` y `PUT /` lo **ignoran** (el curso nuevo y el clon van al
+> final). `DELETE /:id` y `POST /:id/restore` **no** lo tocan, así que un curso reactivado vuelve
+> a su posición; los cursos eliminados participan del orden. Instrucciones de front:
+> `FRONT_ORDEN_CURSOS.md`.
 
 ### GET /
 - Query: `name`, `description`, `course_type_id`, `course_level_id`, `include_inactive` (todos opcionales)
 - Por defecto **oculta los cursos eliminados** (`status = 0`). El front debe enviar
   `include_inactive=true` en la pantalla de configuración para listarlos y poder reactivarlos.
+- Orden: **`row_order ASC, id ASC`** (el `id` es el desempate determinista). El orden es el mismo
+  para todos los consumidores: configuración, selects de matrícula/horarios/grupos/exámenes y
+  evaluaciones.
 - `200` → array de Course con alias `course_type`, `course_level` (incluye `color`, `uses_sessions`,
-  `sessions`, `deleted_at` y `deleted_by`)
+  `sessions`, `row_order`, `deleted_at` y `deleted_by`)
 
 ### POST /
 - Body (Joi; `type`→`course_type_id`, `level`→`course_level_id`): `name`, `description`, `code`,
@@ -225,7 +235,10 @@ arranque usa `alter: false` y no las crea).
   [Días vs. Sesiones](#días-vs-sesiones). Si `sessions` no viene, se persiste `sessions = days`.
 - `status` se acepta por compatibilidad pero se **ignora**: un curso siempre nace activo
   (`status = true`). Para eliminar usa `DELETE /:id` (o `PUT /` con `status: false`).
-- `201` → Course con `course_type`, `course_level` (incluye `color`, `uses_sessions` y `sessions`)
+- `row_order` **se ignora**: el curso nuevo se agrega al final (`MAX(row_order) + 1`). Si el body lo
+  envía, se descarta antes de Joi (no devuelve 400 por clave desconocida).
+- `201` → Course con `course_type`, `course_level` (incluye `color`, `uses_sessions`, `sessions` y
+  `row_order`)
 
 ### PUT /
 - Body (Joi, mismo que POST + `id` requerido; se ignora `hours`)
@@ -234,8 +247,23 @@ arranque usa `alter: false` y no las crea).
   no conoce esos campos ya no degrada el programa — ver [Días vs. Sesiones](#días-vs-sesiones).
 - `status: false` marca el curso como eliminado (setea `deleted_at`/`deleted_by` con el usuario del
   JWT) y `status: true` lo reactiva (limpia la auditoría); omitir `status` conserva ambos.
+- `row_order` **se ignora**: un `PUT` normal nunca reordena (se descarta antes de Joi). Para el
+  orden existe `PUT /order`.
 - `200` → Course con `course_type`, `course_level`
 - `404` JSON `{ message: 'Curso no encontrado' }`
+
+### PUT /order
+- Auth: sí
+- Body: `{ "ids": [3, 1, 2] }` — ids de **todos** los cursos en el orden final (los eliminados
+  también, si la pantalla los muestra).
+- Reasigna `row_order` = `1..N` en una sola transacción y devuelve el listado completo
+  (`include_inactive`), ya ordenado, con `course_type` y `course_level`.
+- Semántica tolerante: los ids que falten (p. ej. porque el front tiene un filtro activo) **no se
+  pierden**; se agregan al final conservando su orden relativo actual.
+- `200` → array de Course ordenado (mismo shape que `GET /` con `include_inactive=true`)
+- `400` JSON `{ message: 'Parámetro ids inválido' }` si `ids` falta, no es array, está vacío o trae
+  valores no numéricos; `{ message: 'La lista de ids tiene duplicados' }` si hay repetidos
+- `404` JSON `{ message: 'Curso no encontrado: <ids>' }` si algún id no existe
 
 ### DELETE /:id
 - Auth: sí
@@ -243,6 +271,7 @@ arranque usa `alter: false` y no las crea).
 - Soft delete reversible: `status = false`, `deleted_at = now`, `deleted_by = req.user.id`.
 - **No borra nada**: matrículas, horarios, asistencias, exámenes, evaluaciones y grupos se
   conservan; solo se bloquean las **creaciones nuevas** (ver bloque de soft delete arriba).
+- No modifica `row_order`: si se reactiva, el curso vuelve a su posición original.
 - Idempotente: si el curso ya está eliminado devuelve `200` sin reescribir la auditoría original.
 - `200` → Course con `course_type`, `course_level` (`status = false`, `deleted_at`, `deleted_by`)
 - `400` JSON `{ message: 'Parámetro id inválido' }` si `id` no es numérico
@@ -253,6 +282,7 @@ arranque usa `alter: false` y no las crea).
 - Params: `id` (curso)
 - Reactiva el curso: `status = true`, `deleted_at = null`, `deleted_by = null`. No recrea ni
   duplica nada; el historial queda exactamente como estaba.
+- No toca `row_order`: el curso vuelve a su posición original en la lista.
 - Idempotente: un curso activo se devuelve `200` sin cambios.
 - `200` → Course con `course_type`, `course_level`
 - `400` JSON `{ message: 'Parámetro id inválido' }` si `id` no es numérico
@@ -275,6 +305,7 @@ arranque usa `alter: false` y no las crea).
 - Crea un curso nuevo (clon estructural) copiando `course`, `subject`, `subject_days`, `subject_lesson` y `subject_lesson_days`, re-apuntados al nuevo `course_id`. No clona students/grupos enrollados, schedules, asistencias, tests ni evaluaciones.
 - Defaults: `name` = `'<origen> (copia)'`, `code` = `'<origen>-COPIA'` (50 max, sufijo incremental si existe). Otros campos copiados (incluido `color`); overrides reemplazan.
 - El clon **no hereda el soft delete**: nace con `status = true` salvo que el body envíe `status` explícito.
+- El clon **no hereda `row_order`**: se agrega al final (`MAX(row_order) + 1`).
 - Transacción: si falla → rollback. Filas con padres faltantes se saltan.
 - `201` → Course con `course_type`, `course_level` (shape `GET /course/:id`) más: `subjects_cloned`, `subject_days_cloned`, `subject_lessons_cloned`, `subject_lesson_days_cloned` (conteos).
 - `400` JSON `{ error: 'Parámetro course_id inválido' }` | texto plano `Input Validation Error <msg>`
@@ -1156,7 +1187,7 @@ ido/expirado → `403` con el error JWT serializado.
 | Student | `id, user_id, status` |
 | Instructor | `id, user_id, status` |
 | UserDocType | `id, name, symbol` |
-| Course | `id, name, description, code, hours, plane_model, color, days, uses_sessions, sessions, status, deleted_at, deleted_by, course_type_id, course_level_id` |
+| Course | `id, name, description, code, hours, plane_model, color, days, uses_sessions, sessions, row_order, status, deleted_at, deleted_by, course_type_id, course_level_id` |
 | CourseType | `id, name` |
 | CourseLevel | `id, name` |
 | CourseStudent | `id, course_id, date, score, approve, student_id, code, type_trip, license, regulation, status, max_attempts, instructor_code, client` |
@@ -1331,13 +1362,23 @@ arranque usa `alter: false` y no las crea).
 > `status` es el único predicado. `deleted_at` (fecha) y `deleted_by` (`user.id`, sin FK) son
 > **solo auditoría** de la eliminación vigente: no filtran queries y se limpian al reactivar.
 > No se usa `paranoid` de Sequelize. Instrucciones de front: `FRONT_SOFT_DELETE_CURSO.md`.
+>
+> **Orden de cursos.** `course.row_order` (INT NOT NULL, 1..N) es el orden de presentación y es
+> **global** (no cuelga de un tipo ni de un nivel). Solo lo cambia `PUT /api/courses/order`:
+> `POST /`, `POST /clone/:course_id` y `PUT /` lo **ignoran** (el curso nuevo y el clon van al
+> final). `DELETE /:id` y `POST /:id/restore` **no** lo tocan, así que un curso reactivado vuelve
+> a su posición; los cursos eliminados participan del orden. Instrucciones de front:
+> `FRONT_ORDEN_CURSOS.md`.
 
 ### GET /
 - Query: `name`, `description`, `course_type_id`, `course_level_id`, `include_inactive` (todos opcionales)
 - Por defecto **oculta los cursos eliminados** (`status = 0`). El front debe enviar
   `include_inactive=true` en la pantalla de configuración para listarlos y poder reactivarlos.
+- Orden: **`row_order ASC, id ASC`** (el `id` es el desempate determinista). El orden es el mismo
+  para todos los consumidores: configuración, selects de matrícula/horarios/grupos/exámenes y
+  evaluaciones.
 - `200` → array de Course con alias `course_type`, `course_level` (incluye `color`, `uses_sessions`,
-  `sessions`, `deleted_at` y `deleted_by`)
+  `sessions`, `row_order`, `deleted_at` y `deleted_by`)
 
 ### POST /
 - Body (Joi; `type`→`course_type_id`, `level`→`course_level_id`): `name`, `description`, `code`,
@@ -1347,7 +1388,10 @@ arranque usa `alter: false` y no las crea).
   [Días vs. Sesiones](#días-vs-sesiones). Si `sessions` no viene, se persiste `sessions = days`.
 - `status` se acepta por compatibilidad pero se **ignora**: un curso siempre nace activo
   (`status = true`). Para eliminar usa `DELETE /:id` (o `PUT /` con `status: false`).
-- `201` → Course con `course_type`, `course_level` (incluye `color`, `uses_sessions` y `sessions`)
+- `row_order` **se ignora**: el curso nuevo se agrega al final (`MAX(row_order) + 1`). Si el body lo
+  envía, se descarta antes de Joi (no devuelve 400 por clave desconocida).
+- `201` → Course con `course_type`, `course_level` (incluye `color`, `uses_sessions`, `sessions` y
+  `row_order`)
 
 ### PUT /
 - Body (Joi, mismo que POST + `id` requerido; se ignora `hours`)
@@ -1356,8 +1400,23 @@ arranque usa `alter: false` y no las crea).
   no conoce esos campos ya no degrada el programa — ver [Días vs. Sesiones](#días-vs-sesiones).
 - `status: false` marca el curso como eliminado (setea `deleted_at`/`deleted_by` con el usuario del
   JWT) y `status: true` lo reactiva (limpia la auditoría); omitir `status` conserva ambos.
+- `row_order` **se ignora**: un `PUT` normal nunca reordena (se descarta antes de Joi). Para el
+  orden existe `PUT /order`.
 - `200` → Course con `course_type`, `course_level`
 - `404` JSON `{ message: 'Curso no encontrado' }`
+
+### PUT /order
+- Auth: sí
+- Body: `{ "ids": [3, 1, 2] }` — ids de **todos** los cursos en el orden final (los eliminados
+  también, si la pantalla los muestra).
+- Reasigna `row_order` = `1..N` en una sola transacción y devuelve el listado completo
+  (`include_inactive`), ya ordenado, con `course_type` y `course_level`.
+- Semántica tolerante: los ids que falten (p. ej. porque el front tiene un filtro activo) **no se
+  pierden**; se agregan al final conservando su orden relativo actual.
+- `200` → array de Course ordenado (mismo shape que `GET /` con `include_inactive=true`)
+- `400` JSON `{ message: 'Parámetro ids inválido' }` si `ids` falta, no es array, está vacío o trae
+  valores no numéricos; `{ message: 'La lista de ids tiene duplicados' }` si hay repetidos
+- `404` JSON `{ message: 'Curso no encontrado: <ids>' }` si algún id no existe
 
 ### DELETE /:id
 - Auth: sí
@@ -1365,6 +1424,7 @@ arranque usa `alter: false` y no las crea).
 - Soft delete reversible: `status = false`, `deleted_at = now`, `deleted_by = req.user.id`.
 - **No borra nada**: matrículas, horarios, asistencias, exámenes, evaluaciones y grupos se
   conservan; solo se bloquean las **creaciones nuevas** (ver bloque de soft delete arriba).
+- No modifica `row_order`: si se reactiva, el curso vuelve a su posición original.
 - Idempotente: si el curso ya está eliminado devuelve `200` sin reescribir la auditoría original.
 - `200` → Course con `course_type`, `course_level` (`status = false`, `deleted_at`, `deleted_by`)
 - `400` JSON `{ message: 'Parámetro id inválido' }` si `id` no es numérico
@@ -1375,6 +1435,7 @@ arranque usa `alter: false` y no las crea).
 - Params: `id` (curso)
 - Reactiva el curso: `status = true`, `deleted_at = null`, `deleted_by = null`. No recrea ni
   duplica nada; el historial queda exactamente como estaba.
+- No toca `row_order`: el curso vuelve a su posición original en la lista.
 - Idempotente: un curso activo se devuelve `200` sin cambios.
 - `200` → Course con `course_type`, `course_level`
 - `400` JSON `{ message: 'Parámetro id inválido' }` si `id` no es numérico

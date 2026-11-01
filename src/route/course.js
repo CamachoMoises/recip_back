@@ -19,6 +19,7 @@ import {
 	ListCoursesTypes,
 	ListSchedule,
 	RestoreCourse,
+	ReorderCourses,
 	UpdateCourse,
 	UpdateCourseStudent,
 	UpdateCourseStudentMaxAttempts,
@@ -47,6 +48,17 @@ router.put(
 	authenticateJWT,
 	convertTypes,
 	UpdateCourse,
+);
+/*
+ * Orden manual de cursos. Ruta literal `/order`: debe ir antes de cualquier
+ * `PUT /:id` (hoy no existe) para que un id con texto no la capture.
+ */
+router.put(
+	'/order',
+	upload.none(),
+	authenticateJWT,
+	convertTypes,
+	ReorderCourses,
 );
 router.get('/courseTypes', authenticateJWT, ListCoursesTypes);
 router.get('/courseLevel', authenticateJWT, ListCoursesLevel);

@@ -62,6 +62,12 @@ const getAllCourses = async (filters) => {
 	const data = Course.findAll({
 		include: [CourseType, CourseLevel],
 		where: whereClause,
+		// Orden manual (1..N). `id ASC` es el desempate determinista: dos cursos
+		// creados a la vez podrían compartir `row_order` hasta el próximo reorder.
+		order: [
+			['row_order', 'ASC'],
+			['id', 'ASC'],
+		],
 	});
 	return data;
 };
@@ -269,6 +275,15 @@ const getCourseProgramSizeByCourseStudent = async (course_student_id) => {
 	};
 };
 
+/*
+ * `row_order` es 1..N y global: un curso nuevo siempre va al final. El orden
+ * manual solo cambia con `PUT /api/courses/order`, nunca con POST/PUT.
+ */
+const getNextCourseRowOrder = async (transaction) => {
+	const maxRowOrder = await Course.max('row_order', { transaction });
+	return Number.isFinite(maxRowOrder) ? maxRowOrder + 1 : 1;
+};
+
 const createCourse = async ({
 	name,
 	description,
@@ -282,8 +297,9 @@ const createCourse = async ({
 	plane_model,
 	color,
 	status,
-}) =>
-	await Course.create({
+}) => {
+	const row_order = await getNextCourseRowOrder();
+	return Course.create({
 		name,
 		description,
 		code,
@@ -296,7 +312,9 @@ const createCourse = async ({
 		course_type_id,
 		course_level_id,
 		status,
+		row_order,
 	});
+};
 
 const editCourse = async ({
 	id,
@@ -400,6 +418,10 @@ const cloneCourse = async (course_id, overrides = {}) => {
 						transaction,
 					);
 
+		// El clon nace al final de la lista: NO hereda `source.row_order` (eso
+		// duplicaría la posición del original).
+		const row_order = await getNextCourseRowOrder(transaction);
+
 		const newCourse = await Course.create(
 			{
 				name:
@@ -423,6 +445,7 @@ const cloneCourse = async (course_id, overrides = {}) => {
 				status: overrides.status ?? true,
 				course_type_id: source.course_type_id,
 				course_level_id: source.course_level_id,
+				row_order,
 			},
 			{ transaction },
 		);
@@ -700,6 +723,12 @@ const courseInactiveError = (course) => {
 	return error;
 };
 
+const courseOrderInputError = (message) => {
+	const error = new Error(message);
+	error.status = 400;
+	return error;
+};
+
 /*
  * Regla de oro del soft delete de curso: `course.status` decide si puedes CREAR
  * cosas nuevas en el curso, no si puedes ver o cerrar lo que ya existe.
@@ -761,6 +790,73 @@ const restoreCourse = async (course_id) => {
 		deleted_by: null,
 	});
 	return course;
+};
+
+/*
+ * Reordenamiento manual (`PUT /api/courses/order`).
+ *
+ * Recibe los ids en el orden final y reasigna `row_order` = 1..N en una sola
+ * transacción. Reglas:
+ *  - ids duplicados o no numéricos => 400;
+ *  - ids inexistentes => 404;
+ *  - los ids que falten (p. ej. porque el front tiene un filtro activo) NO se
+ *    pierden: se agregan al final conservando su orden relativo actual.
+ *
+ * Los cursos eliminados participan del orden: `DELETE` y `POST /:id/restore` no
+ * tocan `row_order`, así que al reactivar el curso vuelve a su posición.
+ */
+const reorderCourses = async (ids) => {
+	if (!Array.isArray(ids) || ids.length === 0) {
+		throw courseOrderInputError('Parámetro ids inválido');
+	}
+
+	const parsedIds = ids.map((id) => Number(id));
+	if (parsedIds.some((id) => !Number.isInteger(id) || id <= 0)) {
+		throw courseOrderInputError('Parámetro ids inválido');
+	}
+	if (new Set(parsedIds).size !== parsedIds.length) {
+		throw courseOrderInputError('La lista de ids tiene duplicados');
+	}
+
+	return sequelize.transaction(async (transaction) => {
+		const courses = await Course.findAll({
+			order: [
+				['row_order', 'ASC'],
+				['id', 'ASC'],
+			],
+			transaction,
+		});
+		const byId = new Map(courses.map((course) => [course.id, course]));
+
+		const unknownIds = parsedIds.filter((id) => !byId.has(id));
+		if (unknownIds.length > 0) {
+			const error = new Error(
+				`Curso no encontrado: ${unknownIds.join(', ')}`,
+			);
+			error.status = 404;
+			throw error;
+		}
+
+		const requested = parsedIds.map((id) => byId.get(id));
+		const requestedIds = new Set(parsedIds);
+		const remaining = courses.filter(
+			(course) => !requestedIds.has(course.id),
+		);
+		const finalOrder = [...requested, ...remaining];
+
+		for (let index = 0; index < finalOrder.length; index += 1) {
+			const course = finalOrder[index];
+			const nextRowOrder = index + 1;
+			if (course.row_order !== nextRowOrder) {
+				await course.update(
+					{ row_order: nextRowOrder },
+					{ transaction },
+				);
+			}
+		}
+
+		return finalOrder;
+	});
 };
 
 /*
@@ -1061,6 +1157,7 @@ export {
 	createCourse,
 	cloneCourse,
 	editCourse,
+	reorderCourses,
 	updateCourseHours,
 	editCourseStudent,
 	updateCourseStudentStatus,

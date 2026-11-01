@@ -54,6 +54,24 @@ export default (sequelize, DataTypes) => {
 				allowNull: true,
 				defaultValue: 1,
 			},
+			/*
+			 * Orden de presentación manual (1..N). Es global: la lista de cursos no
+			 * cuelga de otro registro. Se llama `row_order` y no `order` para no
+			 * depender de comillas en SQL crudo (ORDER es palabra reservada).
+			 *
+			 * - `POST /api/courses` y `POST /clone/:id` lo asignan al final
+			 *   (`MAX(row_order) + 1`).
+			 * - `PUT /api/courses` NO lo modifica.
+			 * - Solo `PUT /api/courses/order` lo reasigna.
+			 *
+			 * El índice `idx_course_row_order` vive solo en la migración, no aquí:
+			 * `sync` (alter: false) procesaría este array y un CREATE INDEX sobre una
+			 * columna inexistente rompería el arranque si falta migrar.
+			 */
+			row_order: {
+				type: DataTypes.INTEGER,
+				allowNull: false,
+			},
 			// Auditoría del soft delete (Fase 2). NUNCA son el predicado: el curso
 			// está eliminado si y solo si `status = 0`. Se limpian al reactivar.
 			deleted_at: {
