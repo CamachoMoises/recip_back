@@ -50,7 +50,8 @@ const updateCourseSchema = Joi.object({
 	color: Joi.string().max(50).allow(null, ''),
 	// hours: Joi.number().required(),
 	days: Joi.number().required(),
-	uses_sessions: Joi.boolean().default(false),
+	// Sin default: un PUT parcial debe conservar el modo actual del curso.
+	uses_sessions: Joi.boolean(),
 	sessions: Joi.number().integer().min(1).allow(null),
 
 	course_type_id: Joi.number()

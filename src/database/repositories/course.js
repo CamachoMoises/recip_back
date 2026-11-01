@@ -39,6 +39,26 @@ const getAllCourses = async (filters) => {
 	if (filters.course_level_id) {
 		whereClause.course_level_id = filters.course_level_id;
 	}
+	/*
+	 * Fase 3: el listado por defecto oculta los cursos eliminados (soft delete).
+	 * El front pide `include_inactive=true` para verlos en la pantalla de
+	 * configuración y poder reactivarlos. Sin ese flag un curso eliminado quedaría
+	 * inalcanzable en la UI, por eso el front debe enviarlo.
+	 *
+	 * `status NULL` nunca estuvo eliminado (la migración lo normaliza a 1), así que
+	 * se incluye explícitamente: `status <> 0` por sí solo descartaría los NULL.
+	 */
+	const includeInactive =
+		filters.include_inactive === true ||
+		filters.include_inactive === 1 ||
+		filters.include_inactive === 'true' ||
+		filters.include_inactive === '1';
+	if (!includeInactive) {
+		whereClause[Op.or] = [
+			{ status: null },
+			{ status: { [Op.ne]: false } },
+		];
+	}
 	const data = Course.findAll({
 		include: [CourseType, CourseLevel],
 		where: whereClause,
@@ -292,24 +312,46 @@ const editCourse = async ({
 	course_type_id,
 	course_level_id,
 	status,
+	deleted_by = null,
 }) => {
 	const course = await Course.findByPk(id);
 	if (!course) {
-		throw new Error('Course not found');
+		throw courseNotFoundError();
 	}
+	const wasDeleted = course.status === false || course.status === 0;
 	await course.update({
 		name,
 		description,
 		code,
 		// hours,
 		days,
-		uses_sessions,
-		sessions,
+		// Un PUT parcial no debe degradar el curso a modo legacy ni colapsar el
+		// techo del programa (attendance y programación dependen de estos valores).
+		uses_sessions: uses_sessions ?? course.uses_sessions,
+		sessions: sessions ?? course.sessions ?? days,
 		course_type_id,
 		course_level_id,
 		plane_model,
 		color,
 		status,
+		// `status` sigue siendo el predicado; esta auditoría solo lo acompaña.
+		// Omitir `status` conserva la auditoría tal cual.
+		deleted_at:
+			status === false
+				? wasDeleted
+					? course.deleted_at
+					: new Date()
+				: status === true
+					? null
+					: course.deleted_at,
+		deleted_by:
+			status === false
+				? wasDeleted
+					? course.deleted_by
+					: (deleted_by ?? null)
+				: status === true
+					? null
+					: course.deleted_by,
 	});
 	return course;
 };
@@ -377,10 +419,8 @@ const cloneCourse = async (course_id, overrides = {}) => {
 				days: source.days,
 				uses_sessions: source.uses_sessions,
 				sessions: source.sessions ?? source.days,
-				status:
-					overrides.status !== undefined
-						? overrides.status
-						: source.status,
+				// Un clon nunca hereda el soft delete: nace activo salvo override explícito.
+				status: overrides.status ?? true,
 				course_type_id: source.course_type_id,
 				course_level_id: source.course_level_id,
 			},
@@ -634,9 +674,175 @@ const getAllSchedule = async (id) => {
 	return data;
 };
 
-const createSchedule = async (
+const scheduleInputError = (message) => {
+	const error = new Error(message);
+	error.status = 400;
+	return error;
+};
+
+const scheduleConflictError = (message) => {
+	const error = new Error(message);
+	error.status = 409;
+	return error;
+};
+
+const courseNotFoundError = () => {
+	const error = new Error('Curso no encontrado');
+	error.status = 404;
+	return error;
+};
+
+const courseInactiveError = (course) => {
+	const error = new Error(
+		`El curso "${course.name}" está eliminado. Reactívalo para volver a operar sobre él.`,
+	);
+	error.status = 409;
+	return error;
+};
+
+/*
+ * Regla de oro del soft delete de curso: `course.status` decide si puedes CREAR
+ * cosas nuevas en el curso, no si puedes ver o cerrar lo que ya existe.
+ *
+ * - `status === false` (0)  => curso eliminado (404/409 en escrituras nuevas)
+ * - `status === null`       => se normaliza a 1 en la migración; no se trata como eliminado
+ *
+ * No se usa `paranoid`: filtrar Course a nivel ORM escondería el historial de
+ * alumnos, horarios, asistencias, exámenes y evaluaciones.
+ */
+const assertCourseIsActive = async (course_id) => {
+	const course = await Course.findByPk(course_id);
+	if (!course) {
+		throw courseNotFoundError();
+	}
+	if (course.status === false || course.status === 0) {
+		throw courseInactiveError(course);
+	}
+	return course;
+};
+
+/*
+ * Eliminación / reactivación explícitas (Fase 2).
+ *
+ * `status` sigue siendo el predicado; `deleted_at` / `deleted_by` son auditoría.
+ * Ambas operaciones son idempotentes: repetir la llamada no altera la auditoría
+ * original ni falla. Nunca tocan tablas hijas (matrículas, horarios, asistencias,
+ * exámenes, evaluaciones, grupos): el historial se conserva y se puede cerrar.
+ */
+const softDeleteCourse = async (course_id, deleted_by = null) => {
+	const course = await Course.findByPk(course_id);
+	if (!course) {
+		throw courseNotFoundError();
+	}
+	if (course.status === false || course.status === 0) {
+		return course;
+	}
+	await course.update({
+		status: false,
+		deleted_at: new Date(),
+		deleted_by: deleted_by ?? null,
+	});
+	return course;
+};
+
+const restoreCourse = async (course_id) => {
+	const course = await Course.findByPk(course_id);
+	if (!course) {
+		throw courseNotFoundError();
+	}
+	if (course.status !== false && course.status !== 0) {
+		return course;
+	}
+	// Se limpia la auditoría: `deleted_at` / `deleted_by` describen la
+	// eliminación vigente, no un historial acumulado.
+	await course.update({
+		status: true,
+		deleted_at: null,
+		deleted_by: null,
+	});
+	return course;
+};
+
+/*
+ * Un horario debe referenciar el `subject_days` REAL del programa del curso, activo,
+ * y no puede repetirse para el mismo alumno. Esto evita:
+ *  - horarios apuntando a días inactivos (quedan invisibles para la UI y permiten
+ *    volver a agendar la misma actividad), y
+ *  - doble registro de la misma actividad (doble submit, reintentos, etc.).
+ */
+const assertScheduleIsValid = async ({
+	subject_id,
+	subject_days_id,
+	course_student_id,
+}) => {
+	const courseStudent = await CourseStudent.findByPk(course_student_id);
+	if (!courseStudent) {
+		throw scheduleInputError('CourseStudent not found');
+	}
+
+	await assertCourseIsActive(courseStudent.course_id);
+
+	if (!subject_days_id) {
+		throw scheduleInputError('subject_days_id es requerido');
+	}
+
+	const subjectDay = await SubjectDays.findByPk(subject_days_id);
+	if (!subjectDay) {
+		throw scheduleInputError('subject_days_id inválido');
+	}
+
+	if (
+		subject_id !== undefined &&
+		subject_id !== null &&
+		Number(subjectDay.subject_id) !== Number(subject_id)
+	) {
+		throw scheduleInputError(
+			'subject_id no corresponde al subject_days_id enviado',
+		);
+	}
+
+	if (Number(subjectDay.course_id) !== Number(courseStudent.course_id)) {
+		throw scheduleInputError(
+			'El día de la actividad no pertenece al curso del alumno',
+		);
+	}
+
+	if (!subjectDay.status) {
+		throw scheduleConflictError(
+			`La actividad ya no está activa en el día ${subjectDay.day} del programa. Actívala en la configuración del curso o agenda otro día.`,
+		);
+	}
+
+	const existingSchedules = await Schedule.findAll({
+		where: {
+			course_student_id,
+			subject_id: subjectDay.subject_id,
+		},
+		include: [{ model: SubjectDays, required: false }],
+	});
+
+	const sameSlot = existingSchedules.find(
+		(schedule) =>
+			Number(schedule.subject_days_id) === Number(subjectDay.id),
+	);
+	if (sameSlot) {
+		throw scheduleConflictError(
+			`Esta actividad ya está agendada para este alumno (horario #${sameSlot.id}).`,
+		);
+	}
+
+	const staleSchedule = existingSchedules.find(
+		(schedule) => !schedule.SubjectDays || !schedule.SubjectDays.status,
+	);
+	if (staleSchedule) {
+		throw scheduleConflictError(
+			`Este alumno ya tiene esta actividad agendada en un día inactivo (horario #${staleSchedule.id}). Elimina ese horario antes de volver a agendarla.`,
+		);
+	}
+};
+
+const createSchedule = async ({
 	instructor_id,
-	course_id,
 	subject_days_id,
 	student_id,
 	subject_id,
@@ -644,10 +850,15 @@ const createSchedule = async (
 	date,
 	hour,
 	classTime,
-) => {
+}) => {
+	await assertScheduleIsValid({
+		subject_id,
+		subject_days_id,
+		course_student_id,
+	});
+
 	const newSchedule = await Schedule.create({
 		instructor_id,
-		course_id,
 		subject_days_id,
 		student_id,
 		subject_id,
@@ -844,6 +1055,9 @@ export {
 	getCourseLevelById,
 	getCourseProgramSizeByCourseStudent,
 	getCourseStudentById,
+	assertCourseIsActive,
+	softDeleteCourse,
+	restoreCourse,
 	createCourse,
 	cloneCourse,
 	editCourse,

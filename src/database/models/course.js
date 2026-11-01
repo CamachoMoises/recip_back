@@ -54,6 +54,18 @@ export default (sequelize, DataTypes) => {
 				allowNull: true,
 				defaultValue: 1,
 			},
+			// Auditoría del soft delete (Fase 2). NUNCA son el predicado: el curso
+			// está eliminado si y solo si `status = 0`. Se limpian al reactivar.
+			deleted_at: {
+				type: DataTypes.DATE,
+				allowNull: true,
+				defaultValue: null,
+			},
+			deleted_by: {
+				type: DataTypes.INTEGER,
+				allowNull: true,
+				defaultValue: null,
+			},
 			course_type_id: {
 				type: DataTypes.INTEGER,
 				allowNull: false,
@@ -81,6 +93,11 @@ export default (sequelize, DataTypes) => {
 					unique: true,
 					using: 'BTREE',
 					fields: [{ name: 'id' }],
+				},
+				{
+					name: 'idx_course_status',
+					using: 'BTREE',
+					fields: [{ name: 'status' }],
 				},
 			],
 		}

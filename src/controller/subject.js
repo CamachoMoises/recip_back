@@ -19,7 +19,7 @@ import {
 	updateSubjectDay,
 	updateSubjectLessonDay,
 } from '../database/repositories/subject.js';
-import { getCourseById } from '../database/repositories/course.js';
+import { assertCourseIsActive } from '../database/repositories/course.js';
 import { calculateCourseTotalHours } from './course.js';
 
 export const ListSubjects = async (req, res) => {
@@ -78,6 +78,7 @@ export const CreateSubject = async (req, res) => {
 		const new_data = await createSubjectSchema.validateAsync(data, { stripUnknown: true });
 		const { name, hours, course_id, order, status, is_schedulable } =
 			new_data;
+		await assertCourseIsActive(course_id);
 		const new_subject = await createSubject({
 			name,
 			hours,
@@ -91,6 +92,9 @@ export const CreateSubject = async (req, res) => {
 		console.error('Error en la validación:', error.message);
 
 		console.log(error.message);
+		if (error.status) {
+			return res.status(error.status).json({ message: error.message });
+		}
 		return res
 			.status(400)
 			.send(`Input Validation Error ${error.message}`);
@@ -100,6 +104,7 @@ export const CreateSubjectLesson = async (req, res) => {
 	const data = req.body;
 	try {
 		const { course_id, subject_id, name, order, status } = data;
+		await assertCourseIsActive(course_id);
 		const new_subject = await createSubjectLesson({
 			course_id,
 			subject_id,
@@ -117,6 +122,9 @@ export const CreateSubjectLesson = async (req, res) => {
 		console.error('Error en la validación:', error.message);
 
 		console.log(error.message);
+		if (error.status) {
+			return res.status(error.status).json({ message: error.message });
+		}
 		return res
 			.status(400)
 			.send(`Input Validation Error ${error.message}`);
@@ -136,6 +144,7 @@ export const UpdateSubject = async (req, res) => {
 			status,
 			is_schedulable,
 		} = new_data;
+		await assertCourseIsActive(course_id);
 		const editedSubject = await editSubject({
 			id,
 			name,
@@ -151,6 +160,9 @@ export const UpdateSubject = async (req, res) => {
 		console.error('Error en la validación:', error.message);
 
 		console.log(error.message);
+		if (error.status) {
+			return res.status(error.status).json({ message: error.message });
+		}
 		return res
 			.status(400)
 			.send(`Input Validation Error ${error.message}`);
@@ -160,6 +172,10 @@ export const UpdateSubjectLesson = async (req, res) => {
 	const data = req.body;
 	try {
 		const { id, subject_id, name, order, status } = data;
+		const currentSubject = await getSubjectById(subject_id);
+		if (currentSubject) {
+			await assertCourseIsActive(currentSubject.course_id);
+		}
 		const editedSubjectLesson = await editSubjectLesson({
 			id,
 			name,
@@ -176,6 +192,9 @@ export const UpdateSubjectLesson = async (req, res) => {
 		console.error('Error en la validación:', error.message);
 
 		console.log(error.message);
+		if (error.status) {
+			return res.status(error.status).json({ message: error.message });
+		}
 		return res
 			.status(400)
 			.send(`Input Validation Error ${error.message}`);
@@ -202,6 +221,9 @@ export const ChangeStatusDay = async (req, res) => {
 		console.error('Error en la validación:', error.message);
 
 		console.log(error.message);
+		if (error.status) {
+			return res.status(error.status).json({ message: error.message });
+		}
 		return res
 			.status(400)
 			.send(`Input Validation Error ${error.message}`);
@@ -273,6 +295,9 @@ export const ChangeStatusLessonDay = async (req, res) => {
 		console.error('Error en la validación:', error.message);
 
 		console.log(error.message);
+		if (error.status) {
+			return res.status(error.status).json({ message: error.message });
+		}
 		return res
 			.status(400)
 			.send(`Input Validation Error ${error.message}`);
@@ -285,8 +310,8 @@ export const ChangeStatusDayFunc = async (
 	day,
 	status,
 ) => {
-	const course = await getCourseById(course_id);
-	if (course?.uses_sessions) {
+	const course = await assertCourseIsActive(course_id);
+	if (course.uses_sessions) {
 		if (course.sessions != null && day > course.sessions) {
 			throw new Error(
 				`day (${day}) excede las sesiones del curso (${course.sessions}).`,

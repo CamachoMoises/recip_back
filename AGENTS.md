@@ -85,16 +85,83 @@ Rules to respect when touching this domain:
   it is never `NULL`. The **flag** is the discriminator, not the `NULL` — never add NULL fallbacks.
 - Attendance uniqueness is `(course_student_id, date, day)`, not `(course_student_id, date)`,
   which is what allows several sessions on one calendar date.
-- `schedule` has **no** unique constraint, so several schedules on the same date were always
-  accepted server-side; any 1-per-day assumption lives in the frontend, not here.
+- `schedule` has **no** date-based unique constraint, so several schedules on the same date were
+  always accepted server-side; any 1-per-day assumption lives in the frontend, not here. It does
+  have `uq_schedule_course_student_subject_days` UNIQUE `(course_student_id, subject_days_id)`:
+  one schedule per program activity (subject + ordinal) per student.
 - Single source of truth for the program ceiling: `getCourseProgramSizeByCourseStudent()` in
   `src/database/repositories/course.js` → `{ uses_sessions, days, sessions, total }`. Do not read
   `course.days` directly for a ceiling check.
-- Migrations `20260927000000-add-sessions-to-course.cjs` and
-  `20260927000001-relax-attendance-unique-date.cjs` add real columns, and startup `sync` uses
-  `alter: false`, so **the migrations must be run before deploying** this code.
+- Migrations `20260927000000-add-sessions-to-course.cjs`,
+  `20260927000001-relax-attendance-unique-date.cjs` and
+  `20261031000000-add-unique-schedule-course-student-subject-days.cjs` add real columns/indexes,
+  and startup `sync` uses `alter: false`, so **the migrations must be run before deploying** this
+  code.
+
+### Anti-duplicate scheduling rules
+
+- `POST /api/courses/schedule` validates that `subject_days_id` belongs to the student's course,
+  matches `subject_id`, is **active** (`subject_days.status = 1`), is not already scheduled for
+  that student, and that the student has no schedule for the same subject on an inactive
+  `subject_days` (orphan). Violations return `400`/`409` JSON `{ message }`.
+- `POST /api/subjects/subjects_days` (and `subjects_lesson_days`) refuses to **deactivate** a
+  `subject_days` that still has schedules (`409` JSON). Deactivating a day used by a schedule left
+  an orphan schedule invisible in the UI and allowed the same activity to be scheduled twice.
+- Repository guards: `createSchedule` in `src/database/repositories/course.js` and
+  `updateSubjectDay` in `src/database/repositories/subject.js`.
 
 See the "Días vs. Sesiones" section of `CONTRACTS.md` for the full endpoint matrix.
+
+## Soft delete de curso (`course.status`)
+
+Eliminar un curso es un soft delete **reversible** sobre el flag que ya existía:
+**eliminado ⇔ `course.status = false` (`0`)**. No hay `paranoid`, ni borrado físico, ni cascada.
+`deleted_at` / `deleted_by` son **solo auditoría** de la eliminación vigente: ninguna query
+depende de ellos y se limpian al reactivar.
+
+**Regla de oro:** `course.status` decide si puedes **crear cosas nuevas** en el curso, **no** si
+puedes **ver o cerrar** lo que ya existe. Por eso el historial nunca se filtra por el curso.
+
+- Helper único: `assertCourseIsActive(course_id)` en `src/database/repositories/course.js`
+  (`error.status = 404` si no existe, `409` si está eliminado). Los controllers lo mapean a
+  `res.status(error.status).json({ message })`.
+- **Endpoints de ciclo de vida:**
+  - `DELETE /api/courses/:id` → `softDeleteCourse(id, req.user.id)`: `status = false`,
+    `deleted_at = now`, `deleted_by = req.user.id` (INTEGER sin FK). Idempotente. `404` JSON si
+    no existe.
+  - `POST /api/courses/:id/restore` → `restoreCourse(id)`: `status = true` y limpia
+    `deleted_at`/`deleted_by`. Idempotente. `404` JSON si no existe.
+  - `PUT /api/courses` con `status: false|true` delega en la misma semántica de auditoría
+    (`editCourse` recibe `deleted_by`); omitir `status` no toca la auditoría.
+- **Bloquean (409):** matrícula (`POST /api/courses/courseStudent/:course_id`), `POST
+  /api/courses/schedule`, programa (`POST/PUT /api/subjects`, `/lesson`, `subjects_days`,
+  `subjects_lesson_days` vía `ChangeStatusDayFunc`), definición de examen (`POST /api/test`),
+  inicio de intento (`POST /api/test/courseStudentTest`), evaluación (`POST
+  /api/assessment/createCourseStudentAssessment`) y grupos (`POST /api/course_groups`).
+- **No se filtran ni bloquean:** `GET /coursesStudents`, `GET /course/:id`, reportes, dashboards de
+  instructor (`course_student.status`), `POST/PUT /attendance`, `PUT /schedule`, firmas y `DELETE`
+  de hijos (sirven para cerrar el ciclo).
+- `POST /api/courses` ignora `status` y siempre crea activo. `cloneCourse` no hereda el soft delete
+  (`status: overrides.status ?? true`) y no copia la auditoría.
+- `PUT /api/courses` es parcial-safe: omitir `uses_sessions`/`sessions` conserva el modo y el techo
+  actuales (no colapsa el programa); `status: false|true` elimina/reactiva.
+- No mezclar los tres `status`: `course.status` (curso), `course_student.status` (matrícula) y
+  `subject_days.status` (actividad).
+
+**Migración obligatoria antes de desplegar:** `migrations/20261101000000-add-soft-delete-to-course.cjs`
+agrega `deleted_at`/`deleted_by`, el índice `idx_course_status` y normaliza `status NULL → 1`.
+El modelo ya declara esas columnas y `sync` corre con `alter: false`, así que **sin `npm run migrate`
+los SELECT sobre `course` fallan**. Es idempotente.
+
+Fase 3 (`include_inactive` en `GET /api/courses`) implementada: el listado **oculta los cursos
+eliminados por defecto** y el front debe pedir `GET /api/courses?include_inactive=true` en la
+pantalla de configuración para verlos y reactivarlos. Sin ese flag un curso eliminado quedaría
+inalcanzable en la UI. `GET /api/courses/course/:id` y `GET /api/courses/coursesStudents` siguen
+sin filtrar (historial y ficha del curso).
+
+**Fase 4 (front):** instrucciones exactas en `FRONT_SOFT_DELETE_CURSO.md` (tipos, thunks
+`deleteCourse`/`restoreCourse`, `include_inactive` solo en configuración, quitar el switch de
+`status` del modal y manejar `error.response.data.message`).
 
 ## API Routes
 
@@ -103,7 +170,7 @@ See the "Días vs. Sesiones" section of `CONTRACTS.md` for the full endpoint mat
 | `/auth` | Login (public) |
 | `/api/users` | User/student/instructor CRUD |
 | `/api/users/student/search` | Fast student search by name/email |
-| `/api/courses` | Course + enrollment + schedule CRUD (includes `instructor_id` filter on `coursesStudents`). `DELETE /schedule/:id` borra un schedule **y en cascada** su `attendance` + `attendance_signature` (match `course_student_id` + `date` + `subject_days.day`); `DELETE /schedule/course-student/:course_student_id` borra todos los schedules del alumno con la misma cascada (solo los pares `(date, day)` que tenían schedule). Ambos en una transacción. |
+| `/api/courses` | Course + enrollment + schedule CRUD (includes `instructor_id` filter on `coursesStudents`). Lifecycle: `DELETE /:id` (soft delete) + `POST /:id/restore` (reactivar), ver sección "Soft delete de curso". `DELETE /schedule/:id` borra un schedule **y en cascada** su `attendance` + `attendance_signature` (match `course_student_id` + `date` + `subject_days.day`); `DELETE /schedule/course-student/:course_student_id` borra todos los schedules del alumno con la misma cascada (solo los pares `(date, day)` que tenían schedule). Ambos en una transacción. |
 | `/api/course_groups` | Course groups CRUD + students list + remove students + signature upload + list signatures per group + `GET /report/attendance` (attendance/signature report grouped by group with students/user, course, schedules/instructors). Supports `instructor_id` filter. |
 | `/api/subjects` | Subject + lessons + days CRUD |
 | `/api/assessment` | Student assessments + signatures |

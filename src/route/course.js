@@ -10,6 +10,7 @@ import {
 	CreateCourse,
 	CreateCourseStudent,
 	CreateSchedule,
+	DeleteCourse,
 	DeleteSchedule,
 	DeleteSchedulesByCourseStudent,
 	ListCourses,
@@ -17,6 +18,7 @@ import {
 	ListCoursesStudent,
 	ListCoursesTypes,
 	ListSchedule,
+	RestoreCourse,
 	UpdateCourse,
 	UpdateCourseStudent,
 	UpdateCourseStudentMaxAttempts,
@@ -112,6 +114,21 @@ router.put(
 	authenticateJWT,
 	convertTypes,
 	UpdateCourseStudentMaxAttempts
+);
+
+/*
+ * Soft delete reversible (Fase 2). `:id` es el id del curso.
+ * Se registran AL FINAL a proposito: `DELETE /:id` solo captura un segmento, pero
+ * dejarlo antes de las rutas hijas permitiria que un futuro `DELETE /x` quedara
+ * tapado por esta. `POST /:id/restore` va aqui por simetria.
+ */
+router.delete('/:id', authenticateJWT, DeleteCourse);
+router.post(
+	'/:id/restore',
+	upload.none(),
+	authenticateJWT,
+	convertTypes,
+	RestoreCourse,
 );
 
 export default router;

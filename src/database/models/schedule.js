@@ -97,6 +97,15 @@ export default (sequelize, DataTypes) => {
 					using: 'BTREE',
 					fields: [{ name: 'instructor_id' }],
 				},
+				{
+					name: 'uq_schedule_course_student_subject_days',
+					unique: true,
+					using: 'BTREE',
+					fields: [
+						{ name: 'course_student_id' },
+						{ name: 'subject_days_id' },
+					],
+				},
 			],
 		}
 	);

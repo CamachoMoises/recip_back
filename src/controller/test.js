@@ -33,6 +33,7 @@ import {
 	updateTest,
 	updateTestQuestionType,
 } from '../database/repositories/test.js';
+import { assertCourseIsActive } from '../database/repositories/course.js';
 import {
 	cleanString,
 	getRandomSubset,
@@ -435,6 +436,7 @@ export const CreateTest = async (req, res) => {
 	try {
 		const data = req.body;
 		const { course_id, duration, min_score } = data;
+		await assertCourseIsActive(course_id);
 		const testCreate = await createTest({
 			course_id,
 			duration,
@@ -444,6 +446,9 @@ export const CreateTest = async (req, res) => {
 		res.status(201).send(newTest);
 	} catch (error) {
 		console.log(error);
+		if (error.status) {
+			return res.status(error.status).json({ message: error.message });
+		}
 		res.status(500).send('Internal Server Error');
 	}
 };
@@ -681,6 +686,12 @@ export const CourseStudentTest = async (req, res) => {
 		const courseStudent = await getCourseStudentById(
 			req.params.course_student_id,
 		);
+		if (!courseStudent) {
+			return res
+				.status(404)
+				.json({ message: 'Matrícula del alumno no encontrada' });
+		}
+		await assertCourseIsActive(courseStudent.course_id);
 		const test = courseStudent.course.tests.find(
 			(dataTest) => dataTest.status,
 		);
@@ -754,6 +765,9 @@ export const CourseStudentTest = async (req, res) => {
 		console.error('Error en la creacion:', error.message);
 		console.log(error.message);
 
+		if (error.status) {
+			return res.status(error.status).json({ message: error.message });
+		}
 		return res.status(400).send(`Error ${error.message}`);
 	}
 };

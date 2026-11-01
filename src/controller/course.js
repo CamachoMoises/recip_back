@@ -4,6 +4,7 @@ import {
 	updateCourseSchema,
 } from '../database/imput_validation/course.js';
 import {
+	assertCourseIsActive,
 	cloneCourse,
 	createCourse,
 	createCourseStudent,
@@ -20,6 +21,8 @@ import {
 	getCourseById,
 	getCourseStudentById,
 	getScheduleById,
+	restoreCourse,
+	softDeleteCourse,
 	updateCourseHours,
 	updateCourseStudentMaxAttempts,
 	updateCourseStudentStatus,
@@ -118,7 +121,6 @@ export const CreateCourse = async (req, res) => {
 			sessions,
 			course_type_id,
 			course_level_id,
-			status,
 		} = new_data;
 
 		const new_course = await createCourse({
@@ -133,7 +135,8 @@ export const CreateCourse = async (req, res) => {
 			color,
 			course_type_id,
 			course_level_id,
-			status,
+			// Eliminar un curso es una acción aparte (status=false solo vía DELETE/PUT).
+			status: true,
 		});
 		const course = await getCourseById(new_course.id);
 		res.status(201).send(course);
@@ -188,20 +191,19 @@ export const CloneCourse = async (req, res) => {
 
 export const CreateCourseStudent = async (req, res) => {
 	const course_id = req.params.course_id;
-	const course = await getCourseById(course_id);
-	if (!course) {
-		return res.status(404).send('Curso no encontrado');
-	} else {
-		try {
-			const courseStudent = await createCourseStudent(course_id);
-			res.send(courseStudent);
-		} catch (error) {
-			console.error('Error en la creacion:', error.message);
-			console.log(error.message);
-			return res
-				.status(400)
-				.send(`Input Validation Error ${error.message}`);
+	try {
+		await assertCourseIsActive(course_id);
+		const courseStudent = await createCourseStudent(course_id);
+		res.send(courseStudent);
+	} catch (error) {
+		console.error('Error en la creacion:', error.message);
+		console.log(error.message);
+		if (error.status) {
+			return res.status(error.status).json({ message: error.message });
 		}
+		return res
+			.status(400)
+			.send(`Input Validation Error ${error.message}`);
 	}
 };
 
@@ -246,15 +248,73 @@ export const UpdateCourse = async (req, res) => {
 			color,
 			days,
 			uses_sessions,
-			sessions: sessions ?? days,
+			// Si el cliente no manda `sessions`, editCourse conserva el actual.
+			sessions,
 			course_type_id,
 			course_level_id,
 			status,
+			// Auditoría del soft delete; `status` sigue siendo el predicado.
+			deleted_by: req.user?.id ?? null,
 		});
 		const course = await getCourseById(id);
 		res.send(course);
 	} catch (error) {
 		console.error('Error en la validación:', error.message);
+		if (error.status) {
+			return res.status(error.status).json({ message: error.message });
+		}
+		return res
+			.status(400)
+			.send(`Input Validation Error ${error.message}`);
+	}
+};
+
+/*
+ * DELETE /api/courses/:id
+ * Soft delete reversible: `course.status = false` + auditoría. No borra hijos
+ * ni filtra el historial; la eliminación se puede deshacer con /restore.
+ */
+export const DeleteCourse = async (req, res) => {
+	const { id } = req.params;
+	// Igual que CloneCourse: `:id` debe ser numérico. Sin esto, una ruta hermana
+	// mal escrita (`DELETE /api/courses/schedule`) llegaría aquí con id='schedule'.
+	if (!id || isNaN(id)) {
+		return res.status(400).json({ message: 'Parámetro id inválido' });
+	}
+	try {
+		await softDeleteCourse(id, req.user?.id ?? null);
+		const course = await getCourseById(id);
+		res.send(course);
+	} catch (error) {
+		console.error('Error al eliminar el curso:', error.message);
+		if (error.status) {
+			return res.status(error.status).json({ message: error.message });
+		}
+		return res
+			.status(400)
+			.send(`Input Validation Error ${error.message}`);
+	}
+};
+
+/*
+ * POST /api/courses/:id/restore
+ * Reactiva el curso y limpia `deleted_at` / `deleted_by`. Idempotente: un curso
+ * activo se devuelve sin cambios.
+ */
+export const RestoreCourse = async (req, res) => {
+	const { id } = req.params;
+	if (!id || isNaN(id)) {
+		return res.status(400).json({ message: 'Parámetro id inválido' });
+	}
+	try {
+		await restoreCourse(id);
+		const course = await getCourseById(id);
+		res.send(course);
+	} catch (error) {
+		console.error('Error al reactivar el curso:', error.message);
+		if (error.status) {
+			return res.status(error.status).json({ message: error.message });
+		}
 		return res
 			.status(400)
 			.send(`Input Validation Error ${error.message}`);
@@ -330,33 +390,15 @@ export const ListSchedule = async (req, res) => {
 
 export const CreateSchedule = async (req, res) => {
 	const data = req.body;
-	const {
-		instructor_id,
-		course_id,
-		subject_days_id,
-		student_id,
-		subject_id,
-		course_student_id,
-		date,
-		hour,
-		classTime,
-	} = data;
 	try {
-		const newSchedule = await createSchedule(
-			instructor_id,
-			course_id,
-			subject_days_id,
-			student_id,
-			subject_id,
-			course_student_id,
-			date,
-			hour,
-			classTime,
-		);
+		const newSchedule = await createSchedule(data);
 		const SC = await getScheduleById(newSchedule.id);
 		res.send(SC);
 	} catch (error) {
 		console.log(error);
+		if (error.status) {
+			return res.status(error.status).json({ message: error.message });
+		}
 		res.status(500).send(`Internal Server Error ${error}`);
 	}
 };

@@ -15,6 +15,7 @@ import {
 	updateCourseStudentAssessmentDay,
 	updateCourseStudentAssessmentLessonDay,
 } from '../database/repositories/assessment.js';
+import { assertCourseIsActive } from '../database/repositories/course.js';
 import {
 	upsertAssessmentSignature,
 	deleteAssessmentSignature,
@@ -114,6 +115,7 @@ export const CreateCourseStudentAssessment = async (req, res) => {
 	try {
 		const data = req.body;
 		const { course_id, student_id, course_student_id } = data;
+		await assertCourseIsActive(course_id);
 		const date = moment().format('YYYY-MM-DD');
 		const courseStudentAssessment =
 			await createCourseStudentAssessment({
@@ -129,6 +131,9 @@ export const CreateCourseStudentAssessment = async (req, res) => {
 		// res.status(500).send('Internal Server Error');
 	} catch (error) {
 		console.log(error);
+		if (error.status) {
+			return res.status(error.status).json({ message: error.message });
+		}
 		res.status(500).send('Internal Server Error');
 	}
 };

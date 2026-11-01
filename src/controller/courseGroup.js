@@ -13,6 +13,7 @@ import {
 	removeCourseStudentsFromGroup,
 	getAttendanceReport,
 } from '../database/repositories/courseGroup.js';
+import { assertCourseIsActive } from '../database/repositories/course.js';
 import {
 	getNextSignatureNumber,
 	createSignature,
@@ -55,6 +56,7 @@ export const CreateCourseGroup = async (req, res) => {
 	try {
 		const validated = await createCourseGroupSchema.validateAsync(data);
 		const { title, user_code, date, course_id } = validated;
+		await assertCourseIsActive(course_id);
 		const courseGroup = await createCourseGroup({
 			title,
 			user_code,
@@ -65,6 +67,9 @@ export const CreateCourseGroup = async (req, res) => {
 		res.status(201).send(created);
 	} catch (error) {
 		console.log(error);
+		if (error.status) {
+			return res.status(error.status).json({ message: error.message });
+		}
 		res.status(400).send(`Input Validation Error ${error.message}`);
 	}
 };

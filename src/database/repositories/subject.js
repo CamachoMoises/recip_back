@@ -3,6 +3,7 @@ import { Op } from 'sequelize';
 
 const {
 	Course,
+	Schedule,
 	Subject,
 	SubjectDays,
 	SubjectLesson,
@@ -248,6 +249,28 @@ const updateSubjectDay = async ({ id, status }) => {
 	if (!subjectDay) {
 		throw new Error('Subject Day not found');
 	}
+
+	/*
+	 * Desactivar un día (o mover la actividad a otro ordinal reutiliza este endpoint
+	 * con `status = false`) deja huérfanos los horarios que lo referencian: la UI
+	 * solo busca horarios por el `subject_days_id` activo, así que el horario viejo
+	 * desaparece de pantalla y luego se puede agendar la misma actividad otra vez,
+	 * produciendo el duplicado. Se bloquea la desactivación hasta limpiar los
+	 * horarios.
+	 */
+	if (!status && subjectDay.status) {
+		const scheduleCount = await Schedule.count({
+			where: { subject_days_id: subjectDay.id },
+		});
+		if (scheduleCount > 0) {
+			const error = new Error(
+				`No se puede desactivar el día ${subjectDay.day}: tiene ${scheduleCount} horario(s) agendado(s). Elimina esos horarios antes de mover o desactivar la actividad.`,
+			);
+			error.status = 409;
+			throw error;
+		}
+	}
+
 	await subjectDay.update({
 		status,
 	});

@@ -34,7 +34,7 @@ repositorios que afecte una petición/respuesta DEBE actualizar este archivo en 
 | Student | `id, user_id, status` |
 | Instructor | `id, user_id, status` |
 | UserDocType | `id, name, symbol` |
-| Course | `id, name, description, code, hours, plane_model, color, days, uses_sessions, sessions, status, course_type_id, course_level_id` |
+| Course | `id, name, description, code, hours, plane_model, color, days, uses_sessions, sessions, status, deleted_at, deleted_by, course_type_id, course_level_id` |
 | CourseType | `id, name` |
 | CourseLevel | `id, name` |
 | CourseStudent | `id, course_id, date, score, approve, student_id, code, type_trip, license, regulation, status, max_attempts, instructor_code, client` |
@@ -92,12 +92,14 @@ Claves de la implementación:
   nuevos que no lo envíen, así que nunca es `NULL`. El discriminador es el **flag**, no el `NULL`.
 - La unicidad de asistencia es `(course_student_id, date, day)`: dos sesiones de la misma fecha
   se distinguen por su número de sesión. Antes era `(course_student_id, date)`.
-- `schedule` nunca tuvo restricción de unicidad, por lo que varias sesiones en la misma fecha
-  ya eran aceptables; el bloqueo era solo del cliente.
+- `schedule` no tiene restricción por fecha, por lo que varias sesiones en la misma fecha
+  ya eran aceptables; el bloqueo era solo del cliente. Sí tiene
+  `uq_schedule_course_student_subject_days` UNIQUE `(course_student_id, subject_days_id)`:
+  un alumno no puede tener dos horarios para la misma actividad del programa.
 - Fuente de verdad del techo: `getCourseProgramSizeByCourseStudent()` en
   `src/database/repositories/course.js`, que devuelve `{ uses_sessions, days, sessions, total }`.
 
-Migraciones: `20260927000000-add-sessions-to-course.cjs`, `20260927000001-relax-attendance-unique-date.cjs`.
+Migraciones: `20260927000000-add-sessions-to-course.cjs`, `20260927000001-relax-attendance-unique-date.cjs`, `20261031000000-add-unique-schedule-course-student-subject-days.cjs`.
 Al ser columnas nuevas, la app requiere que se corran **antes** de desplegar (el `sync` de
 arranque usa `alter: false` y no las crea).
 
@@ -182,9 +184,38 @@ arranque usa `alter: false` y no las crea).
 
 ## Courses — `/api/courses`
 
+> **Soft delete de curso.** Eliminado ⇔ `course.status = false` (`0`). El flag decide si puedes
+> **crear** cosas nuevas en el curso, **no** si puedes ver o cerrar lo existente. Las escrituras
+> que crean estructura devuelven `409` JSON `{ message }`; lecturas, asistencias y reprogramación
+> de horarios siguen funcionando. No hay borrado físico ni cascada, y el curso se puede reactivar.
+>
+> | Endpoint | Curso eliminado |
+> |---|---|
+> | `GET /` | `200` (por defecto oculta eliminados; `?include_inactive=true` los incluye) |
+> | `GET /course/:id`, `GET /coursesStudents`, `GET /schedule/:id` | `200` (sin filtro) |
+> | `POST /` | `201` (siempre nace activo) |
+> | `PUT /` | `200` (`status: false` elimina; `status: true` reactiva) |
+> | `DELETE /:id` | `200` (elimina; idempotente) |
+> | `POST /:id/restore` | `200` (reactiva; idempotente) |
+> | `POST /clone/:course_id` | `201` (el clon nace activo) |
+> | `POST /courseStudent/:course_id` | **`409`** |
+> | `POST /schedule` | **`409`** al crear; `200` en `PUT`/`DELETE` |
+> | `POST/PUT /api/subjects*` (`/lesson*`, `subjects_days`, `subjects_lesson_days`) | **`409`** |
+> | `POST /api/test` (definición), `POST /api/test/courseStudentTest` (iniciar) | **`409`** |
+> | `POST /api/assessment/createCourseStudentAssessment` | **`409`** |
+> | `POST /api/course_groups` | **`409`** |
+> | Resto de lecturas, `POST/PUT /api/attendance`, firmas, reportes, dashboards | `200` |
+>
+> `status` es el único predicado. `deleted_at` (fecha) y `deleted_by` (`user.id`, sin FK) son
+> **solo auditoría** de la eliminación vigente: no filtran queries y se limpian al reactivar.
+> No se usa `paranoid` de Sequelize. Instrucciones de front: `FRONT_SOFT_DELETE_CURSO.md`.
+
 ### GET /
-- Query: `name`, `description`, `course_type_id`, `course_level_id` (todos opcionales)
-- `200` → array de Course con alias `course_type`, `course_level` (incluye `color`, `uses_sessions` y `sessions`)
+- Query: `name`, `description`, `course_type_id`, `course_level_id`, `include_inactive` (todos opcionales)
+- Por defecto **oculta los cursos eliminados** (`status = 0`). El front debe enviar
+  `include_inactive=true` en la pantalla de configuración para listarlos y poder reactivarlos.
+- `200` → array de Course con alias `course_type`, `course_level` (incluye `color`, `uses_sessions`,
+  `sessions`, `deleted_at` y `deleted_by`)
 
 ### POST /
 - Body (Joi; `type`→`course_type_id`, `level`→`course_level_id`): `name`, `description`, `code`,
@@ -192,11 +223,40 @@ arranque usa `alter: false` y no las crea).
   `null`/`''`), `status` (opcionales)
 - `uses_sessions` (bool, default `false`) y `sessions` (int ≥ 1) son opcionales — ver
   [Días vs. Sesiones](#días-vs-sesiones). Si `sessions` no viene, se persiste `sessions = days`.
+- `status` se acepta por compatibilidad pero se **ignora**: un curso siempre nace activo
+  (`status = true`). Para eliminar usa `DELETE /:id` (o `PUT /` con `status: false`).
 - `201` → Course con `course_type`, `course_level` (incluye `color`, `uses_sessions` y `sessions`)
 
 ### PUT /
 - Body (Joi, mismo que POST + `id` requerido; se ignora `hours`)
+- Reemplazo **parcial-safe**: si no se envía `uses_sessions` se conserva el modo actual del curso,
+  y si no se envía `sessions` se conserva el techo actual (no se colapsa a `days`). Un cliente que
+  no conoce esos campos ya no degrada el programa — ver [Días vs. Sesiones](#días-vs-sesiones).
+- `status: false` marca el curso como eliminado (setea `deleted_at`/`deleted_by` con el usuario del
+  JWT) y `status: true` lo reactiva (limpia la auditoría); omitir `status` conserva ambos.
 - `200` → Course con `course_type`, `course_level`
+- `404` JSON `{ message: 'Curso no encontrado' }`
+
+### DELETE /:id
+- Auth: sí
+- Params: `id` (curso)
+- Soft delete reversible: `status = false`, `deleted_at = now`, `deleted_by = req.user.id`.
+- **No borra nada**: matrículas, horarios, asistencias, exámenes, evaluaciones y grupos se
+  conservan; solo se bloquean las **creaciones nuevas** (ver bloque de soft delete arriba).
+- Idempotente: si el curso ya está eliminado devuelve `200` sin reescribir la auditoría original.
+- `200` → Course con `course_type`, `course_level` (`status = false`, `deleted_at`, `deleted_by`)
+- `400` JSON `{ message: 'Parámetro id inválido' }` si `id` no es numérico
+- `404` JSON `{ message: 'Curso no encontrado' }`
+
+### POST /:id/restore
+- Auth: sí
+- Params: `id` (curso)
+- Reactiva el curso: `status = true`, `deleted_at = null`, `deleted_by = null`. No recrea ni
+  duplica nada; el historial queda exactamente como estaba.
+- Idempotente: un curso activo se devuelve `200` sin cambios.
+- `200` → Course con `course_type`, `course_level`
+- `400` JSON `{ message: 'Parámetro id inválido' }` si `id` no es numérico
+- `404` JSON `{ message: 'Curso no encontrado' }`
 
 ### GET /courseTypes
 - `200` → array de CourseType
@@ -214,6 +274,7 @@ arranque usa `alter: false` y no las crea).
 - Body (Joi `cloneCourseSchema`, todos opcionales): `name`, `code`, `description`, `status`
 - Crea un curso nuevo (clon estructural) copiando `course`, `subject`, `subject_days`, `subject_lesson` y `subject_lesson_days`, re-apuntados al nuevo `course_id`. No clona students/grupos enrollados, schedules, asistencias, tests ni evaluaciones.
 - Defaults: `name` = `'<origen> (copia)'`, `code` = `'<origen>-COPIA'` (50 max, sufijo incremental si existe). Otros campos copiados (incluido `color`); overrides reemplazan.
+- El clon **no hereda el soft delete**: nace con `status = true` salvo que el body envíe `status` explícito.
 - Transacción: si falla → rollback. Filas con padres faltantes se saltan.
 - `201` → Course con `course_type`, `course_level` (shape `GET /course/:id`) más: `subjects_cloned`, `subject_days_cloned`, `subject_lessons_cloned`, `subject_lesson_days_cloned` (conteos).
 - `400` JSON `{ error: 'Parámetro course_id inválido' }` | texto plano `Input Validation Error <msg>`
@@ -240,7 +301,8 @@ arranque usa `alter: false` y no las crea).
 ### POST /courseStudent/:course_id
 - Params: `course_id`; Body: ninguno (genera `code` `CP-########`)
 - `200` → CourseStudent (sin includes)
-- `404` texto plano `Curso no encontrado`; `400` `Input Validation Error <msg>`
+- `404` JSON `{ message: 'Curso no encontrado' }`; `409` JSON `{ message }` si el curso está
+  eliminado (soft delete); `400` `Input Validation Error <msg>`
 
 ### PUT /courseStudent/:course_id
 - Params: `course_id` (ignorado); Body: `course_student_id` (requerido), `date`, `student_id`,
@@ -276,11 +338,29 @@ arranque usa `alter: false` y no las crea).
 - Nota: `course_id` no es una columna de `schedule`; se ignora. El curso se deduce de
   `course_student.course_id`. El ordinal (día o sesión) del schedule se deduce de
   `subject_days_id → subject_day.day`.
+- **Validaciones (evitan duplicados):**
+  - El curso del `course_student` no debe estar eliminado (`course.status = true`); si lo está
+    devuelve `409` con `{ message }`.
+  - `subject_days_id` debe existir, pertenecer al curso del `course_student` y
+    corresponder al `subject_id` enviado.
+  - El `subject_days` debe estar **activo** (`status = 1`).
+  - No puede existir otro schedule del mismo alumno para el mismo `subject_days_id`.
+  - No puede existir otro schedule del mismo alumno para el mismo `subject_id`
+    apuntando a un `subject_days` **inactivo** (horario huérfano); hay que eliminar ese
+    horario antes de volver a agendar la actividad.
+- `400` JSON `{ "message": "..." }` si `subject_days_id`/`subject_id` no son válidos o no
+  pertenecen al curso del alumno; `400`/`404` si el `course_student` no existe.
+- `409` JSON `{ "message": "..." }` si la actividad está inactiva o ya está agendada
+  (incluye el `id` del horario existente en el mensaje). La restricción única
+  `uq_schedule_course_student_subject_days` respalda el caso de concurrencia.
+- `500` texto plano `Internal Server Error ...` para errores no controlados.
 
 ### PUT /schedule
 - Auth: **no**
 - Body: `id` (requerido), `instructor_id`, `date`, `hour`, `classTime`
 - `200` → Schedule (mismo shape que GET /schedule/:id)
+- No cambia `subject_days_id` ni `subject_id`; para mover una actividad a otro día hay
+  que eliminar el horario y crearlo de nuevo (así pasan las validaciones de duplicado).
 
 ### DELETE /schedule/:id
 - Params: `id` (**`schedule.id`**, no `course_student_id`)
@@ -434,12 +514,18 @@ arranque usa `alter: false` y no las crea).
 - `400` `Input Validation Error <msg>` | `day (X) excede las sesiones del curso (Y).`
 - `day` es el **número de sesión** cuando el curso tiene `uses_sessions = 1`. El techo solo se
   valida en ese modo; con `uses_sessions = 0` no hay bound check (comportamiento previo).
+- `409` JSON `{ "message": "..." }` si se intenta **desactivar** (`status = false`) un
+  `subject_day` que tiene horarios agendados. El mensaje indica el día y cuántos
+  horarios hay que eliminar primero. Evita que queden horarios huérfanos apuntando a
+  un día inactivo y que luego se agende la misma actividad por segunda vez.
 
 ### POST /subjects_lesson_days
 - Body: `subject_id`, `subject_lesson_id`, `subject_lesson_days_id`, `course_id`, `day`,
   `status_lesson` (opcional; upsert de SubjectDays + SubjectLessonDays)
 - `201` → texto plano `OK`
 - `400` `Input Validation Error <msg>` | `day (X) excede las sesiones del curso (Y).`
+- `409` JSON `{ "message": "..." }` si el upsert desactiva un `subject_day` que tiene
+  horarios agendados (misma regla que `POST /subjects_days`).
 
 ---
 
@@ -1070,7 +1156,7 @@ ido/expirado → `403` con el error JWT serializado.
 | Student | `id, user_id, status` |
 | Instructor | `id, user_id, status` |
 | UserDocType | `id, name, symbol` |
-| Course | `id, name, description, code, hours, plane_model, color, days, uses_sessions, sessions, status, course_type_id, course_level_id` |
+| Course | `id, name, description, code, hours, plane_model, color, days, uses_sessions, sessions, status, deleted_at, deleted_by, course_type_id, course_level_id` |
 | CourseType | `id, name` |
 | CourseLevel | `id, name` |
 | CourseStudent | `id, course_id, date, score, approve, student_id, code, type_trip, license, regulation, status, max_attempts, instructor_code, client` |
@@ -1128,12 +1214,14 @@ Claves de la implementación:
   nuevos que no lo envíen, así que nunca es `NULL`. El discriminador es el **flag**, no el `NULL`.
 - La unicidad de asistencia es `(course_student_id, date, day)`: dos sesiones de la misma fecha
   se distinguen por su número de sesión. Antes era `(course_student_id, date)`.
-- `schedule` nunca tuvo restricción de unicidad, por lo que varias sesiones en la misma fecha
-  ya eran aceptables; el bloqueo era solo del cliente.
+- `schedule` no tiene restricción por fecha, por lo que varias sesiones en la misma fecha
+  ya eran aceptables; el bloqueo era solo del cliente. Sí tiene
+  `uq_schedule_course_student_subject_days` UNIQUE `(course_student_id, subject_days_id)`:
+  un alumno no puede tener dos horarios para la misma actividad del programa.
 - Fuente de verdad del techo: `getCourseProgramSizeByCourseStudent()` en
   `src/database/repositories/course.js`, que devuelve `{ uses_sessions, days, sessions, total }`.
 
-Migraciones: `20260927000000-add-sessions-to-course.cjs`, `20260927000001-relax-attendance-unique-date.cjs`.
+Migraciones: `20260927000000-add-sessions-to-course.cjs`, `20260927000001-relax-attendance-unique-date.cjs`, `20261031000000-add-unique-schedule-course-student-subject-days.cjs`.
 Al ser columnas nuevas, la app requiere que se corran **antes** de desplegar (el `sync` de
 arranque usa `alter: false` y no las crea).
 
@@ -1218,9 +1306,38 @@ arranque usa `alter: false` y no las crea).
 
 ## Courses — `/api/courses`
 
+> **Soft delete de curso.** Eliminado ⇔ `course.status = false` (`0`). El flag decide si puedes
+> **crear** cosas nuevas en el curso, **no** si puedes ver o cerrar lo existente. Las escrituras
+> que crean estructura devuelven `409` JSON `{ message }`; lecturas, asistencias y reprogramación
+> de horarios siguen funcionando. No hay borrado físico ni cascada, y el curso se puede reactivar.
+>
+> | Endpoint | Curso eliminado |
+> |---|---|
+> | `GET /` | `200` (por defecto oculta eliminados; `?include_inactive=true` los incluye) |
+> | `GET /course/:id`, `GET /coursesStudents`, `GET /schedule/:id` | `200` (sin filtro) |
+> | `POST /` | `201` (siempre nace activo) |
+> | `PUT /` | `200` (`status: false` elimina; `status: true` reactiva) |
+> | `DELETE /:id` | `200` (elimina; idempotente) |
+> | `POST /:id/restore` | `200` (reactiva; idempotente) |
+> | `POST /clone/:course_id` | `201` (el clon nace activo) |
+> | `POST /courseStudent/:course_id` | **`409`** |
+> | `POST /schedule` | **`409`** al crear; `200` en `PUT`/`DELETE` |
+> | `POST/PUT /api/subjects*` (`/lesson*`, `subjects_days`, `subjects_lesson_days`) | **`409`** |
+> | `POST /api/test` (definición), `POST /api/test/courseStudentTest` (iniciar) | **`409`** |
+> | `POST /api/assessment/createCourseStudentAssessment` | **`409`** |
+> | `POST /api/course_groups` | **`409`** |
+> | Resto de lecturas, `POST/PUT /api/attendance`, firmas, reportes, dashboards | `200` |
+>
+> `status` es el único predicado. `deleted_at` (fecha) y `deleted_by` (`user.id`, sin FK) son
+> **solo auditoría** de la eliminación vigente: no filtran queries y se limpian al reactivar.
+> No se usa `paranoid` de Sequelize. Instrucciones de front: `FRONT_SOFT_DELETE_CURSO.md`.
+
 ### GET /
-- Query: `name`, `description`, `course_type_id`, `course_level_id` (todos opcionales)
-- `200` → array de Course con alias `course_type`, `course_level` (incluye `color`, `uses_sessions` y `sessions`)
+- Query: `name`, `description`, `course_type_id`, `course_level_id`, `include_inactive` (todos opcionales)
+- Por defecto **oculta los cursos eliminados** (`status = 0`). El front debe enviar
+  `include_inactive=true` en la pantalla de configuración para listarlos y poder reactivarlos.
+- `200` → array de Course con alias `course_type`, `course_level` (incluye `color`, `uses_sessions`,
+  `sessions`, `deleted_at` y `deleted_by`)
 
 ### POST /
 - Body (Joi; `type`→`course_type_id`, `level`→`course_level_id`): `name`, `description`, `code`,
@@ -1228,11 +1345,40 @@ arranque usa `alter: false` y no las crea).
   `null`/`''`), `status` (opcionales)
 - `uses_sessions` (bool, default `false`) y `sessions` (int ≥ 1) son opcionales — ver
   [Días vs. Sesiones](#días-vs-sesiones). Si `sessions` no viene, se persiste `sessions = days`.
+- `status` se acepta por compatibilidad pero se **ignora**: un curso siempre nace activo
+  (`status = true`). Para eliminar usa `DELETE /:id` (o `PUT /` con `status: false`).
 - `201` → Course con `course_type`, `course_level` (incluye `color`, `uses_sessions` y `sessions`)
 
 ### PUT /
 - Body (Joi, mismo que POST + `id` requerido; se ignora `hours`)
+- Reemplazo **parcial-safe**: si no se envía `uses_sessions` se conserva el modo actual del curso,
+  y si no se envía `sessions` se conserva el techo actual (no se colapsa a `days`). Un cliente que
+  no conoce esos campos ya no degrada el programa — ver [Días vs. Sesiones](#días-vs-sesiones).
+- `status: false` marca el curso como eliminado (setea `deleted_at`/`deleted_by` con el usuario del
+  JWT) y `status: true` lo reactiva (limpia la auditoría); omitir `status` conserva ambos.
 - `200` → Course con `course_type`, `course_level`
+- `404` JSON `{ message: 'Curso no encontrado' }`
+
+### DELETE /:id
+- Auth: sí
+- Params: `id` (curso)
+- Soft delete reversible: `status = false`, `deleted_at = now`, `deleted_by = req.user.id`.
+- **No borra nada**: matrículas, horarios, asistencias, exámenes, evaluaciones y grupos se
+  conservan; solo se bloquean las **creaciones nuevas** (ver bloque de soft delete arriba).
+- Idempotente: si el curso ya está eliminado devuelve `200` sin reescribir la auditoría original.
+- `200` → Course con `course_type`, `course_level` (`status = false`, `deleted_at`, `deleted_by`)
+- `400` JSON `{ message: 'Parámetro id inválido' }` si `id` no es numérico
+- `404` JSON `{ message: 'Curso no encontrado' }`
+
+### POST /:id/restore
+- Auth: sí
+- Params: `id` (curso)
+- Reactiva el curso: `status = true`, `deleted_at = null`, `deleted_by = null`. No recrea ni
+  duplica nada; el historial queda exactamente como estaba.
+- Idempotente: un curso activo se devuelve `200` sin cambios.
+- `200` → Course con `course_type`, `course_level`
+- `400` JSON `{ message: 'Parámetro id inválido' }` si `id` no es numérico
+- `404` JSON `{ message: 'Curso no encontrado' }`
 
 ### GET /courseTypes
 - `200` → array de CourseType
@@ -1263,7 +1409,8 @@ arranque usa `alter: false` y no las crea).
 ### POST /courseStudent/:course_id
 - Params: `course_id`; Body: ninguno (genera `code` `CP-########`)
 - `200` → CourseStudent (sin includes)
-- `404` texto plano `Curso no encontrado`; `400` `Input Validation Error <msg>`
+- `404` JSON `{ message: 'Curso no encontrado' }`; `409` JSON `{ message }` si el curso está
+  eliminado (soft delete); `400` `Input Validation Error <msg>`
 
 ### PUT /courseStudent/:course_id
 - Params: `course_id` (ignorado); Body: `course_student_id` (requerido), `date`, `student_id`,
@@ -1299,11 +1446,29 @@ arranque usa `alter: false` y no las crea).
 - Nota: `course_id` no es una columna de `schedule`; se ignora. El curso se deduce de
   `course_student.course_id`. El ordinal (día o sesión) del schedule se deduce de
   `subject_days_id → subject_day.day`.
+- **Validaciones (evitan duplicados):**
+  - El curso del `course_student` no debe estar eliminado (`course.status = true`); si lo está
+    devuelve `409` con `{ message }`.
+  - `subject_days_id` debe existir, pertenecer al curso del `course_student` y
+    corresponder al `subject_id` enviado.
+  - El `subject_days` debe estar **activo** (`status = 1`).
+  - No puede existir otro schedule del mismo alumno para el mismo `subject_days_id`.
+  - No puede existir otro schedule del mismo alumno para el mismo `subject_id`
+    apuntando a un `subject_days` **inactivo** (horario huérfano); hay que eliminar ese
+    horario antes de volver a agendar la actividad.
+- `400` JSON `{ "message": "..." }` si `subject_days_id`/`subject_id` no son válidos o no
+  pertenecen al curso del alumno; `400`/`404` si el `course_student` no existe.
+- `409` JSON `{ "message": "..." }` si la actividad está inactiva o ya está agendada
+  (incluye el `id` del horario existente en el mensaje). La restricción única
+  `uq_schedule_course_student_subject_days` respalda el caso de concurrencia.
+- `500` texto plano `Internal Server Error ...` para errores no controlados.
 
 ### PUT /schedule
 - Auth: **no**
 - Body: `id` (requerido), `instructor_id`, `date`, `hour`, `classTime`
 - `200` → Schedule (mismo shape que GET /schedule/:id)
+- No cambia `subject_days_id` ni `subject_id`; para mover una actividad a otro día hay
+  que eliminar el horario y crearlo de nuevo (así pasan las validaciones de duplicado).
 
 ### DELETE /schedule/:id
 - Params: `id` (**`schedule.id`**, no `course_student_id`)
@@ -1457,12 +1622,18 @@ arranque usa `alter: false` y no las crea).
 - `400` `Input Validation Error <msg>` | `day (X) excede las sesiones del curso (Y).`
 - `day` es el **número de sesión** cuando el curso tiene `uses_sessions = 1`. El techo solo se
   valida en ese modo; con `uses_sessions = 0` no hay bound check (comportamiento previo).
+- `409` JSON `{ "message": "..." }` si se intenta **desactivar** (`status = false`) un
+  `subject_day` que tiene horarios agendados. El mensaje indica el día y cuántos
+  horarios hay que eliminar primero. Evita que queden horarios huérfanos apuntando a
+  un día inactivo y que luego se agende la misma actividad por segunda vez.
 
 ### POST /subjects_lesson_days
 - Body: `subject_id`, `subject_lesson_id`, `subject_lesson_days_id`, `course_id`, `day`,
   `status_lesson` (opcional; upsert de SubjectDays + SubjectLessonDays)
 - `201` → texto plano `OK`
 - `400` `Input Validation Error <msg>` | `day (X) excede las sesiones del curso (Y).`
+- `409` JSON `{ "message": "..." }` si el upsert desactiva un `subject_day` que tiene
+  horarios agendados (misma regla que `POST /subjects_days`).
 
 ---
 
