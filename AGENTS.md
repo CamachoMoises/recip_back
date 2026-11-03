@@ -190,6 +190,31 @@ de cursos no cuelga de otro registro).
 
 Instrucciones de front: `FRONT_ORDEN_CURSOS.md`.
 
+## Horas totales del curso (`course.hours`)
+
+`course.hours` es un valor **derivado**: nunca se toma del body (`POST /` y `PUT /` descartan
+`hours`). Lo calcula `calculateCourseTotalHours(course_id)` en `src/controller/course.js` y lo
+persiste con `updateCourseHours`.
+
+- **`course_type_id = 2` ("Entrenamiento")**: `8 × tamaño del programa`, donde el tamaño es
+  `uses_sessions ? (sessions ?? days) : days`.
+  - No multiplicar por cada `subject_days`: un mismo día/sesión puede tener varias fases
+    (Briefing, Vuelo, Debriefing, ...) y contarlas inflaba el total (curso 29: 25 actividades × 8
+    = 200 h para un programa de 3 días; el valor correcto es 24 h).
+- **Resto de tipos**: `Σ(subject.hours × días activos)` de cada sección.
+- Se recalcula al **crear/editar/clonar** curso y al **crear/editar/desactivar** `subject_days`
+  (`ChangeStatusDayFunc`) o editar `subject.hours` (`UpdateSubject`). Los llamados se hacen con
+  `await` para que la respuesta ya lleve las horas nuevas.
+- En `PUT /api/courses` los alias legacy `type`/`level`, los objetos `course_type.id`/
+  `course_level.id` y los `course_type_id`/`course_level_id` son aceptados; solo se asigna si el
+  valor existe. Claves desconocidas se descartan (`stripUnknown`) para permitir que el front reenvíe
+  el curso completo solo para recalcular `hours`.
+
+**Migración de datos (manual):** `migrations/20261103000000-recalculate-training-course-hours.cjs`
+recalcula los cursos tipo 2 existentes con la regla nueva. Es idempotente y solo toca
+`course_type_id = 2`. Correr `npm run migrate` para corregir filas ya guardadas con la fórmula
+vieja.
+
 ## API Routes
 
 | Prefix | Purpose |

@@ -154,7 +154,7 @@ export const UpdateSubject = async (req, res) => {
 			status,
 			is_schedulable: is_schedulable,
 		});
-		calculateCourseTotalHours(course_id);
+		await calculateCourseTotalHours(course_id);
 		res.status(201).send(editedSubject);
 	} catch (error) {
 		console.error('Error en la validación:', error.message);
@@ -341,6 +341,6 @@ export const ChangeStatusDayFunc = async (
 		});
 	}
 
-	calculateCourseTotalHours(course_id);
+	await calculateCourseTotalHours(course_id);
 	return subject_days;
 };

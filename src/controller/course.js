@@ -95,8 +95,13 @@ export const CourseStudentDetails = async (req, res) => {
 
 export const CreateCourse = async (req, res) => {
 	const data = req.body;
-	const course_type_id = data.type;
-	const course_level_id = data.level;
+	// Acepta el alias legacy (`type`/`level`) y también el objeto incluido que
+	// devuelve `GET /` (`course_type.id`), útil cuando el front reenvía el curso
+	// completo para recalcular `hours`.
+	const course_type_id =
+		data.type ?? data.course_type?.id ?? data.course_type_id;
+	const course_level_id =
+		data.level ?? data.course_level?.id ?? data.course_level_id;
 	delete data.type;
 	delete data.level;
 	delete data.id;
@@ -105,8 +110,11 @@ export const CreateCourse = async (req, res) => {
 	delete data.row_order;
 	delete data.course_type;
 	delete data.course_level;
-	data.course_type_id = course_type_id;
-	data.course_level_id = course_level_id;
+	// `type`/`level` son alias legacy del front. Si no vienen, se respeta el
+	// `course_type_id`/`course_level_id` que ya enviara el cliente (p. ej. al
+	// reguardar un curso completo). No sobrescribir con `undefined`.
+	if (course_type_id !== undefined) data.course_type_id = course_type_id;
+	if (course_level_id !== undefined) data.course_level_id = course_level_id;
 	if (data.color !== undefined && data.color !== null) {
 		data.color = String(data.color);
 	}
@@ -142,6 +150,8 @@ export const CreateCourse = async (req, res) => {
 			// Eliminar un curso es una acción aparte (status=false solo vía DELETE/PUT).
 			status: true,
 		});
+		// `hours` es derivado: se calcula con las secciones/días del curso.
+		await calculateCourseTotalHours(new_course.id);
 		const course = await getCourseById(new_course.id);
 		res.status(201).send(course);
 	} catch (error) {
@@ -173,6 +183,9 @@ export const CloneCourse = async (req, res) => {
 		}
 
 		const { course, counts } = result;
+		// El clon copia las secciones/días: recalcular `hours` con la misma regla
+		// del curso evita heredar un total viejo o incoherente del origen.
+		await calculateCourseTotalHours(course.id);
 		const courseDetails = await getCourseById(course.id);
 
 		res.status(201).send({
@@ -213,8 +226,13 @@ export const CreateCourseStudent = async (req, res) => {
 
 export const UpdateCourse = async (req, res) => {
 	const data = req.body;
-	const course_type_id = data.type;
-	const course_level_id = data.level;
+	// Mismo criterio que POST: acepta `type`/`level`, `course_type.id` o
+	// `course_type_id` directo. Evita pisar el tipo con `undefined` cuando el
+	// front reenvía el objeto completo.
+	const course_type_id =
+		data.type ?? data.course_type?.id ?? data.course_type_id;
+	const course_level_id =
+		data.level ?? data.course_level?.id ?? data.course_level_id;
 	delete data.type;
 	delete data.level;
 	delete data.hours;
@@ -222,13 +240,20 @@ export const UpdateCourse = async (req, res) => {
 	delete data.row_order;
 	delete data.course_type;
 	delete data.course_level;
-	data.course_type_id = course_type_id;
-	data.course_level_id = course_level_id;
+	// Igual que en POST: no pisar `course_type_id`/`course_level_id` con
+	// `undefined` cuando el cliente envía el objeto completo sin los alias.
+	if (course_type_id !== undefined) data.course_type_id = course_type_id;
+	if (course_level_id !== undefined) data.course_level_id = course_level_id;
 	if (data.color !== undefined && data.color !== null) {
 		data.color = String(data.color);
 	}
 	try {
-		const new_data = await updateCourseSchema.validateAsync(data);
+		const new_data = await updateCourseSchema.validateAsync(data, {
+			// El front puede reenviar el curso completo (incluye `createdAt`,
+			// `updatedAt`, auditoría del soft delete, etc.) solo para que el
+			// backend recalcule `hours`. Esos campos no participan del update.
+			stripUnknown: true,
+		});
 		const {
 			id,
 			name,
@@ -262,6 +287,8 @@ export const UpdateCourse = async (req, res) => {
 			// Auditoría del soft delete; `status` sigue siendo el predicado.
 			deleted_by: req.user?.id ?? null,
 		});
+		// `days`/`sessions` y el tipo pueden haber cambiado: recalcular siempre.
+		await calculateCourseTotalHours(id);
 		const course = await getCourseById(id);
 		res.send(course);
 	} catch (error) {
@@ -540,15 +567,39 @@ export const UpdateCourseStudentMaxAttempts = async (req, res) => {
 	}
 };
 
+/*
+ * Horas totales del curso: siempre es un valor derivado, nunca lo que envíe el
+ * cliente (`POST /` y `PUT /` descartan `hours`).
+ *
+ * - `course_type_id = 2` ("Entrenamiento"): la carga es 8 horas por día/sesión
+ *   del programa. Antes se multiplicaba 8 por cada `subject_days` activo; como
+ *   un mismo día suele tener varias fases (Briefing, Vuelo, Debriefing, ...),
+ *   el total se inflaba (curso 29: 25 actividades × 8 = 200 h para 3 días).
+ * - Resto de tipos: suma de `subject.hours` × días activos de cada sección.
+ */
+const TRAINING_COURSE_TYPE_ID = 2;
+const TRAINING_HOURS_PER_DAY = 8;
+
 export const calculateCourseTotalHours = async (course_id) => {
-	const subjects = await getSubjectByCourseId(course_id);
+	const course = await getCourseById(course_id);
+	if (!course) return null;
+
 	let totalHours = 0;
-	for (let index = 0; index < subjects.length; index++) {
-		const subject = subjects[index];
-		const course_type_id = subject.course.course_type_id;
-		const hours = course_type_id === 2 ? 8 : subject.hours;
-		const days = subject.subject_days.length;
-		totalHours = totalHours + hours * days;
+
+	if (Number(course.course_type_id) === TRAINING_COURSE_TYPE_ID) {
+		const programSize = course.uses_sessions
+			? (course.sessions ?? course.days)
+			: course.days;
+		totalHours = TRAINING_HOURS_PER_DAY * (Number(programSize) || 0);
+	} else {
+		const subjects = await getSubjectByCourseId(course_id);
+		for (const subject of subjects) {
+			// `getSubjectByCourseId` solo incluye `subject_days` activos.
+			const activeDays = subject.subject_days.length;
+			totalHours += (Number(subject.hours) || 0) * activeDays;
+		}
 	}
+
 	await updateCourseHours(course_id, totalHours);
+	return totalHours;
 };

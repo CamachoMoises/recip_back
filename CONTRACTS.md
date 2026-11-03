@@ -229,14 +229,16 @@ arranque usa `alter: false` y no las crea).
 
 ### POST /
 - Body (Joi; `type`→`course_type_id`, `level`→`course_level_id`): `name`, `description`, `code`,
-  `days` (requeridos); `type`, `level` (requeridos); `plane_model`, `color` (string ≤ 50, acepta
-  `null`/`''`), `status` (opcionales)
+  `days` (requeridos); `type`, `level` (requeridos); `plane_model` (string ≤ 500, acepta
+  `null`/`''`), `color` (string ≤ 50, acepta `null`/`''`), `status` (opcionales)
 - `uses_sessions` (bool, default `false`) y `sessions` (int ≥ 1) son opcionales — ver
   [Días vs. Sesiones](#días-vs-sesiones). Si `sessions` no viene, se persiste `sessions = days`.
 - `status` se acepta por compatibilidad pero se **ignora**: un curso siempre nace activo
   (`status = true`). Para eliminar usa `DELETE /:id` (o `PUT /` con `status: false`).
 - `row_order` **se ignora**: el curso nuevo se agrega al final (`MAX(row_order) + 1`). Si el body lo
   envía, se descarta antes de Joi (no devuelve 400 por clave desconocida).
+- `hours` es **derivado** y se ignora del body. Se recalcula al guardar: tipo 2
+  (`Entrenamiento`) = `8 × días/sesiones del programa`; resto = `Σ(subject.hours × días activos)`.
 - `201` → Course con `course_type`, `course_level` (incluye `color`, `uses_sessions`, `sessions` y
   `row_order`)
 
@@ -249,6 +251,12 @@ arranque usa `alter: false` y no las crea).
   JWT) y `status: true` lo reactiva (limpia la auditoría); omitir `status` conserva ambos.
 - `row_order` **se ignora**: un `PUT` normal nunca reordena (se descarta antes de Joi). Para el
   orden existe `PUT /order`.
+- `hours` se **ignora** del body y se recalcula siempre con la regla vigente (ver `POST /`).
+  También se recalcula al cambiar secciones (`PUT /api/subjects`) o días
+  (`POST /api/subjects/subjects_days`).
+- Tolerante a payloads completos: acepta `type`/`level`, `course_type.id`/`course_level.id` o
+  `course_type_id`/`course_level_id`; las claves desconocidas (`createdAt`, `updatedAt`,
+  `deleted_at`, ...) se descartan en vez de devolver `400`.
 - `200` → Course con `course_type`, `course_level`
 - `404` JSON `{ message: 'Curso no encontrado' }`
 
@@ -306,6 +314,7 @@ arranque usa `alter: false` y no las crea).
 - Defaults: `name` = `'<origen> (copia)'`, `code` = `'<origen>-COPIA'` (50 max, sufijo incremental si existe). Otros campos copiados (incluido `color`); overrides reemplazan.
 - El clon **no hereda el soft delete**: nace con `status = true` salvo que el body envíe `status` explícito.
 - El clon **no hereda `row_order`**: se agrega al final (`MAX(row_order) + 1`).
+- El clon **recalcula `hours`** con la regla vigente en vez de heredar el total del origen.
 - Transacción: si falla → rollback. Filas con padres faltantes se saltan.
 - `201` → Course con `course_type`, `course_level` (shape `GET /course/:id`) más: `subjects_cloned`, `subject_days_cloned`, `subject_lessons_cloned`, `subject_lesson_days_cloned` (conteos).
 - `400` JSON `{ error: 'Parámetro course_id inválido' }` | texto plano `Input Validation Error <msg>`
@@ -1382,14 +1391,16 @@ arranque usa `alter: false` y no las crea).
 
 ### POST /
 - Body (Joi; `type`→`course_type_id`, `level`→`course_level_id`): `name`, `description`, `code`,
-  `days` (requeridos); `type`, `level` (requeridos); `plane_model`, `color` (string ≤ 50, acepta
-  `null`/`''`), `status` (opcionales)
+  `days` (requeridos); `type`, `level` (requeridos); `plane_model` (string ≤ 500, acepta
+  `null`/`''`), `color` (string ≤ 50, acepta `null`/`''`), `status` (opcionales)
 - `uses_sessions` (bool, default `false`) y `sessions` (int ≥ 1) son opcionales — ver
   [Días vs. Sesiones](#días-vs-sesiones). Si `sessions` no viene, se persiste `sessions = days`.
 - `status` se acepta por compatibilidad pero se **ignora**: un curso siempre nace activo
   (`status = true`). Para eliminar usa `DELETE /:id` (o `PUT /` con `status: false`).
 - `row_order` **se ignora**: el curso nuevo se agrega al final (`MAX(row_order) + 1`). Si el body lo
   envía, se descarta antes de Joi (no devuelve 400 por clave desconocida).
+- `hours` es **derivado** y se ignora del body. Se recalcula al guardar: tipo 2
+  (`Entrenamiento`) = `8 × días/sesiones del programa`; resto = `Σ(subject.hours × días activos)`.
 - `201` → Course con `course_type`, `course_level` (incluye `color`, `uses_sessions`, `sessions` y
   `row_order`)
 
@@ -1402,6 +1413,12 @@ arranque usa `alter: false` y no las crea).
   JWT) y `status: true` lo reactiva (limpia la auditoría); omitir `status` conserva ambos.
 - `row_order` **se ignora**: un `PUT` normal nunca reordena (se descarta antes de Joi). Para el
   orden existe `PUT /order`.
+- `hours` se **ignora** del body y se recalcula siempre con la regla vigente (ver `POST /`).
+  También se recalcula al cambiar secciones (`PUT /api/subjects`) o días
+  (`POST /api/subjects/subjects_days`).
+- Tolerante a payloads completos: acepta `type`/`level`, `course_type.id`/`course_level.id` o
+  `course_type_id`/`course_level_id`; las claves desconocidas (`createdAt`, `updatedAt`,
+  `deleted_at`, ...) se descartan en vez de devolver `400`.
 - `200` → Course con `course_type`, `course_level`
 - `404` JSON `{ message: 'Curso no encontrado' }`
 
