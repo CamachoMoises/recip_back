@@ -49,7 +49,8 @@ repositorios que afecte una petición/respuesta DEBE actualizar este archivo en 
 | CourseStudentAssessment | `id, course_id, student_id, course_student_id, score, approve, date, code, status, finished, comments` |
 | CourseStudentAssessmentDay | `id, course_id, student_id, course_student_id, course_student_assessment_id, day, airport, airstrip, elevation, meteorology, temperature, qnh, wind, weight, flaps, power, seat, takeoff, landing, comments, takeoff_day, takeoff_night, landing_day, landing_night, landing_precision, landing_non_precision, landing_gps, landing_circuit, landing_visual, training_time, check_time, ifr_time, vfr_time, type` — `training_time`/`check_time`/`ifr_time`/`vfr_time` son `FLOAT` (horas decimales, ej. `1.5` = 1h30m) — `landing_precision`/`landing_non_precision`/`landing_gps`/`landing_circuit`/`landing_visual` son `INTEGER` (contadores de aterrizajes por tipo, nullable) |
 | CourseStudentAssessmentLessonDetail | `id, course_id, student_id, course_student_id, course_student_assessment_id, course_student_assessment_day_id, subject_id, subject_lesson_id, subject_days_id, subject_lesson_days_id, item, score, score_2, score_3` |
-| Test | `id, course_id, min_score, duration, code, status` |
+| Test | `id, course_id, min_score, duration, code, status` — `course_id` es el curso **dueño** (autoría); la visibilidad por curso se resuelve con `CourseTest` |
+| CourseTest | `id, course_id, test_id, created_at, updated_at` — puente N:N examen ↔ curso (solo cursos `course_type_id = 1`); UNIQUE `(course_id, test_id)` |
 | QuestionType | `id, value, max_answer, name` |
 | TestQuestionType | `id, amount, value, course_id, question_type_id, test_id, status` |
 | Question | `id, header, course_id, question_type_id, test_question_type_id, test_id, status` |
@@ -336,7 +337,8 @@ arranque usa `alter: false` y no las crea).
 ### GET /courseStudent/:id
 - Params: `id`
 - `200` → CourseStudent con `student`, `course_group`, `course` (con `course_type`, `course_level`,
-  `tests`), `course_student_tests`, `schedules` (solo subjects con nombre LIKE '%examen%', cada uno con `subject`)
+  `tests` = exámenes **vinculados** al curso vía `course_test`, sin atributos del puente),
+  `course_student_tests`, `schedules` (solo subjects con nombre LIKE '%examen%', cada uno con `subject`)
 
 ### POST /courseStudent/:course_id
 - Params: `course_id`; Body: ninguno (genera `code` `CP-########`)
@@ -661,27 +663,83 @@ arranque usa `alter: false` y no las crea).
 
 ## Test — `/api/test`
 
+> **Exámenes compartidos:** `test.course_id` es el curso **dueño** (autoría); la visibilidad de un
+> examen se resuelve con la tabla puente `course_test`. `question`, `answer` y `test_question_type`
+> guardan siempre el `course_id` del dueño, aunque el body envíe el curso desde el que se edita.
+> Los endpoints de importación ya no requieren `course_id`.
+
 ### GET /
 - `200` → array de Test (sin includes)
 
 ### GET /tests/:course_id
 - Params: `course_id`
-- `200` → array de Test con `test_question_types` (cada uno con `question_type`)
+- `200` → array de Test **vinculados** al curso vía `course_test` (no solo los que tienen
+  `test.course_id = :course_id`), con `test_question_types` (cada uno con `question_type`),
+  `course` (dueño: `{ id, name, code, color }`), `courses` (vinculados, mismo shape) e
+  `is_shared` (`courses.length > 1`). Curso inexistente → `[]`.
 
 ### GET /test/:test_id
 - Params: `test_id`
-- `200` → Test con `test_question_types` (cada uno con `question_type`)
+- `200` → Test con `test_question_types` (cada uno con `question_type`), `course` (dueño:
+  `{ id, name, code, color }`), `courses` (cursos vinculados, mismo shape) e `is_shared`
+  (`courses.length > 1`).
+- `404` JSON `{ message: 'Test not found' }`
 
 ### POST /test
-- Body: `course_id` (debe existir), `duration`, `min_score` (genera `code` `E-XXXX`, `status: false`)
-- `201` → Test con `test_question_types` (cada uno con `question_type`)
+- Body: `course_id` (**dueño**, debe existir, estar activo y ser de teoría `course_type_id = 1`),
+  `duration`, `min_score`, `course_ids` (opcional, `number[]` de cursos adicionales a los que se
+  comparte el examen). Genera `code` `E-XXXX` y `status: false`.
+- El curso dueño siempre queda vinculado en `course_test`, aunque no venga en `course_ids`.
+- `201` → Test con `test_question_types`, `course`, `courses` e `is_shared`.
+- `400` JSON `{ message }` si `course_ids` no es un arreglo no vacío de ids válidos.
+- `404` JSON `{ message: 'Course not found' }` si el dueño no existe.
+- `409` JSON `{ message }` si el dueño o algún `course_ids` está eliminado o no es
+  `course_type_id = 1`.
 
 ### PUT /test
 - Body: `id`, `duration`, `min_score`, `status`
-- `201` → Test con `test_question_types`
+- `201` → Test con `test_question_types`, `course`, `courses` e `is_shared`.
+- `404` JSON `{ message: 'Test not found' }`
+- `409` JSON `{ message: 'No se puede editar el examen: todos los cursos vinculados están eliminados' }`
+  si ningún curso vinculado está activo.
+- `409` JSON `{ message, conflicts: [{ course_id, test_id }] }` al pasar `status: true` desde
+  inactivo si algún curso vinculado ya tiene otro examen activo. Si el examen ya estaba activo,
+  no se revalida el conflicto (permite editar datos heredados).
+
+### GET /test/:test_id/courses
+- Auth: sí
+- Params: `test_id`
+- `200` → `{ test_id, owner_course_id, courses: [{ id, name, code, color, status,
+  course_type_id, is_owner }] }`, orden `id ASC`.
+- `400` JSON `{ message: 'Parámetro test_id inválido' }`
+- `404` JSON `{ message: 'Test not found' }`
+
+### POST /tests/:course_id/link
+- Auth: sí
+- Params: `course_id`; Body: `{ test_ids: number[] }` **o** `{ test_id: number }`
+- Vincula exámenes existentes al curso (`course_test`) sin duplicarlos. Idempotente: los ya
+  vinculados se devuelven en `skipped`.
+- `200` → `{ course_id, linked: number[], skipped: number[], tests: Test[] }`, donde `tests` es
+  el listado de `GET /tests/:course_id` ya actualizado.
+- `400` JSON `{ message }` si faltan `test_ids`/`test_id` o traen ids inválidos.
+- `404` JSON `{ message }` si el curso o algún examen no existe.
+- `409` JSON `{ message }` si el curso está eliminado o no es de teoría, si el examen pertenece a
+  un curso que no es de teoría, o si el examen está activo y el curso ya tiene otro activo
+  (`{ message, conflicts: [{ course_id, test_id }] }`). Todo el lote es transaccional.
+
+### DELETE /tests/:course_id/link/:test_id
+- Auth: sí
+- Desvincula el examen del curso **sin borrar** el examen, sus preguntas, respuestas ni intentos.
+- `200` → `{ course_id, test_id, removed: boolean, tests: Test[] }` (`tests` = listado
+  actualizado del curso).
+- `400` JSON `{ message }` si algún parámetro no es válido.
+- `404` JSON `{ message: 'Test not found' }` si el examen no existe. Desvincular un vínculo
+  inexistente no es error: `removed: false`.
 
 ### GET /questions/by-test/:test_id
-- Params: `test_id`; Query: `question_type_id`, `test_question_type_id`, `course_id`, `status`
+- Params: `test_id`; Query: `question_type_id`, `test_question_type_id`, `status`
+- `course_id` se acepta por compatibilidad pero **se ignora**: las preguntas se filtran por
+  `test_id`, no por curso.
 - `200` → array de Question con `answers` y `question_type`
 - `400` JSON `{ error: 'Parámetro test_id inválido' }`
 
@@ -697,7 +755,8 @@ arranque usa `alter: false` y no las crea).
 - `200` → array de Answer (filter por `question_id`)
 
 ### POST /questionTest
-- Body: `course_id`, `test_id`, `question_type_id`, `test_question_type_id`, `header`
+- Body: `test_id`, `question_type_id`, `test_question_type_id`, `header`
+- `course_id` se ignora: la pregunta se guarda con el curso dueño del examen.
 - `201` → Question con `answers` y `question_type`
 
 ### PUT /questionTest
@@ -724,7 +783,8 @@ arranque usa `alter: false` y no las crea).
 - `409` JSON `{ error: 'Una o más preguntas ya fueron usadas en un intento de examen y no pueden eliminarse' }`
 
 ### POST /answerQuestionTest
-- Body: `course_id`, `test_id`, `question_type_id`, `question_id`, `value`
+- Body: `test_id`, `question_id`, `value`
+- `course_id` se ignora: la respuesta se guarda con el curso dueño del examen.
 - `201` → Question (getQuestionById del `question_id`)
 
 ### PUT /answerQuestionTest/:question_id
@@ -732,8 +792,9 @@ arranque usa `alter: false` y no las crea).
 - `201` → Question (getQuestionById del `question_id`)
 
 ### PUT /testQuestionTypes
-- Body: `id` (si > 0 actualiza, si no crea), `course_id`, `amount`, `value`, `question_type_id`,
-  `status`, `test_id`
+- Body: `id` (si > 0 actualiza, si no crea), `amount`, `value`, `question_type_id`, `status`,
+  `test_id`
+- `course_id` se ignora: el blueprint se guarda con el curso dueño del examen.
 - `201` → Test (getTestById) con `test_question_types`
 
 ### GET /student/:student_id
@@ -750,9 +811,14 @@ arranque usa `alter: false` y no las crea).
 
 ### POST /courseStudentTest/:course_student_id
 - Params: `course_student_id`; Body: `date`
+- Usa el **examen activo vinculado al curso** (`course_test`), no `test.course_id`.
 - `200` → CourseStudentTest (shape de GET /courseStudentTest/:id; genera `code` `CST-XXXXXXXX` y
   las preguntas aleatorias)
-- `400` texto plano `Error <msg>`
+- `404` JSON `{ message: 'Matrícula del alumno no encontrada' }`
+- `404` JSON `{ message: 'El curso no tiene un examen activo' }` si ningún examen vinculado al
+  curso está activo.
+- `409` JSON `{ message }` si el curso de la matrícula está eliminado.
+- `400` texto plano `Error <msg>` para el resto de fallos.
 
 ### POST /courseStudentTestAnswer
 - Body: `courseStudentTestAnswer` (objeto) con `course_student_test_id`,
@@ -775,17 +841,18 @@ arranque usa `alter: false` y no las crea).
 ### POST /import-excel/:test_id
 - Auth: sí
 - Params: `test_id` (requerido); File: `excel_file` (`.xlsx`, máx 10MB)
-- Form (multipart): además del archivo, campos `course_id`, `question_type_id`,
+- Form (multipart): además del archivo, campos `question_type_id`,
   `test_question_type_id` (usados cuando la fila es de plantilla en español; `question_type_id`
-  por defecto `1`).
+  por defecto `1`). `course_id` ya no es necesario: el curso se resuelve con el examen.
 - Se soportan **dos plantillas** de columnas:
   - **Español (frontend)**: `Pregunta`, `Respuesta1..RespuestaN`, `RespuestaCorrecta`
     (índice 1-based o letra `a..e` de la respuesta correcta; selección única). Los metadatos
-    `course_id`, `question_type_id`, `test_question_type_id` se toman del body.
-  - **Inglés (legado)**: `course_id, question_type_id, test_question_type_id, header,
-    answer_1..answer_5, answer_1_correct..answer_5_correct`. Los flags `answer_*_correct`
-    se normalizan (acepta `true`/`1`/`'true'`/`'1'`/`'yes'`/`'si'`/`'sí'`/`'verdadero'`/
-    `'correcto'`); puede haber más de una respuesta correcta por pregunta.
+    `question_type_id` y `test_question_type_id` se toman del body; el `course_id` de las
+    preguntas se resuelve con el curso dueño del examen.
+  - **Inglés (legado)**: `course_id` (ignorado), `question_type_id`, `test_question_type_id`,
+    `header`, `answer_1..answer_5`, `answer_1_correct..answer_5_correct`. Los flags
+    `answer_*_correct` se normalizan (acepta `true`/`1`/`'true'`/`'1'`/`'yes'`/`'si'`/`'sí'`/
+    `'verdadero'`/`'correcto'`); puede haber más de una respuesta correcta por pregunta.
 - Si falta metadata (o fila sin `Pregunta`/`header`), la fila se salta y suma a `skippedRows`.
 - `201` → `{ message: 'Excel import completed', questionsImported, answersImported, skippedRows }`
 - `400` JSON `{ error: 'test_id parameter is required and must be a valid number' }` | `{ error: 'Test not found' }`
@@ -794,8 +861,8 @@ arranque usa `alter: false` y no las crea).
 ### POST /import-csv
 - Auth: **sí**
 - Query: `test_id` (requerido); File: `csv_file` (`.csv`, máx 10MB)
-- Igual que `import-excel` (mismas plantillas, metadatos `course_id`, `question_type_id`,
-  `test_question_type_id` en el body; headers con/ sin BOM, valores trim)
+- Igual que `import-excel` (mismas plantillas, metadatos `question_type_id`,
+  `test_question_type_id` en el body; `course_id` se ignora; headers con/ sin BOM, valores trim)
 - `201` → `{ message: 'CSV import completed', questionsImported, answersImported, skippedRows }`
 - `400` JSON `{ error: 'test_id query parameter is required and must be a valid number' }` | `{ error: 'Test not found' }`
 - `400` JSON `{ error: 'No file uploaded' }`
@@ -836,8 +903,9 @@ arranque usa `alter: false` y no las crea).
 
 #### GET /reports/tests
 - Auth: sí
-- Query: `status` (opcional), `course_id` (opcional)
-- `200` → array de Test con alias `course` (`{ id, name, code }`) + `question_count` +
+- Query: `status` (opcional), `course_id` (opcional; filtra por vínculo `course_test`)
+- `200` → array de Test con alias `course` (dueño: `{ id, name, code, color }`), `courses`
+  (vinculados, mismo shape) e `is_shared` (`courses.length > 1`) + `question_count` +
   `attempt_count` (enteros, siempre presentes). Sin paginación.
 
 #### GET /reports/tests/:test_id/questions
@@ -1211,7 +1279,8 @@ ido/expirado → `403` con el error JWT serializado.
 | CourseStudentAssessment | `id, course_id, student_id, course_student_id, score, approve, date, code, status, finished, comments` |
 | CourseStudentAssessmentDay | `id, course_id, student_id, course_student_id, course_student_assessment_id, day, airport, airstrip, elevation, meteorology, temperature, qnh, wind, weight, flaps, power, seat, takeoff, landing, comments, takeoff_day, takeoff_night, landing_day, landing_night, landing_precision, landing_non_precision, landing_gps, landing_circuit, landing_visual, training_time, check_time, ifr_time, vfr_time, type` — `training_time`/`check_time`/`ifr_time`/`vfr_time` son `FLOAT` (horas decimales, ej. `1.5` = 1h30m) — `landing_precision`/`landing_non_precision`/`landing_gps`/`landing_circuit`/`landing_visual` son `INTEGER` (contadores de aterrizajes por tipo, nullable) |
 | CourseStudentAssessmentLessonDetail | `id, course_id, student_id, course_student_id, course_student_assessment_id, course_student_assessment_day_id, subject_id, subject_lesson_id, subject_days_id, subject_lesson_days_id, item, score, score_2, score_3` |
-| Test | `id, course_id, min_score, duration, code, status` |
+| Test | `id, course_id, min_score, duration, code, status` — `course_id` es el curso **dueño** (autoría); la visibilidad por curso se resuelve con `CourseTest` |
+| CourseTest | `id, course_id, test_id, created_at, updated_at` — puente N:N examen ↔ curso (solo cursos `course_type_id = 1`); UNIQUE `(course_id, test_id)` |
 | QuestionType | `id, value, max_answer, name` |
 | TestQuestionType | `id, amount, value, course_id, question_type_id, test_id, status` |
 | Question | `id, header, course_id, question_type_id, test_question_type_id, test_id, status` |
@@ -1482,7 +1551,8 @@ arranque usa `alter: false` y no las crea).
 ### GET /courseStudent/:id
 - Params: `id`
 - `200` → CourseStudent con `student`, `course_group`, `course` (con `course_type`, `course_level`,
-  `tests`), `course_student_tests`, `schedules` (solo subjects con nombre LIKE '%examen%', cada uno con `subject`)
+  `tests` = exámenes **vinculados** al curso vía `course_test`, sin atributos del puente),
+  `course_student_tests`, `schedules` (solo subjects con nombre LIKE '%examen%', cada uno con `subject`)
 
 ### POST /courseStudent/:course_id
 - Params: `course_id`; Body: ninguno (genera `code` `CP-########`)
@@ -1807,27 +1877,83 @@ arranque usa `alter: false` y no las crea).
 
 ## Test — `/api/test`
 
+> **Exámenes compartidos:** `test.course_id` es el curso **dueño** (autoría); la visibilidad de un
+> examen se resuelve con la tabla puente `course_test`. `question`, `answer` y `test_question_type`
+> guardan siempre el `course_id` del dueño, aunque el body envíe el curso desde el que se edita.
+> Los endpoints de importación ya no requieren `course_id`.
+
 ### GET /
 - `200` → array de Test (sin includes)
 
 ### GET /tests/:course_id
 - Params: `course_id`
-- `200` → array de Test con `test_question_types` (cada uno con `question_type`)
+- `200` → array de Test **vinculados** al curso vía `course_test` (no solo los que tienen
+  `test.course_id = :course_id`), con `test_question_types` (cada uno con `question_type`),
+  `course` (dueño: `{ id, name, code, color }`), `courses` (vinculados, mismo shape) e
+  `is_shared` (`courses.length > 1`). Curso inexistente → `[]`.
 
 ### GET /test/:test_id
 - Params: `test_id`
-- `200` → Test con `test_question_types` (cada uno con `question_type`)
+- `200` → Test con `test_question_types` (cada uno con `question_type`), `course` (dueño:
+  `{ id, name, code, color }`), `courses` (cursos vinculados, mismo shape) e `is_shared`
+  (`courses.length > 1`).
+- `404` JSON `{ message: 'Test not found' }`
 
 ### POST /test
-- Body: `course_id` (debe existir), `duration`, `min_score` (genera `code` `E-XXXX`, `status: false`)
-- `201` → Test con `test_question_types` (cada uno con `question_type`)
+- Body: `course_id` (**dueño**, debe existir, estar activo y ser de teoría `course_type_id = 1`),
+  `duration`, `min_score`, `course_ids` (opcional, `number[]` de cursos adicionales a los que se
+  comparte el examen). Genera `code` `E-XXXX` y `status: false`.
+- El curso dueño siempre queda vinculado en `course_test`, aunque no venga en `course_ids`.
+- `201` → Test con `test_question_types`, `course`, `courses` e `is_shared`.
+- `400` JSON `{ message }` si `course_ids` no es un arreglo no vacío de ids válidos.
+- `404` JSON `{ message: 'Course not found' }` si el dueño no existe.
+- `409` JSON `{ message }` si el dueño o algún `course_ids` está eliminado o no es
+  `course_type_id = 1`.
 
 ### PUT /test
 - Body: `id`, `duration`, `min_score`, `status`
-- `201` → Test con `test_question_types`
+- `201` → Test con `test_question_types`, `course`, `courses` e `is_shared`.
+- `404` JSON `{ message: 'Test not found' }`
+- `409` JSON `{ message: 'No se puede editar el examen: todos los cursos vinculados están eliminados' }`
+  si ningún curso vinculado está activo.
+- `409` JSON `{ message, conflicts: [{ course_id, test_id }] }` al pasar `status: true` desde
+  inactivo si algún curso vinculado ya tiene otro examen activo. Si el examen ya estaba activo,
+  no se revalida el conflicto (permite editar datos heredados).
+
+### GET /test/:test_id/courses
+- Auth: sí
+- Params: `test_id`
+- `200` → `{ test_id, owner_course_id, courses: [{ id, name, code, color, status,
+  course_type_id, is_owner }] }`, orden `id ASC`.
+- `400` JSON `{ message: 'Parámetro test_id inválido' }`
+- `404` JSON `{ message: 'Test not found' }`
+
+### POST /tests/:course_id/link
+- Auth: sí
+- Params: `course_id`; Body: `{ test_ids: number[] }` **o** `{ test_id: number }`
+- Vincula exámenes existentes al curso (`course_test`) sin duplicarlos. Idempotente: los ya
+  vinculados se devuelven en `skipped`.
+- `200` → `{ course_id, linked: number[], skipped: number[], tests: Test[] }`, donde `tests` es
+  el listado de `GET /tests/:course_id` ya actualizado.
+- `400` JSON `{ message }` si faltan `test_ids`/`test_id` o traen ids inválidos.
+- `404` JSON `{ message }` si el curso o algún examen no existe.
+- `409` JSON `{ message }` si el curso está eliminado o no es de teoría, si el examen pertenece a
+  un curso que no es de teoría, o si el examen está activo y el curso ya tiene otro activo
+  (`{ message, conflicts: [{ course_id, test_id }] }`). Todo el lote es transaccional.
+
+### DELETE /tests/:course_id/link/:test_id
+- Auth: sí
+- Desvincula el examen del curso **sin borrar** el examen, sus preguntas, respuestas ni intentos.
+- `200` → `{ course_id, test_id, removed: boolean, tests: Test[] }` (`tests` = listado
+  actualizado del curso).
+- `400` JSON `{ message }` si algún parámetro no es válido.
+- `404` JSON `{ message: 'Test not found' }` si el examen no existe. Desvincular un vínculo
+  inexistente no es error: `removed: false`.
 
 ### GET /questions/by-test/:test_id
-- Params: `test_id`; Query: `question_type_id`, `test_question_type_id`, `course_id`, `status`
+- Params: `test_id`; Query: `question_type_id`, `test_question_type_id`, `status`
+- `course_id` se acepta por compatibilidad pero **se ignora**: las preguntas se filtran por
+  `test_id`, no por curso.
 - `200` → array de Question con `answers` y `question_type`
 - `400` JSON `{ error: 'Parámetro test_id inválido' }`
 
@@ -1843,7 +1969,8 @@ arranque usa `alter: false` y no las crea).
 - `200` → array de Answer (filter por `question_id`)
 
 ### POST /questionTest
-- Body: `course_id`, `test_id`, `question_type_id`, `test_question_type_id`, `header`
+- Body: `test_id`, `question_type_id`, `test_question_type_id`, `header`
+- `course_id` se ignora: la pregunta se guarda con el curso dueño del examen.
 - `201` → Question con `answers` y `question_type`
 
 ### PUT /questionTest
@@ -1870,7 +1997,8 @@ arranque usa `alter: false` y no las crea).
 - `409` JSON `{ error: 'Una o más preguntas ya fueron usadas en un intento de examen y no pueden eliminarse' }`
 
 ### POST /answerQuestionTest
-- Body: `course_id`, `test_id`, `question_type_id`, `question_id`, `value`
+- Body: `test_id`, `question_id`, `value`
+- `course_id` se ignora: la respuesta se guarda con el curso dueño del examen.
 - `201` → Question (getQuestionById del `question_id`)
 
 ### PUT /answerQuestionTest/:question_id
@@ -1878,8 +2006,9 @@ arranque usa `alter: false` y no las crea).
 - `201` → Question (getQuestionById del `question_id`)
 
 ### PUT /testQuestionTypes
-- Body: `id` (si > 0 actualiza, si no crea), `course_id`, `amount`, `value`, `question_type_id`,
-  `status`, `test_id`
+- Body: `id` (si > 0 actualiza, si no crea), `amount`, `value`, `question_type_id`, `status`,
+  `test_id`
+- `course_id` se ignora: el blueprint se guarda con el curso dueño del examen.
 - `201` → Test (getTestById) con `test_question_types`
 
 ### GET /student/:student_id
@@ -1896,9 +2025,14 @@ arranque usa `alter: false` y no las crea).
 
 ### POST /courseStudentTest/:course_student_id
 - Params: `course_student_id`; Body: `date`
+- Usa el **examen activo vinculado al curso** (`course_test`), no `test.course_id`.
 - `200` → CourseStudentTest (shape de GET /courseStudentTest/:id; genera `code` `CST-XXXXXXXX` y
   las preguntas aleatorias)
-- `400` texto plano `Error <msg>`
+- `404` JSON `{ message: 'Matrícula del alumno no encontrada' }`
+- `404` JSON `{ message: 'El curso no tiene un examen activo' }` si ningún examen vinculado al
+  curso está activo.
+- `409` JSON `{ message }` si el curso de la matrícula está eliminado.
+- `400` texto plano `Error <msg>` para el resto de fallos.
 
 ### POST /courseStudentTestAnswer
 - Body: `courseStudentTestAnswer` (objeto) con `course_student_test_id`,
@@ -1921,17 +2055,18 @@ arranque usa `alter: false` y no las crea).
 ### POST /import-excel/:test_id
 - Auth: sí
 - Params: `test_id` (requerido); File: `excel_file` (`.xlsx`, máx 10MB)
-- Form (multipart): además del archivo, campos `course_id`, `question_type_id`,
+- Form (multipart): además del archivo, campos `question_type_id`,
   `test_question_type_id` (usados cuando la fila es de plantilla en español; `question_type_id`
-  por defecto `1`).
+  por defecto `1`). `course_id` ya no es necesario: el curso se resuelve con el examen.
 - Se soportan **dos plantillas** de columnas:
   - **Español (frontend)**: `Pregunta`, `Respuesta1..RespuestaN`, `RespuestaCorrecta`
     (índice 1-based o letra `a..e` de la respuesta correcta; selección única). Los metadatos
-    `course_id`, `question_type_id`, `test_question_type_id` se toman del body.
-  - **Inglés (legado)**: `course_id, question_type_id, test_question_type_id, header,
-    answer_1..answer_5, answer_1_correct..answer_5_correct`. Los flags `answer_*_correct`
-    se normalizan (acepta `true`/`1`/`'true'`/`'1'`/`'yes'`/`'si'`/`'sí'`/`'verdadero'`/
-    `'correcto'`); puede haber más de una respuesta correcta por pregunta.
+    `question_type_id` y `test_question_type_id` se toman del body; el `course_id` de las
+    preguntas se resuelve con el curso dueño del examen.
+  - **Inglés (legado)**: `course_id` (ignorado), `question_type_id`, `test_question_type_id`,
+    `header`, `answer_1..answer_5`, `answer_1_correct..answer_5_correct`. Los flags
+    `answer_*_correct` se normalizan (acepta `true`/`1`/`'true'`/`'1'`/`'yes'`/`'si'`/`'sí'`/
+    `'verdadero'`/`'correcto'`); puede haber más de una respuesta correcta por pregunta.
 - Si falta metadata (o fila sin `Pregunta`/`header`), la fila se salta y suma a `skippedRows`.
 - `201` → `{ message: 'Excel import completed', questionsImported, answersImported, skippedRows }`
 - `400` JSON `{ error: 'test_id parameter is required and must be a valid number' }` | `{ error: 'Test not found' }`
@@ -1940,8 +2075,8 @@ arranque usa `alter: false` y no las crea).
 ### POST /import-csv
 - Auth: **sí**
 - Query: `test_id` (requerido); File: `csv_file` (`.csv`, máx 10MB)
-- Igual que `import-excel` (mismas plantillas, metadatos `course_id`, `question_type_id`,
-  `test_question_type_id` en el body; headers con/ sin BOM, valores trim)
+- Igual que `import-excel` (mismas plantillas, metadatos `question_type_id`,
+  `test_question_type_id` en el body; `course_id` se ignora; headers con/ sin BOM, valores trim)
 - `201` → `{ message: 'CSV import completed', questionsImported, answersImported, skippedRows }`
 - `400` JSON `{ error: 'test_id query parameter is required and must be a valid number' }` | `{ error: 'Test not found' }`
 - `400` JSON `{ error: 'No file uploaded' }`
@@ -1982,8 +2117,9 @@ arranque usa `alter: false` y no las crea).
 
 #### GET /reports/tests
 - Auth: sí
-- Query: `status` (opcional), `course_id` (opcional)
-- `200` → array de Test con alias `course` (`{ id, name, code }`) + `question_count` +
+- Query: `status` (opcional), `course_id` (opcional; filtra por vínculo `course_test`)
+- `200` → array de Test con alias `course` (dueño: `{ id, name, code, color }`), `courses`
+  (vinculados, mismo shape) e `is_shared` (`courses.length > 1`) + `question_count` +
   `attempt_count` (enteros, siempre presentes). Sin paginación.
 
 #### GET /reports/tests/:test_id/questions

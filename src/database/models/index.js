@@ -48,6 +48,7 @@ import loadEmailHistory from './emailHistory.js';
 import loadCourseGroupSignature from './courseGroupSignature.js';
 import loadAttendanceSignature from './attendanceSignature.js';
 import loadAssessmentSignature from './assessmentSignature.js';
+import loadCourseTest from './courseTest.js';
 
 // Initialize all models
 const Participant = loadParticipant(sequelize, DataTypes);
@@ -104,6 +105,7 @@ const EmailHistory = loadEmailHistory(sequelize, DataTypes);
 const CourseGroupSignature = loadCourseGroupSignature(sequelize, DataTypes);
 const AttendanceSignature = loadAttendanceSignature(sequelize, DataTypes);
 const AssessmentSignature = loadAssessmentSignature(sequelize, DataTypes);
+const CourseTest = loadCourseTest(sequelize, DataTypes);
 
 // Collect all models into an object
 const models = {
@@ -146,6 +148,7 @@ const models = {
 	CourseGroupSignature,
 	AttendanceSignature,
 	AssessmentSignature,
+	CourseTest,
 };
 
 export default models;

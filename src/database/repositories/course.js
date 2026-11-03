@@ -222,7 +222,15 @@ const getCourseStudentById = async (id) =>
 			},
 			{
 				model: Course,
-				include: [CourseType, CourseLevel, Test],
+				include: [
+					CourseType,
+					CourseLevel,
+					{
+						model: Test,
+						as: 'tests',
+						through: { attributes: [] },
+					},
+				],
 			},
 			{
 				model: CourseStudentTest,

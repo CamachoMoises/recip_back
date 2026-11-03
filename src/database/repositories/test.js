@@ -11,11 +11,52 @@ const {
 	Question,
 	Answer,
 	Course,
+	CourseTest,
 	CourseStudent,
 	CourseStudentTest,
 	CourseStudentTestQuestion,
 	CourseStudentTestAnswer,
 } = models;
+
+const COURSE_SUMMARY_ATTRIBUTES = ['id', 'name', 'code', 'color'];
+
+/** Error con código HTTP para que el controller responda el status correcto. */
+const httpError = (status, message, extra = {}) => {
+	const error = new Error(message);
+	error.status = status;
+	Object.assign(error, extra);
+	return error;
+};
+
+/** Valida que un curso pueda alojar/vincular exámenes (activo y de teoría). */
+const assertCourseCanHostTest = async (course_id, { transaction } = {}) => {
+	const course = await Course.findByPk(course_id, { transaction });
+	if (!course) {
+		throw httpError(404, 'Course not found');
+	}
+	if (!course.status) {
+		throw httpError(409, 'El curso está eliminado');
+	}
+	if (course.course_type_id !== 1) {
+		throw httpError(
+			409,
+			'Solo los cursos de teoría (course_type_id = 1) pueden compartir exámenes',
+		);
+	}
+	return course;
+};
+
+/** Aplana un Test con `course` (dueño) y `courses` (vinculados). */
+const shapeTestWithCourses = (test) => {
+	const plain = test.get({ plain: true });
+	const courses = plain.courses ?? [];
+	return {
+		...plain,
+		course: plain.course ?? null,
+		courses,
+		is_shared: courses.length > 1,
+	};
+};
 
 const getAllTest = async () => await Test.findAll();
 const getTestById = async (id) => {
@@ -26,30 +67,297 @@ const getTestById = async (id) => {
 				model: TestQuestionType,
 				include: [QuestionType],
 			},
-		],
-	});
-	if (!test) {
-		throw new Error('Question Type not found');
-	} else {
-		return test;
-	}
-};
-const getAllTestCourse = async (filters) => {
-	const whereClause = {};
-	if (filters.course_id) {
-		whereClause.course_id = filters.course_id;
-	}
-	const data = await Test.findAll({
-		where: whereClause,
-		include: [
 			{
-				model: TestQuestionType,
-				include: [QuestionType],
+				model: Course,
+				as: 'course',
+				attributes: COURSE_SUMMARY_ATTRIBUTES,
+			},
+			{
+				model: Course,
+				as: 'courses',
+				attributes: COURSE_SUMMARY_ATTRIBUTES,
+				through: { attributes: [] },
 			},
 		],
 	});
-	return data;
+	if (!test) {
+		throw new Error('Test not found');
+	}
+	return shapeTestWithCourses(test);
 };
+const getAllTestCourse = async (filters) => {
+	const include = [
+		{
+			model: TestQuestionType,
+			include: [QuestionType],
+		},
+		{
+			model: Course,
+			as: 'course',
+			attributes: COURSE_SUMMARY_ATTRIBUTES,
+		},
+		{
+			model: Course,
+			as: 'courses',
+			attributes: COURSE_SUMMARY_ATTRIBUTES,
+			through: { attributes: [] },
+		},
+	];
+
+	// La visibilidad del examen se resuelve por la tabla puente: un test
+	// aparece en el curso si está vinculado, sin importar cuál es el dueño.
+	if (filters.course_id) {
+		include.push({
+			model: CourseTest,
+			as: 'course_tests',
+			attributes: [],
+			required: true,
+			where: { course_id: filters.course_id },
+		});
+	}
+
+	const data = await Test.findAll({
+		include,
+		order: [['id', 'ASC']],
+	});
+	return data.map(shapeTestWithCourses);
+};
+// ---------------------------------------------------------------------------
+// Vínculos examen ↔ curso (`course_test`)
+// ---------------------------------------------------------------------------
+
+const getTestIdsByCourse = async (course_id) => {
+	const links = await CourseTest.findAll({
+		where: { course_id },
+		attributes: ['test_id'],
+		order: [['test_id', 'ASC']],
+	});
+	return links.map((link) => link.test_id);
+};
+
+const isTestLinkedToCourse = async (course_id, test_id) => {
+	const link = await CourseTest.findOne({
+		where: { course_id, test_id },
+		attributes: ['id'],
+	});
+	return Boolean(link);
+};
+
+const countCoursesByTest = async (test_id) =>
+	CourseTest.count({ where: { test_id } });
+
+const countActiveCoursesByTest = async (test_id) =>
+	Course.count({
+		where: { status: true },
+		include: [
+			{
+				model: CourseTest,
+				attributes: [],
+				required: true,
+				where: { test_id },
+			},
+		],
+	});
+
+const getActiveTestsByCourse = async (course_id, { transaction } = {}) =>
+	Test.findAll({
+		where: { status: true },
+		attributes: ['id'],
+		include: [
+			{
+				model: CourseTest,
+				as: 'course_tests',
+				attributes: [],
+				required: true,
+				where: { course_id },
+			},
+		],
+		order: [['id', 'ASC']],
+		transaction,
+	});
+
+/**
+ * Examen activo de un curso, resuelto por `course_test` (no por `test.course_id`).
+ * Si hubiera más de uno por datos viejos, usa el de menor id y deja un warning.
+ */
+const getActiveTestByCourse = async (course_id) => {
+	const tests = await getActiveTestsByCourse(course_id);
+	if (tests.length > 1) {
+		console.warn(
+			`[test] El curso ${course_id} tiene ${tests.length} exámenes activos; se usará el de menor id`,
+		);
+	}
+	return tests[0] ?? null;
+};
+
+const getCoursesByTest = async (test_id) => {
+	const test = await Test.findByPk(test_id);
+	if (!test) {
+		throw httpError(404, 'Test not found');
+	}
+	const courses = await Course.findAll({
+		attributes: [...COURSE_SUMMARY_ATTRIBUTES, 'status', 'course_type_id'],
+		include: [
+			{
+				model: CourseTest,
+				attributes: [],
+				required: true,
+				where: { test_id },
+			},
+		],
+		order: [['id', 'ASC']],
+	});
+	return {
+		test_id: test.id,
+		owner_course_id: test.course_id,
+		courses: courses.map((course) => ({
+			...course.get({ plain: true }),
+			is_owner: course.id === test.course_id,
+		})),
+	};
+};
+
+const linkTestToCourse = async ({ course_id, test_id, transaction }) => {
+	await assertCourseCanHostTest(course_id, { transaction });
+
+	const test = await Test.findByPk(test_id, { transaction });
+	if (!test) {
+		throw httpError(404, 'Test not found');
+	}
+
+	const owner = await Course.findByPk(test.course_id, { transaction });
+	if (!owner || owner.course_type_id !== 1) {
+		throw httpError(
+			409,
+			'El examen pertenece a un curso que no es de teoría',
+		);
+	}
+
+	const existing = await CourseTest.findOne({
+		where: { course_id, test_id },
+		transaction,
+	});
+	if (existing) {
+		return { link: existing, created: false };
+	}
+
+	if (test.status) {
+		const activeTests = await getActiveTestsByCourse(course_id, {
+			transaction,
+		});
+		const conflict = activeTests.find((active) => active.id !== test.id);
+		if (conflict) {
+			throw httpError(409, 'El curso ya tiene otro examen activo', {
+				conflicts: [{ course_id, test_id: conflict.id }],
+			});
+		}
+	}
+
+	const link = await CourseTest.create(
+		{ course_id, test_id },
+		{ transaction },
+	);
+	return { link, created: true };
+};
+
+/** Vincula varios exámenes en una sola transacción (todo o nada). */
+const linkTestsToCourse = async (course_id, test_ids) =>
+	sequelize.transaction(async (transaction) => {
+		const linked = [];
+		const skipped = [];
+		const uniqueTestIds = [...new Set(test_ids.map(Number))];
+
+		for (const test_id of uniqueTestIds) {
+			const result = await linkTestToCourse({
+				course_id,
+				test_id,
+				transaction,
+			});
+			if (result.created) {
+				linked.push(test_id);
+			} else {
+				skipped.push(test_id);
+			}
+		}
+
+		return { linked, skipped };
+	});
+
+/** Desvincula sin borrar el examen, sus preguntas, respuestas ni intentos. */
+const unlinkTestFromCourse = async (course_id, test_id) => {
+	const test = await Test.findByPk(test_id);
+	if (!test) {
+		throw httpError(404, 'Test not found');
+	}
+	const removed = await CourseTest.destroy({
+		where: { course_id, test_id },
+	});
+	return removed > 0;
+};
+
+/** Editar el examen exige al menos un curso vinculado activo (no eliminado). */
+const assertAnyLinkedCourseActive = async (test_id) => {
+	const test = await Test.findByPk(test_id);
+	if (!test) {
+		throw httpError(404, 'Test not found');
+	}
+	const total = await countCoursesByTest(test_id);
+	if (total === 0) {
+		return test;
+	}
+	const active = await countActiveCoursesByTest(test_id);
+	if (active === 0) {
+		throw httpError(
+			409,
+			'No se puede editar el examen: todos los cursos vinculados están eliminados',
+		);
+	}
+	return test;
+};
+
+/** Conflictos al activar un examen: cursos vinculados con otro examen activo. */
+const getTestActivationConflicts = async (test_id) => {
+	const links = await CourseTest.findAll({
+		where: { test_id },
+		attributes: ['course_id'],
+	});
+	const courseIds = links.map((link) => link.course_id);
+	if (courseIds.length === 0) {
+		return [];
+	}
+
+	const conflicts = await Test.findAll({
+		where: { status: true, id: { [Op.ne]: test_id } },
+		attributes: ['id'],
+		include: [
+			{
+				model: CourseTest,
+				as: 'course_tests',
+				attributes: ['course_id'],
+				required: true,
+				where: { course_id: courseIds },
+			},
+		],
+	});
+
+	const seen = new Set();
+	const result = [];
+	for (const conflict of conflicts) {
+		for (const link of conflict.course_tests ?? []) {
+			const key = `${link.course_id}:${conflict.id}`;
+			if (seen.has(key)) {
+				continue;
+			}
+			seen.add(key);
+			result.push({
+				course_id: link.course_id,
+				test_id: conflict.id,
+			});
+		}
+	}
+	return result;
+};
+
 const getCourseStudentTestById = async (id) => {
 	const data = await CourseStudentTest.findOne({
 		where: { id: id },
@@ -96,9 +404,8 @@ const getQuestionTest = async (filters) => {
 	if (filters.test_question_type_id > 0) {
 		whereClause.test_question_type_id = filters.test_question_type_id;
 	}
-	if (filters.course_id) {
-		whereClause.course_id = filters.course_id;
-	}
+	// Las preguntas pertenecen al examen (`test_id`); `course_id` ya no se
+	// usa como filtro porque el examen puede estar compartido por varios cursos.
 	const data = await Question.findAll({
 		where: whereClause,
 		// order: [['created_at', 'DESC']],
@@ -120,15 +427,19 @@ const getQuestionTypes = async () => {
 };
 
 const createTestQuestionType = async ({
-	course_id,
 	amount,
 	value,
 	question_type_id,
 	status,
 	test_id,
 }) => {
+	const test = await Test.findByPk(test_id);
+	if (!test) {
+		throw new Error('Test not found');
+	}
 	const newTestQuestionType = await TestQuestionType.create({
-		course_id,
+		// La autoría del blueprint pertenece siempre al curso dueño del examen.
+		course_id: test.course_id,
 		amount,
 		value,
 		question_type_id,
@@ -145,29 +456,59 @@ const updateQuestionType = async ({ id, value }) => {
 	await questionType.update({ value });
 	return questionType;
 };
-const createTest = async ({ course_id, duration, min_score }) => {
-	let numberCode = 1;
-	const course = await Course.findByPk(course_id);
-	if (!course) {
-		throw new Error('Course not found');
-	}
-	const prevTest = await Test.findOne({
-		order: [['id', 'DESC']],
+const createTest = async ({
+	course_id,
+	duration,
+	min_score,
+	course_ids = [],
+}) =>
+	sequelize.transaction(async (transaction) => {
+		// El dueño del examen debe ser un curso de teoría activo.
+		const owner = await assertCourseCanHostTest(course_id, { transaction });
+
+		const extraCourseIds = [...new Set(course_ids.map(Number))];
+		if (extraCourseIds.length > 0) {
+			// Cursos adicionales a los que se compartirá el examen.
+			for (const extraCourseId of extraCourseIds) {
+				await assertCourseCanHostTest(extraCourseId, { transaction });
+			}
+		}
+
+		let numberCode = 1;
+		const prevTest = await Test.findOne({
+			order: [['id', 'DESC']],
+			transaction,
+		});
+		if (prevTest) {
+			numberCode = prevTest.id + 1;
+		}
+		const stringCode = String(numberCode).padStart(4, '0');
+		const code = `E-${stringCode}`;
+		const test = await Test.create(
+			{
+				course_id,
+				code,
+				duration,
+				min_score,
+				status: false,
+			},
+			{ transaction },
+		);
+
+		// El curso dueño siempre queda vinculado para que el examen sea visible.
+		const links = [owner.id, ...extraCourseIds]
+			.filter((id, index, list) => list.indexOf(id) === index)
+			.map((linkedCourseId) => ({
+				course_id: linkedCourseId,
+				test_id: test.id,
+			}));
+		await CourseTest.bulkCreate(links, {
+			transaction,
+			ignoreDuplicates: true,
+		});
+
+		return test;
 	});
-	if (prevTest) {
-		numberCode = prevTest.id + 1;
-	}
-	const stringCode = String(numberCode).padStart(4, '0');
-	const code = `E-${stringCode}`;
-	const test = await Test.create({
-		course_id,
-		code,
-		duration,
-		min_score,
-		status: false,
-	});
-	return test;
-};
 const updateTest = async ({ id, duration, min_score, status }) => {
 	const test = await Test.findByPk(id);
 	if (!test) {
@@ -178,22 +519,19 @@ const updateTest = async ({ id, duration, min_score, status }) => {
 };
 
 const createQuestionTest = async ({
-	course_id,
 	test_id,
 	question_type_id,
 	test_question_type_id,
 	header,
 }) => {
-	const course = await Course.findByPk(course_id);
-	if (!course) {
-		throw new Error('Course not found');
-	}
 	const test = await Test.findByPk(test_id);
 	if (!test) {
 		throw new Error('Test not found');
 	}
 	const question = await Question.create({
-		course_id,
+		// `question.course_id` es denormalizado y siempre apunta al curso dueño
+		// del examen, sin importar desde qué curso vinculado se cree.
+		course_id: test.course_id,
 		test_id,
 		question_type_id,
 		test_question_type_id,
@@ -280,16 +618,11 @@ const deleteQuestionsByTestId = async (test_id) =>
 	});
 
 const createAnswerQuestionTest = async ({
-	course_id,
 	test_id,
 	question_id,
 	value,
 	is_correct = false,
 }) => {
-	const course = await Course.findByPk(course_id);
-	if (!course) {
-		throw new Error('Course not found');
-	}
 	const test = await Test.findByPk(test_id);
 	if (!test) {
 		throw new Error('Test not found');
@@ -299,7 +632,8 @@ const createAnswerQuestionTest = async ({
 		throw new Error('Question not found');
 	}
 	const answer = await Answer.create({
-		course_id,
+		// Igual que `question`, la respuesta hereda el curso dueño del examen.
+		course_id: test.course_id,
 		test_id,
 		question_id,
 		value,
@@ -693,6 +1027,18 @@ export {
 	createAnswerQuestionTest,
 	updateAnswerQuestionTest,
 	updateTestQuestionType,
+	getTestIdsByCourse,
+	isTestLinkedToCourse,
+	countCoursesByTest,
+	countActiveCoursesByTest,
+	getActiveTestsByCourse,
+	getActiveTestByCourse,
+	getCoursesByTest,
+	linkTestToCourse,
+	linkTestsToCourse,
+	unlinkTestFromCourse,
+	assertAnyLinkedCourseActive,
+	getTestActivationConflicts,
 	getAllCourseStudentTestAnswer,
 	getCourseStudentTestById,
 	getCourseStudentTestAnswerByQuestion,

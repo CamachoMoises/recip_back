@@ -11,6 +11,7 @@ const {
 	CourseStudentTest,
 	CourseStudentTestAnswer,
 	CourseStudentTestQuestion,
+	CourseTest,
 	Question,
 	QuestionType,
 	Student,
@@ -18,6 +19,8 @@ const {
 	TestQuestionType,
 	User,
 } = models;
+
+const COURSE_SUMMARY_ATTRIBUTES = ['id', 'name', 'code', 'color'];
 
 const TEST_ATTRIBUTES = [
 	'id',
@@ -189,18 +192,35 @@ const tqtIndex = (test_question_types) =>
 
 const getTestSummaries = async ({ status, course_id } = {}) => {
 	const where = statusWhere({}, status);
-	if (course_id) where.course_id = course_id;
+	const include = [
+		{
+			model: Course,
+			as: 'course',
+			attributes: COURSE_SUMMARY_ATTRIBUTES,
+		},
+		{
+			model: Course,
+			as: 'courses',
+			attributes: COURSE_SUMMARY_ATTRIBUTES,
+			through: { attributes: [] },
+		},
+	];
+
+	// Filtra por vínculo (`course_test`), no por el curso dueño del examen.
+	if (course_id) {
+		include.push({
+			model: CourseTest,
+			as: 'course_tests',
+			attributes: [],
+			required: true,
+			where: { course_id },
+		});
+	}
 
 	const tests = await Test.findAll({
 		where,
 		attributes: TEST_ATTRIBUTES,
-		include: [
-			{
-				model: Course,
-				as: 'course',
-				attributes: ['id', 'name', 'code', 'color'],
-			},
-		],
+		include,
 		order: [['id', 'ASC']],
 	});
 
@@ -241,9 +261,12 @@ const getTestSummaries = async ({ status, course_id } = {}) => {
 
 	return tests.map((test) => {
 		const plain = toPlain(test);
+		const courses = plain.courses ?? [];
 		return {
 			...plain,
 			course: plain.course ?? null,
+			courses,
+			is_shared: courses.length > 1,
 			question_count: questionCountByTest.get(plain.id) ?? 0,
 			attempt_count: attemptCountByTest.get(plain.id) ?? 0,
 		};

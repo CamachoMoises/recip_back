@@ -18,6 +18,7 @@ export function setupAssociations(models) {
 		CourseStudentTest,
 		CourseStudentTestAnswer,
 		CourseStudentTestQuestion,
+		CourseTest,
 		Group,
 		GroupPermission,
 		Instructor,
@@ -78,7 +79,7 @@ export function setupAssociations(models) {
 	Course.hasMany(SubjectLesson, { foreignKey: 'course_id' });
 	Course.hasMany(SubjectLessonDays, { foreignKey: 'course_id' });
 	Course.hasMany(CourseStudent, { foreignKey: 'course_id' });
-	Course.hasMany(Test, { foreignKey: 'course_id' });
+	Course.hasMany(Test, { foreignKey: 'course_id', as: 'owned_tests' });
 	Course.hasMany(CourseStudentTest, { foreignKey: 'course_id' });
 	Course.hasMany(CourseStudentTestQuestion, {
 		foreignKey: 'course_id',
@@ -399,7 +400,26 @@ export function setupAssociations(models) {
 	});
 
 	// ========== TEST ASSOCIATIONS ==========
-	Test.belongsTo(Course, { foreignKey: 'course_id' });
+	// `test.course_id` es el curso dueño (autoría). La visibilidad del examen
+	// para otros cursos se resuelve con la tabla puente `course_test`.
+	Course.belongsToMany(Test, {
+		through: CourseTest,
+		as: 'tests',
+		foreignKey: 'course_id',
+		otherKey: 'test_id',
+	});
+	Test.belongsToMany(Course, {
+		through: CourseTest,
+		as: 'courses',
+		foreignKey: 'test_id',
+		otherKey: 'course_id',
+	});
+	Course.hasMany(CourseTest, { foreignKey: 'course_id' });
+	Test.hasMany(CourseTest, { foreignKey: 'test_id' });
+	CourseTest.belongsTo(Course, { foreignKey: 'course_id' });
+	CourseTest.belongsTo(Test, { foreignKey: 'test_id' });
+
+	Test.belongsTo(Course, { foreignKey: 'course_id', as: 'course' });
 	Test.hasMany(Question, { foreignKey: 'test_id' });
 	Test.hasMany(TestQuestionType, { foreignKey: 'test_id' });
 	Test.hasMany(Answer, { foreignKey: 'test_id' });

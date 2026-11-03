@@ -48,17 +48,17 @@ MySQL with `underscored: true` naming (snake_case columns/timestamps). Sequelize
 
 Always use the skills in .opencode\skills\recip-backend
 
-### Models (37 models across tables)
+### Models (38 models across tables)
 
 **User domain:** User, UserGroup, UserPermission, UserDocType, Student, Instructor, UserSuggestion, Group, GroupPermission
 
-**Course domain:** Course, CourseType, CourseLevel, CourseStudent, CourseStudentTest, CourseStudentTestQuestion, CourseStudentTestAnswer, CourseGroup, CourseGroupSignature
+**Course domain:** Course, CourseType, CourseLevel, CourseStudent, CourseStudentTest, CourseStudentTestQuestion, CourseStudentTestAnswer, CourseGroup, CourseGroupSignature, CourseTest (puente examen ↔ curso)
 
 **Assessment domain:** CourseStudentAssessment, CourseStudentAssessmentDay, CourseStudentAssessmentLessonDetail, AssessmentSignature
 
 **Subject domain:** Subject, SubjectDays, SubjectLesson, SubjectLessonDays
 
-**Test domain:** Test, QuestionType, TestQuestionType, Question, Answer
+**Test domain:** Test, QuestionType, TestQuestionType, Question, Answer, CourseTest (puente curso↔examen)
 
 **Other:** Schedule, Attendance, AttendanceStatus, AttendanceSignature, Module, Permission, EmailHistory
 
@@ -215,6 +215,74 @@ recalcula los cursos tipo 2 existentes con la regla nueva. Es idempotente y solo
 `course_type_id = 2`. Correr `npm run migrate` para corregir filas ya guardadas con la fórmula
 vieja.
 
+## Exámenes compartidos (`course_test`)
+
+**Fases 1, 2, 3 y 4 implementadas** (esquema + lecturas por vínculo + autoría normalizada +
+ciclo de vida de vínculos). Un `test` puede estar vinculado a N cursos de teoría
+(`course_type_id = 1`) mediante la tabla puente `course_test (course_id, test_id)`.
+
+- `test.course_id` sigue siendo el **curso dueño** (autoría). No se hace nullable ni se elimina.
+- `course_test` tiene `id` propio, `created_at`/`updated_at` y UNIQUE `(course_id, test_id)`.
+- Alias de asociaciones (definidos explícitamente):
+  - `Course.tests` (`belongsToMany`, through `CourseTest`): exámenes **vinculados** al curso.
+  - `Course.owned_tests` (`hasMany` por `test.course_id`): exámenes **creados** por el curso.
+  - `Test.courses` (`belongsToMany`): cursos vinculados al examen.
+  - `Test.course`: curso dueño.
+- `GET /api/courses/courseStudent/:id` conserva la clave `course.tests`, pero ahora resuelve por
+  vínculo (backfill: cada test vinculado a su curso actual) y excluye los atributos del puente con
+  `through: { attributes: [] }`.
+- `GET /api/test/tests/:course_id` (`getAllTestCourse`) filtra por `course_test` e incluye
+  `course` (dueño), `courses` (vinculados: `id, name, code, color`) e `is_shared`.
+- `GET /api/test/test/:test_id` (`getTestById`) incluye `course`, `courses` e `is_shared`.
+- `GET /api/test/reports/tests` (`getTestSummaries`) filtra por `course_test` cuando recibe
+  `course_id` y agrega `courses` / `is_shared` al resumen (ya devolvía `course`).
+- `question` / `answer` / `test_question_type` guardan siempre `course_id` del **dueño** del
+  examen. `createQuestionTest`, `createAnswerQuestionTest` y `createTestQuestionType` resuelven el
+  test y fuerzan ese valor; el `course_id` del body (o de la fila del import) se ignora.
+- `GET /api/test/questions/by-test/:test_id` (`getQuestionTest`) ya **no** filtra por `course_id`:
+  las preguntas pertenecen al test. El parámetro se acepta y se ignora.
+- Las importaciones CSV/Excel ya no requieren `course_id` (ni en el body ni en la fila); el curso
+  se resuelve con el examen.
+
+**Ciclo de vida de vínculos (Fase 4):**
+
+- `POST /api/test/tests/:course_id/link` con `{ test_ids: number[] }` o `{ test_id: number }`
+  vincula exámenes existentes. Idempotente (`skipped`), transaccional (todo o nada) y devuelve
+  `{ course_id, linked, skipped, tests }`. Error `409` si el curso está eliminado o no es de teoría,
+  si el examen pertenece a un curso que no es de teoría, o si el examen está activo y el curso ya
+  tiene otro examen activo (`conflicts`).
+- `DELETE /api/test/tests/:course_id/link/:test_id` desvincula **sin borrar** el examen, sus
+  preguntas, respuestas ni intentos. Devuelve `{ course_id, test_id, removed, tests }`.
+- `GET /api/test/test/:test_id/courses` lista los cursos vinculados:
+  `{ test_id, owner_course_id, courses: [{ ..., is_owner }] }`.
+- `POST /api/test/test` acepta `course_ids` (opcional) para crear y compartir en una sola
+  transacción. El dueño siempre se vincula. El dueño y los `course_ids` deben estar activos y ser
+  `course_type_id = 1` (`409`).
+- `PUT /api/test/test` con `status: true` valida conflictos **solo** en el paso inactivo → activo;
+  si ya estaba activo no bloquea la edición de datos heredados. Editar exige al menos un curso
+  vinculado activo (`409` si todos están eliminados).
+- `POST /api/test/courseStudentTest/:course_student_id` usa `getActiveTestByCourse` (vínculo, no
+  `test.course_id`). Si el curso no tiene examen activo → `404 { message }`. Si hay varios activos
+  por datos viejos usa el de menor id y deja un `console.warn`.
+- Repositorio: helpers `getTestIdsByCourse`, `isTestLinkedToCourse`, `countCoursesByTest`,
+  `countActiveCoursesByTest`, `getActiveTestsByCourse`, `getActiveTestByCourse`,
+  `getCoursesByTest`, `linkTestToCourse`, `linkTestsToCourse`, `unlinkTestFromCourse`,
+  `assertAnyLinkedCourseActive`, `getTestActivationConflicts` en
+  `src/database/repositories/test.js`.
+
+**Migración obligatoria antes de desplegar:** `migrations/20261202000000-create-course-test.cjs`
+crea la tabla y hace backfill (`test.course_id → course_test`). Es idempotente. El `sync` de
+arranque (`alter: false`) puede crear la tabla si falta, pero **no** ejecuta el backfill.
+
+**Consolidación de duplicados (Fase 7, migración pendiente de ejecución):**
+`migrations/20261203000000-consolidate-duplicate-tests.cjs` consolida el único grupo real detectado
+por `npm run analyze:duplicates`: vincula el canónico **test 8** a los cursos 13 y 14 y deja los
+tests 10 y 11 con `status = 0`. Solo actúa si los tres exámenes pertenecen a cursos de teoría y
+conservan la misma huella de contenido (preguntas + respuestas + blueprint); si alguien editó uno,
+se omite con un warning. **No borra** preguntas, respuestas, vínculos ni intentos. Es idempotente y
+debe correrse después de `20261202000000-create-course-test.cjs`. Tras ejecutarla,
+`npm run analyze:duplicates` debe reportar 0 grupos activos.
+
 ## API Routes
 
 | Prefix | Purpose |
@@ -226,7 +294,7 @@ vieja.
 | `/api/course_groups` | Course groups CRUD + students list + remove students + signature upload + list signatures per group + `GET /report/attendance` (attendance/signature report grouped by group with students/user, course, schedules/instructors). Supports `instructor_id` filter. |
 | `/api/subjects` | Subject + lessons + days CRUD |
 | `/api/assessment` | Student assessments + signatures |
-| `/api/test` | Tests, questions, answers, Excel/CSV import |
+| `/api/test` | Tests, questions, answers, Excel/CSV import. Exámenes compartidos: `POST /tests/:course_id/link` + `DELETE /tests/:course_id/link/:test_id` + `GET /test/:test_id/courses`, ver sección "Exámenes compartidos (`course_test`)". |
 | `/api/test/reports` | Reportes de examen **solo lectura**: listar exámenes, hoja de preguntas con la correcta marcada, solo correctas, detalle/respuestas/preguntas sorteadas por intento de alumno, y resultado global por alumno (paginado, `pageSize=-1` = todos). Repositorio dedicado: `src/database/repositories/testReport.js` |
 | `/api/attendance` | Attendance + statuses CRUD + signature upload + delete signature. Supports `instructor_id` filter. |
 | `/api/instructor` | Instructor dashboard: schedules, assessments, tests filtered by instructor_id |
@@ -265,6 +333,7 @@ vieja.
 - `npm run seed:undo` — Undo last seeder
 - `npm test` — No test suite configured
 - `npm run migrate:generate` — Generate new migration file
+- `npm run analyze:duplicates` — Analiza exámenes duplicados (solo lectura; `--json`, `--sql`, `--out`)
 - `npm run lint` — Run ESLint
 
 Lint with `npx eslint .`

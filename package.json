@@ -10,7 +10,8 @@
 		"migrate:undo": "sequelize-cli db:migrate:undo --config config/database.cjs --migrations-path migrations --models-path models --seeders-path seeders",
 		"migrate:generate": "sequelize-cli migration:generate --migrations-path migrations",
 		"seed": "sequelize-cli db:seed:all --config config/database.cjs --migrations-path migrations --models-path models --seeders-path seeders",
-		"seed:undo": "sequelize-cli db:seed:undo --config config/database.cjs --migrations-path migrations --models-path models --seeders-path seeders"
+		"seed:undo": "sequelize-cli db:seed:undo --config config/database.cjs --migrations-path migrations --models-path models --seeders-path seeders",
+		"analyze:duplicates": "node scripts/analyzeDuplicateTests.js"
 	},
 	"keywords": [],
 	"author": "",

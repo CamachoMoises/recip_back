@@ -2,6 +2,7 @@ import moment from 'moment';
 import readXlsxFile from 'read-excel-file/node';
 import { parse as parseCsvSync } from 'csv-parse/sync';
 import {
+	assertAnyLinkedCourseActive,
 	createAnswerQuestionTest,
 	createCourseStudentTest,
 	createCourseStudentTestAnswer,
@@ -11,6 +12,7 @@ import {
 	createTestQuestionType,
 	deleteQuestionById,
 	deleteQuestionsByTestId,
+	getActiveTestByCourse,
 	getAllCourseStudentTestAnswer,
 	getAllCourseStudentTestByStudentId,
 	getAllTest,
@@ -19,13 +21,17 @@ import {
 	getCourseStudentTest,
 	getCourseStudentTestAnswerByQuestion,
 	getCourseStudentTestById,
+	getCoursesByTest,
 	getQuestionById,
 	getQuestionTest,
 	getQuestionTypes,
+	getTestActivationConflicts,
 	getTestById,
 	getTotalScore,
+	linkTestsToCourse,
 	resolveCourseStudentTest,
 	resolveCourseStudentTestAnswer,
+	unlinkTestFromCourse,
 	updateAnswerQuestionTest,
 	updateCourseStudentTestAnswer,
 	updateQuestionTest,
@@ -182,9 +188,6 @@ const processImportedRows = async (rows, metadata) => {
 
 			const usesSpanish = 'Pregunta' in row;
 
-			const course_id = parseInt(
-				usesSpanish ? metadata.course_id : row.course_id,
-			);
 			let question_type_id = parseInt(
 				usesSpanish
 					? metadata.question_type_id
@@ -196,7 +199,9 @@ const processImportedRows = async (rows, metadata) => {
 					: row.test_question_type_id,
 			);
 
-			if (!course_id || !test_question_type_id) {
+			// El curso ya no se toma de la fila ni del body: la autoría se
+			// resuelve con el curso dueño del examen dentro del repositorio.
+			if (!test_question_type_id) {
 				console.warn('Skipping row with missing metadata:', row);
 				skippedRows++;
 				continue;
@@ -221,7 +226,6 @@ const processImportedRows = async (rows, metadata) => {
 			}
 
 			const question = await createQuestionTest({
-				course_id,
 				test_id,
 				question_type_id,
 				test_question_type_id,
@@ -232,7 +236,6 @@ const processImportedRows = async (rows, metadata) => {
 
 			for (const answer of parsed.answers) {
 				await createAnswerQuestionTest({
-					course_id,
 					test_id,
 					question_id: question.id,
 					value: answer.value,
@@ -256,7 +259,6 @@ const processImportedRows = async (rows, metadata) => {
 
 const importMetadataFromRequest = (req, test_id) => ({
 	test_id,
-	course_id: req.body.course_id,
 	question_type_id: req.body.question_type_id,
 	test_question_type_id: req.body.test_question_type_id,
 });
@@ -367,12 +369,8 @@ export const TestCourseDetail = async (req, res) => {
 export const ListQuestionsByTest = async (req, res) => {
 	try {
 		const { test_id } = req.params;
-		const {
-			question_type_id,
-			test_question_type_id,
-			course_id,
-			status,
-		} = req.query;
+		const { question_type_id, test_question_type_id, status } =
+			req.query;
 
 		if (!test_id || isNaN(test_id)) {
 			return res
@@ -390,10 +388,6 @@ export const ListQuestionsByTest = async (req, res) => {
 
 		if (test_question_type_id && !isNaN(test_question_type_id)) {
 			filters.test_question_type_id = parseInt(test_question_type_id);
-		}
-
-		if (course_id && !isNaN(course_id)) {
-			filters.course_id = parseInt(course_id);
 		}
 
 		if (typeof status !== 'undefined') {
@@ -435,12 +429,33 @@ export const UpdateQuestionType = async (req, res) => {
 export const CreateTest = async (req, res) => {
 	try {
 		const data = req.body;
-		const { course_id, duration, min_score } = data;
+		const { course_id, duration, min_score, course_ids } = data;
+
+		let extraCourseIds = [];
+		if (typeof course_ids !== 'undefined') {
+			if (!Array.isArray(course_ids) || course_ids.length === 0) {
+				return res.status(400).json({
+					message: 'course_ids debe ser un arreglo de ids',
+				});
+			}
+			extraCourseIds = course_ids.map(Number);
+			if (
+				extraCourseIds.some(
+					(id) => !Number.isInteger(id) || id <= 0,
+				)
+			) {
+				return res.status(400).json({
+					message: 'course_ids contiene ids inválidos',
+				});
+			}
+		}
+
 		await assertCourseIsActive(course_id);
 		const testCreate = await createTest({
 			course_id,
 			duration,
 			min_score,
+			course_ids: extraCourseIds,
 		});
 		const newTest = await getTestById({ id: testCreate.id });
 		res.status(201).send(newTest);
@@ -456,6 +471,21 @@ export const UpdateTest = async (req, res) => {
 	try {
 		const data = req.body;
 		const { id, duration, min_score, status } = data;
+
+		const currentTest = await assertAnyLinkedCourseActive(id);
+		if (status === true && !currentTest.status) {
+			// Solo se valida el paso de inactivo a activo: si el examen ya estaba
+			// activo, un conflicto preexistente no debe bloquear su edición.
+			const conflicts = await getTestActivationConflicts(id);
+			if (conflicts.length > 0) {
+				return res.status(409).json({
+					message:
+						'No se puede activar el examen: algún curso vinculado ya tiene otro examen activo',
+					conflicts,
+				});
+			}
+		}
+
 		await updateTest({
 			id,
 			duration,
@@ -466,21 +496,117 @@ export const UpdateTest = async (req, res) => {
 		res.status(201).send(newTest);
 	} catch (error) {
 		console.log(error);
+		if (error.status) {
+			return res.status(error.status).json({ message: error.message });
+		}
 		res.status(500).send('Internal Server Error');
 	}
 };
+const respondTestError = (res, error, context) => {
+	console.error(context, error);
+	if (error.status) {
+		const payload = { message: error.message };
+		if (error.conflicts) {
+			payload.conflicts = error.conflicts;
+		}
+		return res.status(error.status).json(payload);
+	}
+	return res.status(500).json({ message: 'Error interno del servidor' });
+};
+
+export const LinkTestToCourse = async (req, res) => {
+	try {
+		const course_id = parseInt(req.params.course_id);
+		if (!course_id || isNaN(course_id)) {
+			return res
+				.status(400)
+				.json({ message: 'Parámetro course_id inválido' });
+		}
+
+		const body = req.body ?? {};
+		const raw =
+			typeof body.test_ids !== 'undefined'
+				? body.test_ids
+				: typeof body.test_id !== 'undefined'
+					? [body.test_id]
+					: undefined;
+		if (typeof raw === 'undefined') {
+			return res
+				.status(400)
+				.json({ message: 'Debes enviar test_ids o test_id' });
+		}
+
+		const list = Array.isArray(raw) ? raw : [raw];
+		const testIds = list.map(Number);
+		if (
+			testIds.length === 0 ||
+			testIds.length !== list.length ||
+			testIds.some((id) => !Number.isInteger(id) || id <= 0)
+		) {
+			return res
+				.status(400)
+				.json({ message: 'test_ids contiene ids inválidos' });
+		}
+
+		const { linked, skipped } = await linkTestsToCourse(
+			course_id,
+			testIds,
+		);
+		const tests = await getAllTestCourse({ course_id });
+		res.status(200).json({ course_id, linked, skipped, tests });
+	} catch (error) {
+		return respondTestError(res, error, 'Error al vincular exámenes:');
+	}
+};
+
+export const UnlinkTestFromCourse = async (req, res) => {
+	try {
+		const course_id = parseInt(req.params.course_id);
+		const test_id = parseInt(req.params.test_id);
+		if (!course_id || isNaN(course_id)) {
+			return res
+				.status(400)
+				.json({ message: 'Parámetro course_id inválido' });
+		}
+		if (!test_id || isNaN(test_id)) {
+			return res
+				.status(400)
+				.json({ message: 'Parámetro test_id inválido' });
+		}
+
+		const removed = await unlinkTestFromCourse(course_id, test_id);
+		const tests = await getAllTestCourse({ course_id });
+		res.status(200).json({ course_id, test_id, removed, tests });
+	} catch (error) {
+		return respondTestError(res, error, 'Error al desvincular examen:');
+	}
+};
+
+export const ListTestCourses = async (req, res) => {
+	try {
+		const test_id = parseInt(req.params.test_id);
+		if (!test_id || isNaN(test_id)) {
+			return res
+				.status(400)
+				.json({ message: 'Parámetro test_id inválido' });
+		}
+		const data = await getCoursesByTest(test_id);
+		res.status(200).json(data);
+	} catch (error) {
+		return respondTestError(res, error, 'Error al listar cursos del examen:');
+	}
+};
+
 export const CreateQuestionTest = async (req, res) => {
 	try {
 		const data = req.body;
 		const {
-			course_id,
 			test_id,
 			question_type_id,
 			test_question_type_id,
 			header,
 		} = data;
 		const questionCreate = await createQuestionTest({
-			course_id,
 			test_id,
 			question_type_id,
 			test_question_type_id,
@@ -567,17 +693,9 @@ export const DeleteQuestionsByTest = async (req, res) => {
 export const CreateAnswerQuestionTest = async (req, res) => {
 	try {
 		const data = req.body;
-		const {
-			course_id,
-			test_id,
-			question_type_id,
-			question_id,
-			value,
-		} = data;
+		const { test_id, question_id, value } = data;
 		const answer = await createAnswerQuestionTest({
-			course_id,
 			test_id,
-			question_type_id,
 			question_id,
 			value,
 		});
@@ -617,7 +735,6 @@ export const UpdateTestQuestionType = async (req, res) => {
 		const data = req.body;
 		const {
 			id,
-			course_id,
 			amount,
 			value,
 			question_type_id,
@@ -637,7 +754,6 @@ export const UpdateTestQuestionType = async (req, res) => {
 			}
 		} else {
 			const createTQT = await createTestQuestionType({
-				course_id,
 				amount,
 				value,
 				question_type_id,
@@ -692,11 +808,11 @@ export const CourseStudentTest = async (req, res) => {
 				.json({ message: 'Matrícula del alumno no encontrada' });
 		}
 		await assertCourseIsActive(courseStudent.course_id);
-		const test = courseStudent.course.tests.find(
-			(dataTest) => dataTest.status,
-		);
-		if (!test.id) {
-			throw new Error('Question Type not found');
+		const test = await getActiveTestByCourse(courseStudent.course_id);
+		if (!test) {
+			return res
+				.status(404)
+				.json({ message: 'El curso no tiene un examen activo' });
 		}
 		const testData = await getTestById(test.id);
 		let exist = false;

@@ -12,12 +12,14 @@ import {
 	DeleteQuestionsByTest,
 	ImportQuestionsFromCSV,
 	ImportQuestionsFromExcel,
+	LinkTestToCourse,
 	ListAnswerQuestion,
 	ListAllTestsByStudent,
 	ListQuestionTypes,
 	ListQuestionsByTest,
 	ListTest,
 	ListTestCourse,
+	ListTestCourses,
 	ReportListTests,
 	ReportTestAttemptAnswers,
 	ReportTestAttemptDetail,
@@ -26,6 +28,7 @@ import {
 	ReportTestQuestions,
 	ReportTestResults,
 	TestCourseDetail,
+	UnlinkTestFromCourse,
 	UpdateAnswerQuestionTest,
 	UpdateQuestionTest,
 	UpdateQuestionType,
@@ -124,6 +127,19 @@ router.get(
 );
 
 router.get('/', authenticateJWT, ListTest);
+router.post(
+	'/tests/:course_id/link',
+	upload.none(),
+	authenticateJWT,
+	convertTypes,
+	LinkTestToCourse,
+);
+router.delete(
+	'/tests/:course_id/link/:test_id',
+	authenticateJWT,
+	UnlinkTestFromCourse,
+);
+router.get('/test/:test_id/courses', authenticateJWT, ListTestCourses);
 router.get('/tests/:course_id', authenticateJWT, ListTestCourse);
 router.get('/test/:test_id', authenticateJWT, TestCourseDetail);
 router.get(
