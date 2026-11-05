@@ -935,8 +935,14 @@ const assertScheduleIsValid = async ({
 		);
 	}
 
+	// `Schedule.belongsTo(SubjectDays)` no declara `as`, así que Sequelize expone
+	// el día como `subject_day` (singular del modelo), NO como `SubjectDays`.
+	// Leer `schedule.SubjectDays` devolvía siempre `undefined`, así que cualquier
+	// horario previo de la misma actividad se reportaba como "día inactivo" y
+	// bloqueaba agendarla en un segundo día/sesión del programa.
 	const staleSchedule = existingSchedules.find(
-		(schedule) => !schedule.SubjectDays || !schedule.SubjectDays.status,
+		(schedule) =>
+			!schedule.subject_day || !Number(schedule.subject_day.status),
 	);
 	if (staleSchedule) {
 		throw scheduleConflictError(
@@ -998,7 +1004,10 @@ const buildSessionPairs = (schedules) => {
 	const pairs = [];
 
 	for (const schedule of schedules) {
-		const ordinal = schedule.SubjectDays?.day ?? null;
+		// Mismo alias que en `assertScheduleIsValid`: el día llega como
+		// `subject_day`. Leyendo `SubjectDays` el ordinal era siempre `null` y el
+		// borrado de horarios nunca limpiaba las asistencias de esas sesiones.
+		const ordinal = schedule.subject_day?.day ?? null;
 		if (!schedule.date || ordinal === null) continue;
 
 		const key = `${schedule.date}|${ordinal}`;

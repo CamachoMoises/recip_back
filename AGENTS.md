@@ -104,6 +104,17 @@ Rules to respect when touching this domain:
   matches `subject_id`, is **active** (`subject_days.status = 1`), is not already scheduled for
   that student, and that the student has no schedule for the same subject on an inactive
   `subject_days` (orphan). Violations return `400`/`409` JSON `{ message }`.
+- **La misma actividad SÍ puede agendarse en varios días/sesiones del programa**: el único
+  duplicado es el mismo `subject_days_id` (índice único
+  `uq_schedule_course_student_subject_days`). Si añades validaciones, no bloquees por
+  `subject_id` a secas.
+- **Alias de asociación (trampa que costó un bug)**: `Schedule.belongsTo(SubjectDays)` no declara
+  `as`, así que Sequelize expone el día como **`subject_day`** (singular), no como
+  `SubjectDays`. Escribir `schedule.SubjectDays.status`/`?.day` daba siempre `undefined`: el
+  validador marcaba como "día inactivo" cualquier horario previo y bloqueaba agendar la misma
+  actividad en un segundo día; además `buildSessionPairs` devolvía `null` y el borrado de
+  horarios nunca limpiaba asistencias. Afecta a `course.js` (`assertScheduleIsValid`,
+  `buildSessionPairs`) e `instructor.js` (días por grupo).
 - `POST /api/subjects/subjects_days` (and `subjects_lesson_days`) refuses to **deactivate** a
   `subject_days` that still has schedules (`409` JSON). Deactivating a day used by a schedule left
   an orphan schedule invisible in the UI and allowed the same activity to be scheduled twice.

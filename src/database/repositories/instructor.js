@@ -497,7 +497,8 @@ const listSignatureGroupsByInstructor = async (instructor_id) => {
 
 	const csToDays = new Map();
 	schedules.forEach(s => {
-		const day = s.SubjectDays?.day;
+		// `Schedule.belongsTo(SubjectDays)` se serializa como `subject_day`.
+		const day = s.subject_day?.day;
 		if (day !== undefined && day !== null) {
 			if (!csToDays.has(s.course_student_id)) csToDays.set(s.course_student_id, new Set());
 			csToDays.get(s.course_student_id).add(day);
