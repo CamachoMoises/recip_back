@@ -3,6 +3,7 @@ import readXlsxFile from 'read-excel-file/node';
 import { parse as parseCsvSync } from 'csv-parse/sync';
 import {
 	assertAnyLinkedCourseActive,
+	cloneTest,
 	createAnswerQuestionTest,
 	createCourseStudentTest,
 	createCourseStudentTestAnswer,
@@ -40,6 +41,7 @@ import {
 	updateTestQuestionType,
 } from '../database/repositories/test.js';
 import { assertCourseIsActive } from '../database/repositories/course.js';
+import { cloneTestSchema } from '../database/imput_validation/test.js';
 import {
 	cleanString,
 	getRandomSubset,
@@ -594,6 +596,47 @@ export const ListTestCourses = async (req, res) => {
 		res.status(200).json(data);
 	} catch (error) {
 		return respondTestError(res, error, 'Error al listar cursos del examen:');
+	}
+};
+
+export const CloneTest = async (req, res) => {
+	try {
+		const test_id = parseInt(req.params.test_id);
+		if (!test_id || isNaN(test_id) || test_id <= 0) {
+			return res
+				.status(400)
+				.json({ message: 'Parámetro test_id inválido' });
+		}
+
+		let body;
+		try {
+			body = await cloneTestSchema.validateAsync(req.body ?? {}, {
+				stripUnknown: true,
+			});
+		} catch (error) {
+			return res
+				.status(400)
+				.json({ message: `Input Validation Error ${error.message}` });
+		}
+
+		const result = await cloneTest({
+			test_id,
+			course_id: body.course_id,
+			code: body.code,
+			duration: body.duration,
+			min_score: body.min_score,
+		});
+
+		const cloned = await getTestById({ id: result.test.id });
+		res.status(201).json({
+			...cloned,
+			cloned_from_test_id: result.source_test_id,
+			test_question_types_cloned: result.counts.test_question_types,
+			questions_cloned: result.counts.questions,
+			answers_cloned: result.counts.answers,
+		});
+	} catch (error) {
+		return respondTestError(res, error, 'Error al clonar examen:');
 	}
 };
 

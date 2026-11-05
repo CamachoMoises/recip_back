@@ -5,6 +5,7 @@ import {
 	CourseStudentTestAnswer,
 	CourseStudentTestDetails,
 	CourseStudentTestEnd,
+	CloneTest,
 	CreateAnswerQuestionTest,
 	CreateQuestionTest,
 	CreateTest,
@@ -140,6 +141,13 @@ router.delete(
 	UnlinkTestFromCourse,
 );
 router.get('/test/:test_id/courses', authenticateJWT, ListTestCourses);
+router.post(
+	'/clone/:test_id',
+	upload.none(),
+	authenticateJWT,
+	convertTypes,
+	CloneTest,
+);
 router.get('/tests/:course_id', authenticateJWT, ListTestCourse);
 router.get('/test/:test_id', authenticateJWT, TestCourseDetail);
 router.get(

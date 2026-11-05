@@ -509,6 +509,213 @@ const createTest = async ({
 
 		return test;
 	});
+const TEST_CODE_MAX_LENGTH = 50;
+
+/**
+ * Genera un `test.code` único a nivel de aplicación. La columna no tiene
+ * índice UNIQUE, así que se resuelve con sufijos `-2`, `-3`, ... respetando
+ * el largo máximo de `STRING(50)`.
+ */
+const buildUniqueTestCode = async (base, transaction) => {
+	const trimmed = String(base ?? '').trim() || 'COPIA';
+	let candidate = trimmed.slice(0, TEST_CODE_MAX_LENGTH);
+	let suffix = 2;
+
+	while (
+		await Test.count({ where: { code: candidate }, transaction })
+	) {
+		const suffixStr = `-${suffix}`;
+		candidate = `${trimmed.slice(
+			0,
+			TEST_CODE_MAX_LENGTH - suffixStr.length,
+		)}${suffixStr}`;
+		suffix += 1;
+	}
+
+	return candidate;
+};
+
+/**
+ * Clona un examen completo (blueprint + preguntas + respuestas) en otro curso.
+ * El clon siempre nace inactivo y solo se vincula al curso destino. No copia
+ * intentos ni los vínculos `course_test` del origen.
+ */
+const cloneTest = async ({
+	test_id,
+	course_id,
+	code,
+	duration,
+	min_score,
+	transaction,
+}) => {
+	const run = async (tx) => {
+		const source = await Test.findByPk(test_id, { transaction: tx });
+		if (!source) {
+			throw httpError(404, 'Test not found');
+		}
+
+		const target = await assertCourseCanHostTest(course_id, {
+			transaction: tx,
+		});
+		if (source.course_id === target.id) {
+			throw httpError(
+				409,
+				'El curso destino debe ser diferente al curso dueño del examen',
+			);
+		}
+
+		// El curso dueño del origen puede estar eliminado: clonar es una vía
+		// válida para rescatar contenido. Lo que sí se exige es que sea teórico.
+		const owner = await Course.findByPk(source.course_id, {
+			transaction: tx,
+		});
+		if (!owner || owner.course_type_id !== 1) {
+			throw httpError(
+				409,
+				'El examen origen no pertenece a un curso de teoría',
+			);
+		}
+
+		const [sourceTqts, sourceQuestions, sourceAnswers] = await Promise.all([
+			TestQuestionType.findAll({
+				where: { test_id },
+				order: [['id', 'ASC']],
+				transaction: tx,
+			}),
+			Question.findAll({
+				where: { test_id },
+				order: [['id', 'ASC']],
+				transaction: tx,
+			}),
+			Answer.findAll({
+				where: { test_id },
+				order: [['id', 'ASC']],
+				transaction: tx,
+			}),
+		]);
+
+		// Guard de integridad: no se crea un clon a medias desde datos roscos.
+		const tqtIds = new Set(sourceTqts.map((row) => row.id));
+		const questionIds = new Set(sourceQuestions.map((row) => row.id));
+		const inconsistent =
+			sourceQuestions.some(
+				(question) => !tqtIds.has(question.test_question_type_id),
+			) ||
+			sourceAnswers.some(
+				(answer) => !questionIds.has(answer.question_id),
+			);
+		if (inconsistent) {
+			throw httpError(
+				409,
+				'El examen origen tiene preguntas o respuestas inconsistentes',
+			);
+		}
+
+		// `code` vacío/null/undefined => se genera automáticamente.
+		const requestedCode =
+			typeof code === 'string' ? code.trim() : code;
+		let newCode;
+		if (requestedCode) {
+			const taken = await Test.count({
+				where: { code: requestedCode },
+				transaction: tx,
+			});
+			if (taken > 0) {
+				throw httpError(409, 'Ya existe un examen con ese código');
+			}
+			newCode = requestedCode;
+		} else {
+			// Clonar un clon no debe producir `-COPIA-COPIA`: se toma la raíz
+			// del código y el helper resuelve el sufijo numérico.
+			const rootCode = source.code.replace(/-COPIA(-\d+)?$/i, '');
+			newCode = await buildUniqueTestCode(`${rootCode}-COPIA`, tx);
+		}
+
+		const cloned = await Test.create(
+			{
+				course_id: target.id,
+				code: newCode,
+				duration: duration ?? source.duration,
+				min_score: min_score ?? source.min_score,
+				// Regla dura: el clon siempre nace inactivo.
+				status: false,
+			},
+			{ transaction: tx },
+		);
+
+		// Blueprint: se remapean los IDs para que las preguntas copiadas
+		// apunten a las filas nuevas.
+		const tqtMap = new Map();
+		for (const tqt of sourceTqts) {
+			const created = await TestQuestionType.create(
+				{
+					course_id: target.id,
+					test_id: cloned.id,
+					question_type_id: tqt.question_type_id,
+					amount: tqt.amount,
+					value: tqt.value,
+					status: tqt.status,
+				},
+				{ transaction: tx },
+			);
+			tqtMap.set(tqt.id, created.id);
+		}
+
+		const questionMap = new Map();
+		for (const question of sourceQuestions) {
+			const created = await Question.create(
+				{
+					course_id: target.id,
+					test_id: cloned.id,
+					question_type_id: question.question_type_id,
+					test_question_type_id: tqtMap.get(
+						question.test_question_type_id,
+					),
+					header: question.header,
+					status: question.status,
+				},
+				{ transaction: tx },
+			);
+			questionMap.set(question.id, created.id);
+		}
+
+		if (sourceAnswers.length > 0) {
+			await Answer.bulkCreate(
+				sourceAnswers.map((answer) => ({
+					course_id: target.id,
+					test_id: cloned.id,
+					question_id: questionMap.get(answer.question_id),
+					value: answer.value,
+					is_correct: answer.is_correct,
+					status: answer.status,
+				})),
+				{ transaction: tx },
+			);
+		}
+
+		await linkTestToCourse({
+			course_id: target.id,
+			test_id: cloned.id,
+			transaction: tx,
+		});
+
+		return {
+			test: cloned,
+			source_test_id: source.id,
+			counts: {
+				test_question_types: sourceTqts.length,
+				questions: sourceQuestions.length,
+				answers: sourceAnswers.length,
+			},
+		};
+	};
+
+	if (transaction) {
+		return run(transaction);
+	}
+	return sequelize.transaction(run);
+};
+
 const updateTest = async ({ id, duration, min_score, status }) => {
 	const test = await Test.findByPk(id);
 	if (!test) {
@@ -1020,6 +1227,8 @@ export {
 	updateQuestionType,
 	createTest,
 	updateTest,
+	cloneTest,
+	buildUniqueTestCode,
 	createQuestionTest,
 	updateQuestionTest,
 	deleteQuestionById,

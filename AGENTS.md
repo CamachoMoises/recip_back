@@ -283,6 +283,35 @@ se omite con un warning. **No borra** preguntas, respuestas, vínculos ni intent
 debe correrse después de `20261202000000-create-course-test.cjs`. Tras ejecutarla,
 `npm run analyze:duplicates` debe reportar 0 grupos activos.
 
+## Clonación de exámenes (variantes)
+
+Compartir (`course_test`) mantiene **un** examen para N cursos; clonar crea una **variante
+independiente**. El clon sirve cuando a partir de un examen base surgen versiones con más/menos
+preguntas, otro `duration` o `min_score`.
+
+- `POST /api/test/clone/:test_id` con `{ course_id }` (+ overrides opcionales `code`, `duration`,
+  `min_score`). `course_id` es el curso **destino** (dueño del clon): debe existir, estar activo y
+  ser `course_type_id = 1`; debe ser **distinto** del curso dueño del origen.
+- Copia profunda en una transacción: `test` (`duration`, `min_score`), blueprint
+  (`test_question_type`), **todas** las `question` (tipos 1..5, incluidas inactivas) y **todas** las
+  `answer` (incluida `is_correct`). Los IDs son nuevos y el `course_id` de blueprint/preguntas/
+  respuestas se normaliza al destino.
+- El clon **siempre nace inactivo** (`status: false`) y solo se vincula al curso destino. No copia
+  intentos (`course_student_test*`) ni los vínculos del origen, así que editarlo o borrar preguntas
+  no afecta al origen.
+- `code` autogenerado: `${code_origen}-COPIA` con sufijos `-2`, `-3`, … (`test.code` no tiene
+  UNIQUE; la unicidad se garantiza en la aplicación). `code` explícito repetido → `409`.
+- El curso dueño del origen **puede estar eliminado** (rescate de contenido), pero debe ser de
+  teoría (`409` si no). Contenido inconsistente del origen (pregunta sin blueprint o respuesta sin
+  pregunta del test) → `409`.
+- No valida conflicto de examen activo al crear (nace inactivo): al activarlo aplica el `409` de
+  `PUT /api/test/test`.
+- Repositorio: `cloneTest` + `buildUniqueTestCode` en `src/database/repositories/test.js`.
+  Controller `CloneTest` (`src/controller/test.js`), Joi `cloneTestSchema`
+  (`src/database/imput_validation/test.js`), ruta en `src/route/test.js`.
+- **Sin migración en v1.** El linaje (`test.parent_test_id`) queda para v2.
+- Plan completo: `PLAN_CLONACION_EXAMENES.md`.
+
 ## API Routes
 
 | Prefix | Purpose |
@@ -294,7 +323,7 @@ debe correrse después de `20261202000000-create-course-test.cjs`. Tras ejecutar
 | `/api/course_groups` | Course groups CRUD + students list + remove students + signature upload + list signatures per group + `GET /report/attendance` (attendance/signature report grouped by group with students/user, course, schedules/instructors). Supports `instructor_id` filter. |
 | `/api/subjects` | Subject + lessons + days CRUD |
 | `/api/assessment` | Student assessments + signatures |
-| `/api/test` | Tests, questions, answers, Excel/CSV import. Exámenes compartidos: `POST /tests/:course_id/link` + `DELETE /tests/:course_id/link/:test_id` + `GET /test/:test_id/courses`, ver sección "Exámenes compartidos (`course_test`)". |
+| `/api/test` | Tests, questions, answers, Excel/CSV import. Exámenes compartidos: `POST /tests/:course_id/link` + `DELETE /tests/:course_id/link/:test_id` + `GET /test/:test_id/courses`, ver sección "Exámenes compartidos (`course_test`)". Clonación de variantes: `POST /clone/:test_id` (`{ course_id, code?, duration?, min_score? }`), ver sección "Clonación de exámenes (variantes)". |
 | `/api/test/reports` | Reportes de examen **solo lectura**: listar exámenes, hoja de preguntas con la correcta marcada, solo correctas, detalle/respuestas/preguntas sorteadas por intento de alumno, y resultado global por alumno (paginado, `pageSize=-1` = todos). Repositorio dedicado: `src/database/repositories/testReport.js` |
 | `/api/attendance` | Attendance + statuses CRUD + signature upload + delete signature. Supports `instructor_id` filter. |
 | `/api/instructor` | Instructor dashboard: schedules, assessments, tests filtered by instructor_id |
