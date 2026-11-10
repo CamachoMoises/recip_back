@@ -323,6 +323,26 @@ preguntas, otro `duration` o `min_score`.
 - **Sin migración en v1.** El linaje (`test.parent_test_id`) queda para v2.
 - Plan completo: `PLAN_CLONACION_EXAMENES.md`.
 
+## Evaluaciones: solo filas activas en las lecturas de programa
+
+Las tres lecturas de evaluación de `src/database/repositories/assessment.js` filtran
+`status: true` en **los tres niveles** del árbol (`subject_days`, `subject_lesson`,
+`subject_lesson_days`), además del filtro `subject.status`/`is_schedulable` que ya existía:
+
+- `getSubjectsByAssessment` (`GET /api/assessment/fetchSubjectAssessment`) y
+  `getSubjectBySubjectId` (respuesta de `PUT /changeCourseStudentAssessmentLessonDay`): filtran
+  por `day` **y** `status: true`. Un tema con el switch apagado en ese día
+  (`subject_lesson_days.status = 0`) no aparece, y un subject sin ningún tema activo en ese día
+  desaparece de la respuesta (join interno).
+- `getSubjectBySubjectByCSA` (`GET /api/assessment/fetchAssessmentData` → PDF): **no** filtra por
+  `day` (el PDF cubre todas las sesiones del programa), pero sí por `status` en los tres niveles.
+
+Lección aprendida (bug curso 33): los includes filtraban solo por `day`, así que la vista de
+evaluación mostraba temas desactivados "en todos los días". El frontend no debe filtrar por status:
+muestra lo que la API devuelve. En Sequelize 6, un include con `where` y sin `required` explícito
+es INNER JOIN (`model.js`: `include.required = !!include.where`), por eso las secciones sin temas
+activos se eliminan solas de la respuesta. No quites esos `status: true`.
+
 ## API Routes
 
 | Prefix | Purpose |

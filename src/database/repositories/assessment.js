@@ -236,15 +236,17 @@ const getSubjectsByAssessment = async ({
 		include: [
 			{
 				model: SubjectDays,
-				where: { day },
+				where: { day, status: true },
 				required: true,
 			},
 			{
 				model: SubjectLesson,
+				where: { status: true },
+				required: true,
 				include: [
 					{
 						model: SubjectLessonDays,
-						where: { day },
+						where: { day, status: true },
 						required: true,
 
 						include: [
@@ -274,15 +276,17 @@ const getSubjectBySubjectId = async ({
 		include: [
 			{
 				model: SubjectDays,
-				where: { day },
+				where: { day, status: true },
 				required: true,
 			},
 			{
 				model: SubjectLesson,
+				where: { status: true },
+				required: true,
 				include: [
 					{
 						model: SubjectLessonDays,
-						where: { day },
+						where: { day, status: true },
 						required: true,
 
 						include: [
@@ -390,13 +394,17 @@ const getSubjectBySubjectByCSA = async ({ CSA_id, course_id }) => {
 		include: [
 			{
 				model: SubjectDays,
+				where: { status: true },
 				required: true,
 			},
 			{
 				model: SubjectLesson,
+				where: { status: true },
+				required: true,
 				include: [
 					{
 						model: SubjectLessonDays,
+						where: { status: true },
 						required: true,
 						include: [
 							{

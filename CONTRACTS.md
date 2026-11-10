@@ -590,7 +590,9 @@ arranque usa `alter: false` y no las crea).
     - `course_score_average`: promedio global del CSA (o `null`)
   - `CASD` = array de Subject (status=true, is_schedulable=false) con `subject_days` y
     `subject_lessons` → `subject_lesson_days` → `course_student_assessment_lesson_days`
-    (los lesson details filtrados por `course_student_assessment_id = CSA_id`)
+    (los lesson details filtrados por `course_student_assessment_id = CSA_id`). Sin filter por
+    `day` (el PDF cubre todos los días del programa), pero `subject_days`, `subject_lesson` y
+    `subject_lesson_days` filtran `status=true`: los días/temas desactivados no aparecen.
 
 ### GET /courseStudentAssessment/:id
 - Params: `id` (CSA id)
@@ -638,9 +640,12 @@ arranque usa `alter: false` y no las crea).
 
 ### GET /fetchSubjectAssessment
 - Query: `day`, `course_id`, `course_student_assessment_day_id`
-- `200` → array de Subject (status=true, is_schedulable=false) con `subject_days` (filter por `day`)
-  y `subject_lessons` → `subject_lesson_days` (filter por `day`) →
-  `course_student_assessment_lesson_days` (filter por `course_student_assessment_day_id`)
+- `200` → array de Subject (status=true, is_schedulable=false) con `subject_days` (filter por
+  `day` y `status=true`) y `subject_lessons` (filter por `status=true`) → `subject_lesson_days`
+  (filter por `day` y `status=true`) → `course_student_assessment_lesson_days` (filter por
+  `course_student_assessment_day_id`)
+- Solo temas activos: un tema con `subject_lesson_days.status = 0` (switch apagado en ese día) no
+  aparece, y un subject sin ningún tema activo en ese día desaparece de la respuesta.
 
 ### PUT /changeCourseStudentAssessmentLessonDay
 - Body: `id` (opcional; si llega actualiza, si no crea), `course_id`, `student_id`,
@@ -1834,7 +1839,9 @@ arranque usa `alter: false` y no las crea).
     - `course_score_average`: promedio global del CSA (o `null`)
   - `CASD` = array de Subject (status=true, is_schedulable=false) con `subject_days` y
     `subject_lessons` → `subject_lesson_days` → `course_student_assessment_lesson_days`
-    (los lesson details filtrados por `course_student_assessment_id = CSA_id`)
+    (los lesson details filtrados por `course_student_assessment_id = CSA_id`). Sin filter por
+    `day` (el PDF cubre todos los días del programa), pero `subject_days`, `subject_lesson` y
+    `subject_lesson_days` filtran `status=true`: los días/temas desactivados no aparecen.
 
 ### GET /courseStudentAssessment/:id
 - Params: `id` (CSA id)
@@ -1882,9 +1889,12 @@ arranque usa `alter: false` y no las crea).
 
 ### GET /fetchSubjectAssessment
 - Query: `day`, `course_id`, `course_student_assessment_day_id`
-- `200` → array de Subject (status=true, is_schedulable=false) con `subject_days` (filter por `day`)
-  y `subject_lessons` → `subject_lesson_days` (filter por `day`) →
-  `course_student_assessment_lesson_days` (filter por `course_student_assessment_day_id`)
+- `200` → array de Subject (status=true, is_schedulable=false) con `subject_days` (filter por
+  `day` y `status=true`) y `subject_lessons` (filter por `status=true`) → `subject_lesson_days`
+  (filter por `day` y `status=true`) → `course_student_assessment_lesson_days` (filter por
+  `course_student_assessment_day_id`)
+- Solo temas activos: un tema con `subject_lesson_days.status = 0` (switch apagado en ese día) no
+  aparece, y un subject sin ningún tema activo en ese día desaparece de la respuesta.
 
 ### PUT /changeCourseStudentAssessmentLessonDay
 - Body: `id` (opcional; si llega actualiza, si no crea), `course_id`, `student_id`,
