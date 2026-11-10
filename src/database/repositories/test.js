@@ -1111,6 +1111,36 @@ const resolveCourseStudentTest = async (
 	return true;
 };
 
+/**
+ * Reabre un intento ya presentado (`finished = true`) para que el alumno siga
+ * respondiendo las mismas preguntas del examen que ya tenía cargado.
+ *
+ * - Idempotente: si el intento ya está abierto no reescribe nada.
+ * - Limpia solo la evaluación del intento (`score` / `approve`), porque deja de
+ *   estar "presentado y evaluado". El puntaje histórico de la matrícula
+ *   (`course_student.score` / `approve`) NO se toca: al volver a finalizar se
+ *   recalcula con `resolveCourseStudentTest` y solo mejora el máximo.
+ * - Las preguntas y las respuestas se conservan; sus puntajes se recalculan al
+ *   cerrar el intento otra vez.
+ */
+const reactivateCourseStudentTest = async (course_student_test_id) => {
+	const courseStudentTest = await CourseStudentTest.findByPk(
+		course_student_test_id,
+	);
+	if (!courseStudentTest) {
+		throw httpError(404, 'Intento de examen no encontrado');
+	}
+	if (!courseStudentTest.finished) {
+		return courseStudentTest;
+	}
+	await courseStudentTest.update({
+		finished: false,
+		score: null,
+		approve: null,
+	});
+	return courseStudentTest;
+};
+
 const getTotalScore = async (course_student_test_id) => {
 	try {
 		const totalScore = await CourseStudentTestAnswer.sum('score', {
@@ -1253,6 +1283,7 @@ export {
 	getCourseStudentTestAnswerByQuestion,
 	resolveCourseStudentTestAnswer,
 	resolveCourseStudentTest,
+	reactivateCourseStudentTest,
 	updateCourseStudentTestAnswer,
 	getQuestionTest,
 	getAnswerQuestion,

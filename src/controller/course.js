@@ -575,18 +575,30 @@ export const UpdateCourseStudentMaxAttempts = async (req, res) => {
  *   del programa. Antes se multiplicaba 8 por cada `subject_days` activo; como
  *   un mismo día suele tener varias fases (Briefing, Vuelo, Debriefing, ...),
  *   el total se inflaba (curso 29: 25 actividades × 8 = 200 h para 3 días).
+ * - Excepción "Experiencia Reciente" (nivel 4): cursos de Entrenamiento cortos
+ *   (PIC/PI) cuya carga real la define el programa, no una jornada completa.
+ *   Usan la suma de secciones: Σ(subject.hours × días activos). El curso 23
+ *   (Briefing 1h + Vuelo 1h + Debriefing 1h) da 3 h, no 8 × 1 día.
  * - Resto de tipos: suma de `subject.hours` × días activos de cada sección.
  */
 const TRAINING_COURSE_TYPE_ID = 2;
 const TRAINING_HOURS_PER_DAY = 8;
+const EXPERIENCE_RECENT_COURSE_LEVEL_ID = 4;
 
 export const calculateCourseTotalHours = async (course_id) => {
 	const course = await getCourseById(course_id);
 	if (!course) return null;
 
+	// Entrenamiento de jornada completa (Inicial/Periódico/Especial): 8 h por
+	// día/sesión. La "Experiencia Reciente" es la excepción: experiencias cortas
+	// cuyo total sale de sumar las fases programadas.
+	const isTrainingFullDay =
+		Number(course.course_type_id) === TRAINING_COURSE_TYPE_ID &&
+		Number(course.course_level_id) !== EXPERIENCE_RECENT_COURSE_LEVEL_ID;
+
 	let totalHours = 0;
 
-	if (Number(course.course_type_id) === TRAINING_COURSE_TYPE_ID) {
+	if (isTrainingFullDay) {
 		const programSize = course.uses_sessions
 			? (course.sessions ?? course.days)
 			: course.days;

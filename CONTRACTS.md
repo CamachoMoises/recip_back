@@ -239,7 +239,9 @@ arranque usa `alter: false` y no las crea).
 - `row_order` **se ignora**: el curso nuevo se agrega al final (`MAX(row_order) + 1`). Si el body lo
   envía, se descarta antes de Joi (no devuelve 400 por clave desconocida).
 - `hours` es **derivado** y se ignora del body. Se recalcula al guardar: tipo 2
-  (`Entrenamiento`) = `8 × días/sesiones del programa`; resto = `Σ(subject.hours × días activos)`.
+  (`Entrenamiento`) = `8 × días/sesiones del programa`, **salvo** nivel 4 (`Experiencia
+  Reciente`) que usa `Σ(subject.hours × días activos)`; resto =
+  `Σ(subject.hours × días activos)`.
 - `201` → Course con `course_type`, `course_level` (incluye `color`, `uses_sessions`, `sessions` y
   `row_order`)
 
@@ -867,6 +869,23 @@ arranque usa `alter: false` y no las crea).
 - `200` → `{ answers: [...], score }` (cada answer con `question` —con `answers` restringidas a
   `is_correct=true`, `question_type`, `test_question_type`—)
 - `400` texto plano `Error <msg>`
+
+### POST /courseStudentTest/:course_student_test_id/reactivate
+- Auth: sí, **solo `user.is_superuser`** (administrador). Sin token `401`; con token sin rol
+  `403` JSON `{ message: 'Se requiere rol de administrador' }`.
+- Params: `course_student_test_id` (id del **intento**, no de la matrícula). Body: ninguno.
+- **Reabre un intento ya presentado y evaluado** (`finished = true`) para que el alumno siga
+  respondiendo las preguntas del mismo examen: `finished = false`, `score = null`,
+  `approve = null`.
+- Conserva preguntas, respuestas y el puntaje histórico de la matrícula: `course_student.score`
+  y `course_student.approve` **no** se tocan. Al volver a cerrar el intento con
+  `POST /courseStudentTestEnd` se recalculan todos los puntajes.
+- Idempotente: si el intento ya estaba abierto responde `200` sin cambios.
+- El alumno retoma el intento con el flujo normal (`POST /courseStudentTest/:course_student_id`
+  reutiliza el intento abierto dentro de la ventana de 2 horas del horario).
+- `200` → CourseStudentTest (shape de `GET /courseStudentTest/:id`)
+- `400` JSON `{ message: 'Parámetro course_student_test_id inválido' }`
+- `404` JSON `{ message: 'Intento de examen no encontrado' }`
 
 ### PUT /updateCourseStudentTestScore
 - Body: `course_student_test_id`, `course_student_test_answer_id`, `score`
@@ -1504,7 +1523,9 @@ arranque usa `alter: false` y no las crea).
 - `row_order` **se ignora**: el curso nuevo se agrega al final (`MAX(row_order) + 1`). Si el body lo
   envía, se descarta antes de Joi (no devuelve 400 por clave desconocida).
 - `hours` es **derivado** y se ignora del body. Se recalcula al guardar: tipo 2
-  (`Entrenamiento`) = `8 × días/sesiones del programa`; resto = `Σ(subject.hours × días activos)`.
+  (`Entrenamiento`) = `8 × días/sesiones del programa`, **salvo** nivel 4 (`Experiencia
+  Reciente`) que usa `Σ(subject.hours × días activos)`; resto =
+  `Σ(subject.hours × días activos)`.
 - `201` → Course con `course_type`, `course_level` (incluye `color`, `uses_sessions`, `sessions` y
   `row_order`)
 
@@ -2116,6 +2137,23 @@ arranque usa `alter: false` y no las crea).
 - `200` → `{ answers: [...], score }` (cada answer con `question` —con `answers` restringidas a
   `is_correct=true`, `question_type`, `test_question_type`—)
 - `400` texto plano `Error <msg>`
+
+### POST /courseStudentTest/:course_student_test_id/reactivate
+- Auth: sí, **solo `user.is_superuser`** (administrador). Sin token `401`; con token sin rol
+  `403` JSON `{ message: 'Se requiere rol de administrador' }`.
+- Params: `course_student_test_id` (id del **intento**, no de la matrícula). Body: ninguno.
+- **Reabre un intento ya presentado y evaluado** (`finished = true`) para que el alumno siga
+  respondiendo las preguntas del mismo examen: `finished = false`, `score = null`,
+  `approve = null`.
+- Conserva preguntas, respuestas y el puntaje histórico de la matrícula: `course_student.score`
+  y `course_student.approve` **no** se tocan. Al volver a cerrar el intento con
+  `POST /courseStudentTestEnd` se recalculan todos los puntajes.
+- Idempotente: si el intento ya estaba abierto responde `200` sin cambios.
+- El alumno retoma el intento con el flujo normal (`POST /courseStudentTest/:course_student_id`
+  reutiliza el intento abierto dentro de la ventana de 2 horas del horario).
+- `200` → CourseStudentTest (shape de `GET /courseStudentTest/:id`)
+- `400` JSON `{ message: 'Parámetro course_student_test_id inválido' }`
+- `404` JSON `{ message: 'Intento de examen no encontrado' }`
 
 ### PUT /updateCourseStudentTestScore
 - Body: `course_student_test_id`, `course_student_test_answer_id`, `score`

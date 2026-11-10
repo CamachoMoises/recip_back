@@ -28,6 +28,7 @@ import {
 	ReportTestCorrectAnswers,
 	ReportTestQuestions,
 	ReportTestResults,
+	ReactivateCourseStudentTest,
 	TestCourseDetail,
 	UnlinkTestFromCourse,
 	UpdateAnswerQuestionTest,
@@ -38,6 +39,7 @@ import {
 	UpdateCourseStudentTestScore,
 } from '../controller/test.js';
 import convertTypes from '../middleware/convertTypes.js';
+import { requireSuperuser } from '../middleware/requireSuperuser.js';
 import { authenticateJWT } from '../controller/authentication.js';
 
 // Configure multer for file uploads (Excel)
@@ -228,6 +230,13 @@ router.put(
 );
 
 router.get('/courseStudentTest/:id', CourseStudentTestDetails);
+// Reabrir un intento ya presentado y evaluado (solo administradores).
+router.post(
+	'/courseStudentTest/:course_student_test_id/reactivate',
+	authenticateJWT,
+	requireSuperuser,
+	ReactivateCourseStudentTest,
+);
 router.post(
 	'/courseStudentTest/:course_student_id',
 	upload.none(),

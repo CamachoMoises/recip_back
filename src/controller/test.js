@@ -32,6 +32,7 @@ import {
 	linkTestsToCourse,
 	resolveCourseStudentTest,
 	resolveCourseStudentTestAnswer,
+	reactivateCourseStudentTest,
 	unlinkTestFromCourse,
 	updateAnswerQuestionTest,
 	updateCourseStudentTestAnswer,
@@ -1022,6 +1023,42 @@ export const CourseStudentTestEnd = async (req, res) => {
 		console.error('Error en la creacion:', error.message);
 		console.log(error.message);
 
+		return res.status(400).send(`Error ${error.message}`);
+	}
+};
+
+/**
+ * Reabre un intento ya presentado y evaluado para que el alumno continúe
+ * respondiendo las preguntas del mismo examen. Solo administradores.
+ *
+ * `POST /api/test/courseStudentTest/:course_student_test_id/reactivate`
+ * - Idempotente: si el intento sigue abierto responde 200 sin cambios.
+ * - Conserva preguntas, respuestas y el puntaje histórico de la matrícula.
+ */
+export const ReactivateCourseStudentTest = async (req, res) => {
+	try {
+		const course_student_test_id = Number(
+			req.params.course_student_test_id,
+		);
+		if (
+			!Number.isInteger(course_student_test_id) ||
+			course_student_test_id <= 0
+		) {
+			return res
+				.status(400)
+				.json({ message: 'Parámetro course_student_test_id inválido' });
+		}
+
+		await reactivateCourseStudentTest(course_student_test_id);
+		const courseStudentTestSelected = await getCourseStudentTestById(
+			course_student_test_id,
+		);
+		res.send(courseStudentTestSelected);
+	} catch (error) {
+		console.error('Error al reactivar el intento:', error.message);
+		if (error.status) {
+			return res.status(error.status).json({ message: error.message });
+		}
 		return res.status(400).send(`Error ${error.message}`);
 	}
 };

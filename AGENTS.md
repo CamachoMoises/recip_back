@@ -212,6 +212,10 @@ persiste con `updateCourseHours`.
   - No multiplicar por cada `subject_days`: un mismo día/sesión puede tener varias fases
     (Briefing, Vuelo, Debriefing, ...) y contarlas inflaba el total (curso 29: 25 actividades × 8
     = 200 h para un programa de 3 días; el valor correcto es 24 h).
+- **Excepción "Experiencia Reciente" (nivel 4)**: cursos tipo 2 con `course_level_id = 4` son
+  experiencias cortas (PIC/PI, 1 día) cuya carga real la definen las fases, no una jornada
+  completa. Usan `Σ(subject.hours × días activos)` (curso 23: Briefing 1h + Vuelo 1h +
+  Debriefing 1h = **3 h**, no 8 × 1). Cursos 23 y 24 son los únicos con ese nivel.
 - **Resto de tipos**: `Σ(subject.hours × días activos)` de cada sección.
 - Se recalcula al **crear/editar/clonar** curso y al **crear/editar/desactivar** `subject_days`
   (`ChangeStatusDayFunc`) o editar `subject.hours` (`UpdateSubject`). Los llamados se hacen con
@@ -221,10 +225,11 @@ persiste con `updateCourseHours`.
   valor existe. Claves desconocidas se descartan (`stripUnknown`) para permitir que el front reenvíe
   el curso completo solo para recalcular `hours`.
 
-**Migración de datos (manual):** `migrations/20261103000000-recalculate-training-course-hours.cjs`
-recalcula los cursos tipo 2 existentes con la regla nueva. Es idempotente y solo toca
-`course_type_id = 2`. Correr `npm run migrate` para corregir filas ya guardadas con la fórmula
-vieja.
+**Migraciones de datos (manuales):** `migrations/20261103000000-recalculate-training-course-hours.cjs`
+recalcula los cursos tipo 2 existentes con la regla de `8 × tamaño` (idempotente, solo toca
+`course_type_id = 2`). `migrations/20261204000000-recalculate-experience-recent-course-hours.cjs`
+recalcula los "Experiencia Reciente" (`course_type_id = 2` + `course_level_id = 4`) con la suma de
+secciones. Correr `npm run migrate` para corregir filas ya guardadas con las fórmulas viejas.
 
 ## Exámenes compartidos (`course_test`)
 
@@ -275,10 +280,16 @@ ciclo de vida de vínculos). Un `test` puede estar vinculado a N cursos de teor�
 - `POST /api/test/courseStudentTest/:course_student_id` usa `getActiveTestByCourse` (vínculo, no
   `test.course_id`). Si el curso no tiene examen activo → `404 { message }`. Si hay varios activos
   por datos viejos usa el de menor id y deja un `console.warn`.
+- `POST /api/test/courseStudentTest/:course_student_test_id/reactivate` **reabre un intento ya
+  presentado y evaluado** (`finished = true → false`, `score`/`approve` a `null`) para que el
+  alumno siga respondiendo el mismo examen. Solo administradores (`user.is_superuser`, middleware
+  `src/middleware/requireSuperuser.js`; sin rol → `403 { message }`). Idempotente. Conserva
+  preguntas, respuestas y el puntaje histórico de `course_student`; al re-cerrar el intento se
+  recalculan los puntajes. Repo: `reactivateCourseStudentTest`.
 - Repositorio: helpers `getTestIdsByCourse`, `isTestLinkedToCourse`, `countCoursesByTest`,
   `countActiveCoursesByTest`, `getActiveTestsByCourse`, `getActiveTestByCourse`,
   `getCoursesByTest`, `linkTestToCourse`, `linkTestsToCourse`, `unlinkTestFromCourse`,
-  `assertAnyLinkedCourseActive`, `getTestActivationConflicts` en
+  `assertAnyLinkedCourseActive`, `getTestActivationConflicts`, `reactivateCourseStudentTest` en
   `src/database/repositories/test.js`.
 
 **Migración obligatoria antes de desplegar:** `migrations/20261202000000-create-course-test.cjs`
