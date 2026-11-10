@@ -881,8 +881,14 @@ arranque usa `alter: false` y no las crea).
   y `course_student.approve` **no** se tocan. Al volver a cerrar el intento con
   `POST /courseStudentTestEnd` se recalculan todos los puntajes.
 - Idempotente: si el intento ya estaba abierto responde `200` sin cambios.
-- El alumno retoma el intento con el flujo normal (`POST /courseStudentTest/:course_student_id`
-  reutiliza el intento abierto dentro de la ventana de 2 horas del horario).
+- El alumno retoma el intento por **id del intento** con `GET /courseStudentTest/:id`: el
+  frontend carga ese intento y entra directo a `new_test`, sin pasar por
+  `POST /courseStudentTest/:course_student_id`. Ese endpoint exige un examen activo y, fuera de la
+  ventana de 2 horas del horario, **crearía un intento nuevo** (preguntas distintas y respuestas en
+  blanco), pisando el intento reabierto.
+- Un intento reabierto se puede continuar **aunque el examen esté inactivo** (`test.status = 0`),
+  porque las preguntas ya están en `course_student_test_question`; lo que no se puede es iniciar
+  uno nuevo mientras siga inactivo. La reactivación **no** toca `test.status`.
 - `200` → CourseStudentTest (shape de `GET /courseStudentTest/:id`)
 - `400` JSON `{ message: 'Parámetro course_student_test_id inválido' }`
 - `404` JSON `{ message: 'Intento de examen no encontrado' }`
@@ -2149,8 +2155,14 @@ arranque usa `alter: false` y no las crea).
   y `course_student.approve` **no** se tocan. Al volver a cerrar el intento con
   `POST /courseStudentTestEnd` se recalculan todos los puntajes.
 - Idempotente: si el intento ya estaba abierto responde `200` sin cambios.
-- El alumno retoma el intento con el flujo normal (`POST /courseStudentTest/:course_student_id`
-  reutiliza el intento abierto dentro de la ventana de 2 horas del horario).
+- El alumno retoma el intento por **id del intento** con `GET /courseStudentTest/:id`: el
+  frontend carga ese intento y entra directo a `new_test`, sin pasar por
+  `POST /courseStudentTest/:course_student_id`. Ese endpoint exige un examen activo y, fuera de la
+  ventana de 2 horas del horario, **crearía un intento nuevo** (preguntas distintas y respuestas en
+  blanco), pisando el intento reabierto.
+- Un intento reabierto se puede continuar **aunque el examen esté inactivo** (`test.status = 0`),
+  porque las preguntas ya están en `course_student_test_question`; lo que no se puede es iniciar
+  uno nuevo mientras siga inactivo. La reactivación **no** toca `test.status`.
 - `200` → CourseStudentTest (shape de `GET /courseStudentTest/:id`)
 - `400` JSON `{ message: 'Parámetro course_student_test_id inválido' }`
 - `404` JSON `{ message: 'Intento de examen no encontrado' }`

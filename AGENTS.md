@@ -285,7 +285,9 @@ ciclo de vida de vínculos). Un `test` puede estar vinculado a N cursos de teor�
   alumno siga respondiendo el mismo examen. Solo administradores (`user.is_superuser`, middleware
   `src/middleware/requireSuperuser.js`; sin rol → `403 { message }`). Idempotente. Conserva
   preguntas, respuestas y el puntaje histórico de `course_student`; al re-cerrar el intento se
-  recalculan los puntajes. Repo: `reactivateCourseStudentTest`.
+  recalculan los puntajes. Repo: `reactivateCourseStudentTest`. El frontend lo retoma por id
+  (`GET /api/test/courseStudentTest/:id`), **no** por `POST /courseStudentTest/:course_student_id`,
+  para no recrear el intento fuera de la ventana de 2 h.
 - Repositorio: helpers `getTestIdsByCourse`, `isTestLinkedToCourse`, `countCoursesByTest`,
   `countActiveCoursesByTest`, `getActiveTestsByCourse`, `getActiveTestByCourse`,
   `getCoursesByTest`, `linkTestToCourse`, `linkTestsToCourse`, `unlinkTestFromCourse`,
