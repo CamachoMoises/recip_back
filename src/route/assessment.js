@@ -9,6 +9,7 @@ import {
 	UpdateCourseStudentAssessmentDay,
 	ListSubjectsAssessment,
 	ChangeCourseStudentAssessmentLessonDay,
+	DeleteCourseStudentAssessmentLessonDay,
 	CourseStudentAssessmentData,
 	CourseStudentAssessmentApprove,
 	SaveSignatures,
@@ -83,5 +84,10 @@ router.delete(
 	'/signature',
 	authenticateJWT,
 	DeleteAssessmentSignature,
+);
+router.delete(
+	'/courseStudentAssessmentLessonDay',
+	authenticateJWT,
+	DeleteCourseStudentAssessmentLessonDay,
 );
 export default router;

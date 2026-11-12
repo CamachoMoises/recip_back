@@ -666,6 +666,16 @@ arranque usa `alter: false` y no las crea).
 - `200` → `{ success: true, message: 'Firma eliminada correctamente.' }`
 - `400` JSON `{ success: false, error: 'CSAD_id y type son requeridos.' | 'type debe ser 1, 2 o 3.' }`
 
+### DELETE /courseStudentAssessmentLessonDay
+- Query: `id` o `course_student_assessment_day_id` (al menos uno; enteros positivos)
+  - `id` → borra ese `course_student_assessment_lesson_day` puntual.
+  - `course_student_assessment_day_id` → borra **todos** los detalles de ese día de evaluación.
+  - Si llegan ambos, se combinan (el detalle debe cumplir ambos filtros).
+- `200` → `{ success: true, deleted: N, ids: [..] }`
+- `400` JSON `{ success: false, error: 'id o course_student_assessment_day_id es requerido.' | 'id y course_student_assessment_day_id deben ser enteros positivos.' }`
+- `404` JSON `{ success: false, error: 'No se encontraron registros de course_student_assessment_lesson_day para eliminar.' }`
+- Borrado **físico**: la tabla no tiene columna `status` (no hay soft delete).
+
 ---
 
 ## Test — `/api/test`
@@ -1939,6 +1949,16 @@ arranque usa `alter: false` y no las crea).
 - Query: `CSAD_id` (requerido), `type` (1|2|3, requerido)
 - `200` → `{ success: true, message: 'Firma eliminada correctamente.' }`
 - `400` JSON `{ success: false, error: 'CSAD_id y type son requeridos.' | 'type debe ser 1, 2 o 3.' }`
+
+### DELETE /courseStudentAssessmentLessonDay
+- Query: `id` o `course_student_assessment_day_id` (al menos uno; enteros positivos)
+  - `id` → borra ese `course_student_assessment_lesson_day` puntual.
+  - `course_student_assessment_day_id` → borra **todos** los detalles de ese día de evaluación.
+  - Si llegan ambos, se combinan (el detalle debe cumplir ambos filtros).
+- `200` → `{ success: true, deleted: N, ids: [..] }`
+- `400` JSON `{ success: false, error: 'id o course_student_assessment_day_id es requerido.' | 'id y course_student_assessment_day_id deben ser enteros positivos.' }`
+- `404` JSON `{ success: false, error: 'No se encontraron registros de course_student_assessment_lesson_day para eliminar.' }`
+- Borrado **físico**: la tabla no tiene columna `status` (no hay soft delete).
 
 ---
 

@@ -357,6 +357,34 @@ const updateCourseStudentAssessmentLessonDay = async ({
 	});
 	return courseStudentAssessmentLessonDetail;
 };
+const deleteCourseStudentAssessmentLessonDay = async ({
+	id,
+	course_student_assessment_day_id,
+}) => {
+	const where = {};
+	if (id !== undefined && id !== null) where.id = id;
+	if (
+		course_student_assessment_day_id !== undefined &&
+		course_student_assessment_day_id !== null
+	) {
+		where.course_student_assessment_day_id =
+			course_student_assessment_day_id;
+	}
+
+	const rows = await CourseStudentAssessmentLessonDetail.findAll({
+		where,
+		attributes: ['id'],
+	});
+	const ids = rows.map((row) => row.id);
+
+	if (ids.length === 0) {
+		return { deleted: 0, ids: [] };
+	}
+
+	await CourseStudentAssessmentLessonDetail.destroy({ where });
+	return { deleted: ids.length, ids };
+};
+
 const getAssessmentScoreAverages = async ({ CSA_id }) => {
 	const { fn, col } = CourseStudentAssessmentLessonDetail.sequelize;
 	const effectiveScore = fn(
@@ -496,6 +524,7 @@ export {
 	getSubjectBySubjectId,
 	createCourseStudentAssessmentLessonDay,
 	updateCourseStudentAssessmentLessonDay,
+	deleteCourseStudentAssessmentLessonDay,
 	getSubjectBySubjectByCSA,
 	getAssessmentScoreAverages,
 	getAssessmentsByInstructor,

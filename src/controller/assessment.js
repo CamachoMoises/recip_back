@@ -14,6 +14,7 @@ import {
 	updateCourseStudentAssessmentApprove,
 	updateCourseStudentAssessmentDay,
 	updateCourseStudentAssessmentLessonDay,
+	deleteCourseStudentAssessmentLessonDay,
 } from '../database/repositories/assessment.js';
 import { assertCourseIsActive } from '../database/repositories/course.js';
 import {
@@ -280,6 +281,72 @@ export const ChangeCourseStudentAssessmentLessonDay = async (
 		res.status(500).send('Internal Server Error');
 	}
 };
+export const DeleteCourseStudentAssessmentLessonDay = async (
+	req,
+	res,
+) => {
+	try {
+		const { id, course_student_assessment_day_id } = req.query;
+		const hasId = id !== undefined && id !== '';
+		const hasDay =
+			course_student_assessment_day_id !== undefined &&
+			course_student_assessment_day_id !== '';
+
+		if (!hasId && !hasDay) {
+			return res.status(400).json({
+				success: false,
+				error: 'id o course_student_assessment_day_id es requerido.',
+			});
+		}
+
+		const lessonDetailId = hasId ? Number(id) : undefined;
+		const assessmentDayId = hasDay
+			? Number(course_student_assessment_day_id)
+			: undefined;
+
+		const idIsValid =
+			!hasId ||
+			(Number.isInteger(lessonDetailId) && lessonDetailId > 0);
+		const dayIsValid =
+			!hasDay ||
+			(Number.isInteger(assessmentDayId) && assessmentDayId > 0);
+
+		if (!idIsValid || !dayIsValid) {
+			return res.status(400).json({
+				success: false,
+				error: 'id y course_student_assessment_day_id deben ser enteros positivos.',
+			});
+		}
+
+		const result = await deleteCourseStudentAssessmentLessonDay({
+			id: lessonDetailId,
+			course_student_assessment_day_id: assessmentDayId,
+		});
+
+		if (result.deleted === 0) {
+			return res.status(404).json({
+				success: false,
+				error: 'No se encontraron registros de course_student_assessment_lesson_day para eliminar.',
+			});
+		}
+
+		res.status(200).json({
+			success: true,
+			deleted: result.deleted,
+			ids: result.ids,
+		});
+	} catch (error) {
+		console.error(
+			'Error en DeleteCourseStudentAssessmentLessonDay:',
+			error,
+		);
+		res.status(500).json({
+			success: false,
+			error: 'Error al eliminar los detalles de evaluación.',
+		});
+	}
+};
+
 export const CourseStudentAssessmentData = async (req, res) => {
 	try {
 		let CASD = null;
