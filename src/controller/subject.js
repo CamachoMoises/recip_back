@@ -16,6 +16,7 @@ import {
 	getSubjectById,
 	getSubjectsDaysByFull,
 	getSubjectsLessonDaysByFull,
+	reorderSubjectLessons,
 	updateSubjectDay,
 	updateSubjectLessonDay,
 } from '../database/repositories/subject.js';
@@ -192,6 +193,30 @@ export const UpdateSubjectLesson = async (req, res) => {
 		console.error('Error en la validación:', error.message);
 
 		console.log(error.message);
+		if (error.status) {
+			return res.status(error.status).json({ message: error.message });
+		}
+		return res
+			.status(400)
+			.send(`Input Validation Error ${error.message}`);
+	}
+};
+
+/*
+ * PUT /api/subjects/lesson/order
+ * Body: `{ subject_id: number, ids: number[] }` con las lecciones de la
+ * asignatura en el orden final.
+ *
+ * Reasigna `order` = 1..N en una transacción y devuelve las lecciones de la
+ * asignatura ya ordenadas.
+ */
+export const ReorderSubjectLessons = async (req, res) => {
+	const { subject_id, ids } = req.body ?? {};
+	try {
+		const lessons = await reorderSubjectLessons(subject_id, ids);
+		res.send(lessons);
+	} catch (error) {
+		console.error('Error al reordenar las lecciones:', error.message);
 		if (error.status) {
 			return res.status(error.status).json({ message: error.message });
 		}

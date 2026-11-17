@@ -1,4 +1,4 @@
-import { models } from '../index.js';
+import { models, sequelize } from '../index.js';
 import { Op } from 'sequelize';
 
 const {
@@ -288,6 +288,97 @@ const updateSubjectLessonDay = async ({ id, status }) => {
 	return subjectLessonDays;
 };
 
+/*
+ * Reordenamiento manual (`PUT /api/subjects/lesson/order`).
+ *
+ * Recibe `subject_id` y los ids de sus lecciones en el orden final y reasigna
+ * `order` = 1..N en una sola transacción. Reglas:
+ *  - `subject_id` requerido y numérico => 400 si falta o es inválido;
+ *  - asignatura inexistente => 404;
+ *  - ids duplicados o no numéricos => 400;
+ *  - ids inexistentes o que no pertenezcan a la asignatura => 404;
+ *  - las lecciones de la asignatura que falten en la lista NO se pierden: se
+ *    agregan al final conservando su orden relativo actual.
+ */
+const reorderSubjectLessons = async (subject_id, ids) => {
+	const parsedSubjectId = Number(subject_id);
+	if (!Number.isInteger(parsedSubjectId) || parsedSubjectId <= 0) {
+		const error = new Error('Parámetro subject_id inválido');
+		error.status = 400;
+		throw error;
+	}
+
+	if (!Array.isArray(ids) || ids.length === 0) {
+		const error = new Error('Parámetro ids inválido');
+		error.status = 400;
+		throw error;
+	}
+
+	const parsedIds = ids.map((id) => Number(id));
+	if (parsedIds.some((id) => !Number.isInteger(id) || id <= 0)) {
+		const error = new Error('Parámetro ids inválido');
+		error.status = 400;
+		throw error;
+	}
+	if (new Set(parsedIds).size !== parsedIds.length) {
+		const error = new Error('La lista de ids tiene duplicados');
+		error.status = 400;
+		throw error;
+	}
+
+	return sequelize.transaction(async (transaction) => {
+		const subject = await Subject.findByPk(parsedSubjectId, { transaction });
+		if (!subject) {
+			const error = new Error('Asignatura no encontrada');
+			error.status = 404;
+			throw error;
+		}
+
+		const lessons = await SubjectLesson.findAll({
+			where: { subject_id: parsedSubjectId },
+			order: [
+				['order', 'ASC'],
+				['id', 'ASC'],
+			],
+			transaction,
+		});
+		const byId = new Map(lessons.map((lesson) => [lesson.id, lesson]));
+
+		const unknownIds = parsedIds.filter((id) => !byId.has(id));
+		if (unknownIds.length > 0) {
+			const error = new Error(
+				`Lección no encontrada: ${unknownIds.join(', ')}`,
+			);
+			error.status = 404;
+			throw error;
+		}
+
+		const requested = parsedIds.map((id) => byId.get(id));
+		const requestedIds = new Set(parsedIds);
+		const remaining = lessons.filter(
+			(lesson) => !requestedIds.has(lesson.id),
+		);
+		const finalOrder = [...requested, ...remaining];
+
+		for (let index = 0; index < finalOrder.length; index += 1) {
+			const lesson = finalOrder[index];
+			const nextOrder = index + 1;
+			if (lesson.order !== nextOrder) {
+				await lesson.update({ order: nextOrder }, { transaction });
+			}
+		}
+
+		return SubjectLesson.findAll({
+			where: { subject_id: parsedSubjectId },
+			order: [
+				['order', 'ASC'],
+				['id', 'ASC'],
+			],
+			transaction,
+		});
+	});
+};
+
 export {
 	getAllSubjects,
 	getSubjectById,
@@ -305,4 +396,5 @@ export {
 	updateSubjectDay,
 	updateSubjectLessonDay,
 	checkStatusDay,
+	reorderSubjectLessons,
 };

@@ -10,6 +10,7 @@ import {
 	ChangeStatusLessonDay,
 	CreateSubjectLesson,
 	UpdateSubjectLesson,
+	ReorderSubjectLessons,
 	ListSubjectsLessonCourse,
 } from '../controller/subject.js';
 import convertTypes from '../middleware/convertTypes.js';
@@ -47,6 +48,14 @@ router.put(
 	authenticateJWT,
 	convertTypes,
 	UpdateSubjectLesson
+);
+// Orden manual de lecciones de una asignatura. Ruta literal `/lesson/order`.
+router.put(
+	'/lesson/order',
+	upload.none(),
+	authenticateJWT,
+	convertTypes,
+	ReorderSubjectLessons
 );
 router.get(
 	'/course/:id',

@@ -511,6 +511,20 @@ status: boolean
 
 **Response** `201`: Updated subject with lessons included.
 
+### `PUT /api/subjects/lesson/order`
+Reorder subject lessons within a subject.
+
+**Request** (form-data/JSON):
+```
+subject_id: number
+ids: number[]
+```
+`ids` is the final order of the subject's lesson IDs. Missing lesson IDs of that subject are appended at the end preserving their relative order.
+
+**Response** `200`: Array of `SubjectLesson` objects for the subject, ordered by `order ASC, id ASC`.
+
+**Errors**: `400` invalid `subject_id`/`ids` or duplicates; `404` subject or lesson not found.
+
 ---
 
 ## Assessment
