@@ -186,7 +186,10 @@ const editUser = async ({
 		user.is_active = is_active;
 		user.is_staff = is_staff;
 		user.is_superuser = is_superuser;
-		if (password) {
+		// El front reenvía el usuario completo del GET, incluido `password` con el
+		// hash actual. Solo rehashear si es un valor nuevo: si se rehashea el hash
+		// guardado, el usuario deja de poder iniciar sesión.
+		if (password && password !== user.password) {
 			user.password = hashPassword(`${password}`);
 		}
 		await user.save();

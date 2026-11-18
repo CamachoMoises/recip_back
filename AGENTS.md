@@ -6,13 +6,13 @@ Backend API for a driving school management platform (RECIP 360 ATC). Handles co
 
 ## Tech Stack
 
-- **Runtime**: Node.js v18+ (ES Modules: `"type": "module"`)
-- **Framework**: Express 4.21
+- **Runtime**: Node.js v20+ (ES Modules: `"type": "module"`). `nodemailer@10` requires Node >= 20; declared in `package.json` `engines`.
+- **Framework**: Express 4.22
 - **ORM**: Sequelize 6.37 with mysql2 (MySQL)
 - **Validation**: Joi 17
 - **Auth**: JWT + bcryptjs
 - **File Uploads**: Multer (in-memory) + Cloudinary
-- **Email**: Nodemailer
+- **Email**: Nodemailer 10
 - **Migrations**: Sequelize CLI
 - **Linting**: ESLint 9
 

@@ -174,6 +174,11 @@ arranque usa `alter: false` y no las crea).
   facto, busca al usuario por uuid), `name`, `last_name`, `country_name`, `flag`, `phone`,
   `rank` (TEXT, opcional), `password`, `user_doc_type_id`, `is_superuser`, `is_staff`, `is_active`, `createdAt`, `updatedAt`
 - `201` → User con `student`, `instructor`, `user_doc_type`
+- El esquema usa `stripUnknown: true`: las claves extra se **ignoran**, así que el front puede
+  reenviar el usuario completo del GET (incluye los includes `student`, `instructor` y
+  `user_doc_type`) sin que Joi devuelva `"<clave>" is not allowed`.
+- `password`: si se reenvía el **mismo hash** que ya tiene el usuario, no se vuelve a hashear
+  (evita dejar al usuario sin login). Solo se hashea si el valor es distinto.
 - `404` texto plano `User not found`; `400` `Input Validation Error <msg>`
 
 ### PUT /api/users/disable-role

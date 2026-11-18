@@ -55,6 +55,6 @@ const updateUserSchema = Joi.object({
 	is_active: Joi.boolean(),
 	createdAt: Joi.string().allow(null, ''),
 	updatedAt: Joi.string().allow(null, ''),
-});
+}).options({ stripUnknown: true });
 
 export { createUserSchema, updateUserSchema };
