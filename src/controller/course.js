@@ -571,47 +571,21 @@ export const UpdateCourseStudentMaxAttempts = async (req, res) => {
  * Horas totales del curso: siempre es un valor derivado, nunca lo que envíe el
  * cliente (`POST /` y `PUT /` descartan `hours`).
  *
- * - `course_type_id = 2` ("Entrenamiento"): la carga es 8 horas por día/sesión
- *   del programa. Antes se multiplicaba 8 por cada `subject_days` activo; como
- *   un mismo día suele tener varias fases (Briefing, Vuelo, Debriefing, ...),
- *   el total se inflaba (curso 29: 25 actividades × 8 = 200 h para 3 días).
- * - Excepción "Experiencia Reciente" (nivel 4): cursos de Entrenamiento cortos
- *   (PIC/PI) cuya carga real la define el programa, no una jornada completa.
- *   Usan la suma de secciones: Σ(subject.hours × días activos). El curso 23
- *   (Briefing 1h + Vuelo 1h + Debriefing 1h) da 3 h, no 8 × 1 día.
- * - Resto de tipos: suma de `subject.hours` × días activos de cada sección.
+ * Regla única para TODOS los tipos de curso (teoría y entrenamiento):
+ * Σ(subject.hours × días/sesiones activos). `getSubjectByCourseId` solo incluye
+ * `subject_days` activos, así que los días desactivados no cuentan.
+ *
+ * Antes los cursos de Entrenamiento (`course_type_id = 2`) usaban 8 h por
+ * día/sesión, con una excepción para "Experiencia Reciente" (nivel 4). Ese tramo
+ * especial se eliminó para igualar su cálculo al de los cursos teóricos.
  */
-const TRAINING_COURSE_TYPE_ID = 2;
-const TRAINING_HOURS_PER_DAY = 8;
-const EXPERIENCE_RECENT_COURSE_LEVEL_ID = 4;
-
 export const calculateCourseTotalHours = async (course_id) => {
-	const course = await getCourseById(course_id);
-	if (!course) return null;
-
-	// Entrenamiento de jornada completa (Inicial/Periódico/Especial): 8 h por
-	// día/sesión. La "Experiencia Reciente" es la excepción: experiencias cortas
-	// cuyo total sale de sumar las fases programadas.
-	const isTrainingFullDay =
-		Number(course.course_type_id) === TRAINING_COURSE_TYPE_ID &&
-		Number(course.course_level_id) !== EXPERIENCE_RECENT_COURSE_LEVEL_ID;
-
+	const subjects = await getSubjectByCourseId(course_id);
 	let totalHours = 0;
-
-	if (isTrainingFullDay) {
-		const programSize = course.uses_sessions
-			? (course.sessions ?? course.days)
-			: course.days;
-		totalHours = TRAINING_HOURS_PER_DAY * (Number(programSize) || 0);
-	} else {
-		const subjects = await getSubjectByCourseId(course_id);
-		for (const subject of subjects) {
-			// `getSubjectByCourseId` solo incluye `subject_days` activos.
-			const activeDays = subject.subject_days.length;
-			totalHours += (Number(subject.hours) || 0) * activeDays;
-		}
+	for (const subject of subjects) {
+		const activeDays = subject.subject_days.length;
+		totalHours += (Number(subject.hours) || 0) * activeDays;
 	}
-
 	await updateCourseHours(course_id, totalHours);
 	return totalHours;
 };

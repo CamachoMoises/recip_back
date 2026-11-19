@@ -11,7 +11,8 @@
 		"migrate:generate": "sequelize-cli migration:generate --migrations-path migrations",
 		"seed": "sequelize-cli db:seed:all --config config/database.cjs --migrations-path migrations --models-path models --seeders-path seeders",
 		"seed:undo": "sequelize-cli db:seed:undo --config config/database.cjs --migrations-path migrations --models-path models --seeders-path seeders",
-		"analyze:duplicates": "node scripts/analyzeDuplicateTests.js"
+		"analyze:duplicates": "node scripts/analyzeDuplicateTests.js",
+		"recalculate:course-hours": "node scripts/recalculateCourseHours.js"
 	},
 	"keywords": [],
 	"author": "",

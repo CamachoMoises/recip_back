@@ -207,16 +207,13 @@ Instrucciones de front: `FRONT_ORDEN_CURSOS.md`.
 `hours`). Lo calcula `calculateCourseTotalHours(course_id)` en `src/controller/course.js` y lo
 persiste con `updateCourseHours`.
 
-- **`course_type_id = 2` ("Entrenamiento")**: `8 × tamaño del programa`, donde el tamaño es
-  `uses_sessions ? (sessions ?? days) : days`.
-  - No multiplicar por cada `subject_days`: un mismo día/sesión puede tener varias fases
-    (Briefing, Vuelo, Debriefing, ...) y contarlas inflaba el total (curso 29: 25 actividades × 8
-    = 200 h para un programa de 3 días; el valor correcto es 24 h).
-- **Excepción "Experiencia Reciente" (nivel 4)**: cursos tipo 2 con `course_level_id = 4` son
-  experiencias cortas (PIC/PI, 1 día) cuya carga real la definen las fases, no una jornada
-  completa. Usan `Σ(subject.hours × días activos)` (curso 23: Briefing 1h + Vuelo 1h +
-  Debriefing 1h = **3 h**, no 8 × 1). Cursos 23 y 24 son los únicos con ese nivel.
-- **Resto de tipos**: `Σ(subject.hours × días activos)` de cada sección.
+- **Regla única para todos los tipos** (teoría y entrenamiento): `Σ(subject.hours × días/sesiones
+  activos)` de cada sección. `getSubjectByCourseId` solo incluye `subject_days` activos, así que
+  los días desactivados no cuentan.
+- Se eliminó el tramo especial de los cursos de Entrenamiento (`course_type_id = 2`): antes sumaban
+  `8 × tamaño del programa`, con una excepción para "Experiencia Reciente" (`course_level_id = 4`).
+  Ahora se calculan igual que los cursos teóricos (tipo 1). Ya no existen las constantes
+  `TRAINING_COURSE_TYPE_ID`, `TRAINING_HOURS_PER_DAY` ni `EXPERIENCE_RECENT_COURSE_LEVEL_ID`.
 - Se recalcula al **crear/editar/clonar** curso y al **crear/editar/desactivar** `subject_days`
   (`ChangeStatusDayFunc`) o editar `subject.hours` (`UpdateSubject`). Los llamados se hacen con
   `await` para que la respuesta ya lleve las horas nuevas.
@@ -225,11 +222,17 @@ persiste con `updateCourseHours`.
   valor existe. Claves desconocidas se descartan (`stripUnknown`) para permitir que el front reenvíe
   el curso completo solo para recalcular `hours`.
 
-**Migraciones de datos (manuales):** `migrations/20261103000000-recalculate-training-course-hours.cjs`
-recalcula los cursos tipo 2 existentes con la regla de `8 × tamaño` (idempotente, solo toca
-`course_type_id = 2`). `migrations/20261204000000-recalculate-experience-recent-course-hours.cjs`
-recalcula los "Experiencia Reciente" (`course_type_id = 2` + `course_level_id = 4`) con la suma de
-secciones. Correr `npm run migrate` para corregir filas ya guardadas con las fórmulas viejas.
+**Recálculo de datos existentes:** `npm run recalculate:course-hours`
+(`scripts/recalculateCourseHours.js`) recorre todos los cursos, incluidos los eliminados, y llama a
+`calculateCourseTotalHours(id)` para cada uno; la regla no se duplica en SQL. Acepta
+`--course-id <id>` para un curso puntual. Ejecutarlo **una sola vez** tras desplegar el cambio:
+escribe en la BD, así que lo ejecuta el dueño del proyecto, no un agente.
+
+**Migraciones históricas (ya no reflejan la regla vigente):**
+`migrations/20261103000000-recalculate-training-course-hours.cjs` y
+`migrations/20261204000000-recalculate-experience-recent-course-hours.cjs` aplicaban las fórmulas
+viejas (`8 × días` y la excepción de nivel 4). **No volver a ejecutarlas**: para corregir filas
+guardadas con esas fórmulas, usar el script de recálculo.
 
 ## Exámenes compartidos (`course_test`)
 
@@ -407,6 +410,7 @@ activos se eliminan solas de la respuesta. No quites esos `status: true`.
 - `npm test` — No test suite configured
 - `npm run migrate:generate` — Generate new migration file
 - `npm run analyze:duplicates` — Analiza exámenes duplicados (solo lectura; `--json`, `--sql`, `--out`)
+- `npm run recalculate:course-hours` — Recalcula `course.hours` de todos los cursos con la regla vigente (escribe en BD; solo el dueño; `--course-id <id>` opcional)
 - `npm run lint` — Run ESLint
 
 Lint with `npx eslint .`
