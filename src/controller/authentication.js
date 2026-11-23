@@ -29,7 +29,7 @@ export const Login = async (req, res) => {
 			throw new Error('invalid_password');
 		}
 		const token = jwt.sign({ id: user.id }, SECRET_KEY, {
-			expiresIn: '6h',
+			expiresIn: '8h',
 		});
 		res.send({ email, user, token });
 	} catch (error) {
