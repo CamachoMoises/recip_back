@@ -24,7 +24,27 @@ password: string
 }
 ```
 
-**Errors**: `401` Invalid User / Invalid Password
+**Errors**: `401` Invalid User / Invalid Password / User is inactive
+
+### `POST /auth/impersonate/:user_id`
+Admin only (`is_superuser`). Needs the admin's `Authorization: Bearer <token>` header.
+Returns a **1 h** token for the target user so the admin can view content without logging in.
+The JWT payload is `{ id: <user_id>, impersonated_by: <admin_id>, is_impersonation: true }`.
+
+**Response** `200`:
+```json
+{
+  "email": "target@email.com",
+  "user": { "id": 2, "name": "...", "email": "...", "student": {}, "instructor": {}, "user_doc_type": {} },
+  "token": "eyJhbG...",
+  "impersonated_by": 1,
+  "expires_in": "1h"
+}
+```
+`user` omits the `password` hash. Self-impersonation and impersonating another admin are blocked.
+
+**Errors** (JSON `{ "message": ... }`): `400` invalid id / self, `401` missing token,
+`403` not admin / target is admin / invalid or expired admin token, `404` target not found.
 
 ---
 

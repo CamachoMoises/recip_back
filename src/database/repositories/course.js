@@ -1,6 +1,10 @@
 import { Op, Sequelize } from 'sequelize';
 import { models, sequelize } from '../index.js';
 import { getCourseStudentIdsByInstructor } from './instructor.js';
+import {
+	assertInstructorRoleActiveById,
+	assertStudentRoleActiveById,
+} from './user.js';
 
 const {
 	Course,
@@ -611,6 +615,10 @@ const editCourseStudent = async (course_student_id, data) => {
 			);
 	}
 
+	if (data.student_id !== undefined && data.student_id !== null) {
+		await assertStudentRoleActiveById(data.student_id);
+	}
+
 	const updateData = {};
 	for (const [dbField, reqField] of Object.entries(EDITABLE_COURSE_STUDENT_FIELDS)) {
 		if (data[reqField] !== undefined) {
@@ -961,6 +969,7 @@ const createSchedule = async ({
 	hour,
 	classTime,
 }) => {
+	await assertInstructorRoleActiveById(instructor_id);
 	await assertScheduleIsValid({
 		subject_id,
 		subject_days_id,
@@ -989,6 +998,9 @@ const updateSchedule = async (
 	const editSchedule = await Schedule.findByPk(id);
 	if (!editSchedule) {
 		throw new Error('Course not found');
+	}
+	if (instructor_id !== undefined && instructor_id !== null) {
+		await assertInstructorRoleActiveById(instructor_id);
 	}
 	await editSchedule.update({
 		instructor_id,

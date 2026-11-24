@@ -17,6 +17,7 @@ import {
 	deleteCourseStudentAssessmentLessonDay,
 } from '../database/repositories/assessment.js';
 import { assertCourseIsActive } from '../database/repositories/course.js';
+import { assertStudentRoleActiveById } from '../database/repositories/user.js';
 import {
 	upsertAssessmentSignature,
 	deleteAssessmentSignature,
@@ -117,6 +118,7 @@ export const CreateCourseStudentAssessment = async (req, res) => {
 		const data = req.body;
 		const { course_id, student_id, course_student_id } = data;
 		await assertCourseIsActive(course_id);
+		await assertStudentRoleActiveById(student_id);
 		const date = moment().format('YYYY-MM-DD');
 		const courseStudentAssessment =
 			await createCourseStudentAssessment({

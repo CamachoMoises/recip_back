@@ -111,10 +111,31 @@ arranque usa `alter: false` y no las crea).
 ### POST /auth
 - Auth: no
 - Body: `email` (string), `password` (string)
-- `200` → `{ email, user, token }` (JWT, payload `{ id }`, expira en 1h). `user` trae los alias
+- `200` → `{ email, user, token }` (JWT, payload `{ id }`, expira en **8 h**). `user` trae los alias
   `student` e `instructor` (NO trae `user_doc_type`). Ojo: incluye `password` (hash bcrypt).
 - `401` texto plano: `Invalid User` | `Invalid Password` | `User is inactive`
 - `500` `Internal Server Error`
+
+### POST /auth/impersonate/:user_id
+- Auth: sí (token del administrador) + `requireSuperuser` (`is_superuser = true`).
+- Params: `user_id` (entero positivo). No requiere body.
+- Genera un JWT para el usuario destino con payload
+  `{ id: <user_id>, impersonated_by: <admin_id>, is_impersonation: true }`, vigente **1 h**.
+  El resto de la API sigue leyendo `req.user.id`, así que no requiere cambios.
+- `200` → `{ email, user, token, impersonated_by, expires_in: '1h' }`. `user` incluye los alias
+  `student`, `instructor` y `user_doc_type`, pero **omite `password`** (a diferencia del login).
+- Cada llamada emite un `console.warn` de auditoría con
+  `{ event: 'user_impersonation', admin_id, target_user_id, timestamp }` (sin el token).
+- Reglas: no se puede suplantar a uno mismo ni a otro administrador; **sí** se puede suplantar a
+  usuarios inactivos (el objetivo es inspeccionar contenido, no iniciar sesión normal).
+- `400` JSON `{ message: 'ID de usuario inválido' | 'No puedes suplantarte a ti mismo' }`
+- `401` texto plano `Unauthorized` (sin token) o JSON `{ message: 'Usuario no encontrado' }`
+  (el admin del token ya no existe)
+- `403` JSON `{ message: 'Se requiere rol de administrador' }` (middleware), o
+  `{ message: 'No se puede suplantar a un administrador' }`, o el error JWT serializado si el
+  token del admin es inválido/expiró
+- `404` JSON `{ message: 'Usuario no encontrado' }` (destino inexistente)
+- `500` JSON `{ message: 'Internal Server Error' }`
 
 ---
 
@@ -145,13 +166,21 @@ arranque usa `alter: false` y no las crea).
 ### GET /api/users/student
 - Query: `status` (`"true"`/`"false"`, opcional)
 - `200` → array de User que tienen Student, con `student`, `user_doc_type`
+- Sin `status` devuelve todos (incluidos roles desactivados). Para selectores operativos, el front
+  debe pedir `?status=true`; el histórico/admin puede omitirlo o usar `status=false`.
 
 ### GET /api/users/instructor
 - Query: `status` (`"true"`/`"false"`, opcional)
 - `200` → array de User que tienen Instructor, con `instructor`, `user_doc_type`
+- Sin `status` devuelve todos (incluidos roles desactivados). Para selectores operativos, el front
+  debe pedir `?status=true`. Los dashboards/reportes `/api/instructor/*` mantienen visibilidad
+  histórica aunque el rol esté desactivado.
 
 ### GET /api/users/student/search
-- Query: `search` (string, requerido)
+- Query: `search` (string, requerido), `include_inactive` (booleano, opcional; default `false`)
+- Por defecto solo devuelve alumnos con `Student.status = true` y `User.is_active = true`, para que
+  los selectores operativos no ofrezcan roles desactivados.
+- `include_inactive=true` incluye alumnos con rol o cuenta inactiva (uso admin/configuración).
 - `200` → `{ data: [{ student_id, name, email }] }`
 - `400` JSON `{ message: 'Search query is required' }`
 
@@ -163,10 +192,14 @@ arranque usa `alter: false` y no las crea).
 
 ### POST /api/users/student
 - Body: `user_id` (requerido)
+- Idempotente/"ensure active": si el rol no existe lo crea con `status = user.is_active`; si existe
+  con `status = false` lo reactiva (`status = true`) sin cambiar `User.is_active`.
 - `201` → User con `student`, `instructor`, `user_doc_type`
 
 ### POST /api/users/instructor
 - Body: `user_id` (requerido)
+- Idempotente/"ensure active": si el rol no existe lo crea con `status = user.is_active`; si existe
+  con `status = false` lo reactiva (`status = true`) sin cambiar `User.is_active`.
 - `201` → User con `student`, `instructor`, `user_doc_type`
 
 ### PUT /api/users/
@@ -356,6 +389,9 @@ arranque usa `alter: false` y no las crea).
 ### PUT /courseStudent/:course_id
 - Params: `course_id` (ignorado); Body: `course_student_id` (requerido), `date`, `student_id`,
   `typeTrip`, `license`, `regulation`, `instructorCode`, `courseGroupId`, `client`
+- Si se envía `student_id`, debe corresponder a un Student con rol activo
+  (`Student.status = true` y `User.is_active = true`); si no, `409` JSON
+  `{ "message": "El alumno no está activo; reactiva su rol antes de asignarlo" }`.
 - `200` → CourseStudent (sin includes)
 - `400` texto plano `course_student_id is required`
 
@@ -390,6 +426,9 @@ arranque usa `alter: false` y no las crea).
 - **Validaciones (evitan duplicados):**
   - El curso del `course_student` no debe estar eliminado (`course.status = true`); si lo está
     devuelve `409` con `{ message }`.
+  - `instructor_id`, si se envía, debe corresponder a un Instructor con rol activo
+    (`Instructor.status = true` y `User.is_active = true`); si no, `409` JSON
+    `{ "message": "El instructor no está activo; reactiva su rol antes de asignarlo" }`.
   - `subject_days_id` debe existir, pertenecer al curso del `course_student` y
     corresponder al `subject_id` enviado.
   - El `subject_days` debe estar **activo** (`status = 1`).
@@ -399,15 +438,17 @@ arranque usa `alter: false` y no las crea).
     horario antes de volver a agendar la actividad.
 - `400` JSON `{ "message": "..." }` si `subject_days_id`/`subject_id` no son válidos o no
   pertenecen al curso del alumno; `400`/`404` si el `course_student` no existe.
-- `409` JSON `{ "message": "..." }` si la actividad está inactiva o ya está agendada
-  (incluye el `id` del horario existente en el mensaje). La restricción única
-  `uq_schedule_course_student_subject_days` respalda el caso de concurrencia.
+- `409` JSON `{ "message": "..." }` si la actividad está inactiva, ya está agendada
+  (incluye el `id` del horario existente en el mensaje), o el instructor no está activo. La
+  restricción única `uq_schedule_course_student_subject_days` respalda el caso de concurrencia.
 - `500` texto plano `Internal Server Error ...` para errores no controlados.
 
 ### PUT /schedule
 - Auth: **no**
 - Body: `id` (requerido), `instructor_id`, `date`, `hour`, `classTime`
 - `200` → Schedule (mismo shape que GET /schedule/:id)
+- Si se envía `instructor_id`, debe corresponder a un Instructor con rol activo; si no, `409` JSON
+  `{ "message": "El instructor no está activo; reactiva su rol antes de asignarlo" }`.
 - No cambia `subject_days_id` ni `subject_id`; para mover una actividad a otro día hay
   que eliminar el horario y crearlo de nuevo (así pasan las validaciones de duplicado).
 
@@ -640,6 +681,7 @@ arranque usa `alter: false` y no las crea).
 - Body: `course_id` (requerido), `student_id` (requerido), `course_student_id` (requerido)
   (genera `code` `CSA-########`, `date` = hoy)
 - `201` → CourseStudentAssessment (shape de GET /courseStudentAssessment/:id)
+- `409` JSON `{ message }` si el curso está eliminado o si el rol Student no está activo.
 
 ### POST /courseStudentAssessmentApprove
 - Body: `course_student_assessment_id` (requerido), `approve` (requerido)
@@ -883,7 +925,9 @@ arranque usa `alter: false` y no las crea).
 - `404` JSON `{ message: 'Matrícula del alumno no encontrada' }`
 - `404` JSON `{ message: 'El curso no tiene un examen activo' }` si ningún examen vinculado al
   curso está activo.
-- `409` JSON `{ message }` si el curso de la matrícula está eliminado.
+- `409` JSON `{ message }` si el curso de la matrícula está eliminado o si el rol Student del
+  alumno no está activo (solo al crear un intento nuevo; retomar un intento abierto existente no
+  se bloquea).
 - `400` texto plano `Error <msg>` para el resto de fallos.
 
 ### POST /courseStudentTestAnswer

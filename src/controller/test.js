@@ -42,6 +42,7 @@ import {
 	updateTestQuestionType,
 } from '../database/repositories/test.js';
 import { assertCourseIsActive } from '../database/repositories/course.js';
+import { assertStudentRoleActiveById } from '../database/repositories/user.js';
 import { cloneTestSchema } from '../database/imput_validation/test.js';
 import {
 	cleanString,
@@ -879,6 +880,7 @@ export const CourseStudentTest = async (req, res) => {
 			}
 		}
 		if (!exist) {
+			await assertStudentRoleActiveById(courseStudent.student_id);
 			const courseStudentTest = await createCourseStudentTest(
 				filters.course_student_id,
 				filters.test_id,

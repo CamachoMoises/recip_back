@@ -270,14 +270,16 @@ export const DisableUserRole = async (req, res) => {
 };
 
 export const SearchStudents = async (req, res) => {
-	const { search } = req.query;
+	const { search, include_inactive } = req.query;
 	if (!search || search.trim() === '') {
 		return res
 			.status(400)
 			.json({ message: 'Search query is required' });
 	}
 	try {
-		const students = await searchStudents(search.trim());
+		const students = await searchStudents(search.trim(), {
+			include_inactive,
+		});
 		res.json({ data: students });
 	} catch (error) {
 		console.log(error);

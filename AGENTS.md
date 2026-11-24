@@ -234,6 +234,33 @@ escribe en la BD, así que lo ejecuta el dueño del proyecto, no un agente.
 viejas (`8 × días` y la excepción de nivel 4). **No volver a ejecutarlas**: para corregir filas
 guardadas con esas fórmulas, usar el script de recálculo.
 
+## Roles de usuario (Student/Instructor)
+
+`Student.status` / `Instructor.status` son el estado del **rol**, no de la cuenta (`User.is_active`).
+Desactivar un rol es reversible y **no borra** la fila: preserva el histórico (FKs de
+`course_student`, `schedule`, evaluaciones, intentos, asistencias, reportes).
+
+- **Regla:** rol desactivado = no permitir **nuevas asignaciones/escrituras** de ese rol; el
+  histórico existente sigue visible. No hay borrado físico de `Student/Instructor`.
+- **Guards fase 1 (escrituras):** `assertStudentRoleActiveById` /
+  `assertInstructorRoleActiveById` en `src/database/repositories/user.js` validan
+  `Student/Instructor.status = true` y `User.is_active = true`; devuelven 400 id inválido, 404 no
+  encontrado, 409 rol inactivo.
+- **Aplicados en:** `POST /api/courses/schedule` y `PUT /api/courses/schedule` (instructor activo),
+  `PUT /api/courses/courseStudent` cuando se envía `student_id` (alumno activo),
+  `POST /api/assessment/createCourseStudentAssessment` (alumno activo), y
+  `POST /api/test/courseStudentTest/:course_student_id` solo al crear un intento nuevo (retomar un
+  intento abierto existente no se bloquea).
+- **Fase 2:** `GET /api/users/student/search` excluye roles/cuentas inactivas por defecto; acepta
+  `include_inactive=true` para uso admin. `POST /api/users/student|instructor` es idempotente
+  "ensure active": crea el rol si falta, o lo reactiva (`status=true`) si existía desactivado, sin
+  cambiar `User.is_active`.
+- **Fase 3 (decisión):** `/api/instructor/*` y reportes/histórico **sí muestran** instructores que
+  dejaron de ser instructores (no filtrar por `Instructor.status`); el histórico no se oculta. Los
+  selectores operativos deben pedir solo activos: `GET /api/users/student/search` ya filtra por
+  defecto, y `GET /api/users/student|instructor` deben consumirse con `?status=true` cuando el
+  front los use para asignar/seleccionar.
+
 ## Exámenes compartidos (`course_test`)
 
 **Fases 1, 2, 3 y 4 implementadas** (esquema + lecturas por vínculo + autoría normalizada +
@@ -363,7 +390,7 @@ activos se eliminan solas de la respuesta. No quites esos `status: true`.
 
 | Prefix | Purpose |
 |--------|---------|
-| `/auth` | Login (public) |
+| `/auth` | Login (public). `POST /impersonate/:user_id` (admin only, `authenticateJWT` + `requireSuperuser`) emite un JWT de **1 h** para ver el contenido como otro usuario sin iniciar sesión. Token con claims `impersonated_by` e `is_impersonation`; auditoría por `console.warn`; bloquea suplantarse a uno mismo o a otro admin; el login normal expira en 8 h. |
 | `/api/users` | User/student/instructor CRUD |
 | `/api/users/student/search` | Fast student search by name/email |
 | `/api/courses` | Course + enrollment + schedule CRUD (includes `instructor_id` filter on `coursesStudents`). Lifecycle: `DELETE /:id` (soft delete) + `POST /:id/restore` (reactivar), ver sección "Soft delete de curso". Orden manual: `PUT /order` (`{ ids }` → 1..N) + `row_order` en `GET /`, ver sección "Orden de cursos". `DELETE /schedule/:id` borra un schedule **y en cascada** su `attendance` + `attendance_signature` (match `course_student_id` + `date` + `subject_days.day`); `DELETE /schedule/course-student/:course_student_id` borra todos los schedules del alumno con la misma cascada (solo los pares `(date, day)` que tenían schedule). Ambos en una transacción. |

@@ -40,11 +40,15 @@ const getStudentByUserId = async (user_id) => {
 	if (!user) throw new Error('User not found');
 	const student = await user.getStudent();
 	if (!student) {
-		const status = user.is_active;
-		return await user.createStudent({ status });
-	} else {
-		return student;
+		return await user.createStudent({ status: user.is_active });
 	}
+	// Idempotente para POST /api/users/student: si el rol existe pero está
+	// desactivado, lo reactiva. No toca User.is_active.
+	if (!student.status) {
+		student.status = true;
+		await student.save();
+	}
+	return student;
 };
 
 const getInstructorByUserId = async (user_id) => {
@@ -52,11 +56,13 @@ const getInstructorByUserId = async (user_id) => {
 	if (!user) throw new Error('User not found');
 	const instructor = await user.getInstructor();
 	if (!instructor) {
-		const status = user.is_active;
-		return await user.createInstructor({ status });
-	} else {
-		return instructor;
+		return await user.createInstructor({ status: user.is_active });
 	}
+	if (!instructor.status) {
+		instructor.status = true;
+		await instructor.save();
+	}
+	return instructor;
 };
 
 const removeStudentByUserId = async (user_id) => {
@@ -86,6 +92,68 @@ const updateInstructorStatus = async (userId, status) => {
 	if (!instructor) throw new Error('Instructor not found');
 	instructor.status = status;
 	await instructor.save();
+	return instructor;
+};
+
+const roleInactiveError = (message) => {
+	const error = new Error(message);
+	error.status = 409;
+	return error;
+};
+
+/*
+ * Guards para escrituras/asignaciones nuevas. No se usan para ocultar historial:
+ * desactivar un rol impide nuevas asignaciones, pero conserva registros previos.
+ * Se valida por id de rol (Student.id / Instructor.id), que es lo que guardan
+ * schedule.instructor_id, course_student.student_id, etc.
+ */
+const assertStudentRoleActiveById = async (studentId) => {
+	if (studentId === undefined || studentId === null || studentId === '') {
+		return null;
+	}
+	const id = Number(studentId);
+	if (!Number.isInteger(id) || id <= 0) {
+		const error = new Error('ID de alumno inválido');
+		error.status = 400;
+		throw error;
+	}
+	const student = await Student.findByPk(id, { include: [{ model: User }] });
+	if (!student) {
+		const error = new Error('Alumno no encontrado');
+		error.status = 404;
+		throw error;
+	}
+	if (!student.status || !student.user?.is_active) {
+		throw roleInactiveError(
+			'El alumno no está activo; reactiva su rol antes de asignarlo',
+		);
+	}
+	return student;
+};
+
+const assertInstructorRoleActiveById = async (instructorId) => {
+	if (instructorId === undefined || instructorId === null || instructorId === '') {
+		return null;
+	}
+	const id = Number(instructorId);
+	if (!Number.isInteger(id) || id <= 0) {
+		const error = new Error('ID de instructor inválido');
+		error.status = 400;
+		throw error;
+	}
+	const instructor = await Instructor.findByPk(id, {
+		include: [{ model: User }],
+	});
+	if (!instructor) {
+		const error = new Error('Instructor no encontrado');
+		error.status = 404;
+		throw error;
+	}
+	if (!instructor.status || !instructor.user?.is_active) {
+		throw roleInactiveError(
+			'El instructor no está activo; reactiva su rol antes de asignarlo',
+		);
+	}
 	return instructor;
 };
 const getUserById = async (id) => {
@@ -261,20 +329,33 @@ const getUsersInstructors = async (status) => {
 };
 // repositories/user.js
 
-const searchStudents = async (query) => {
+const searchStudents = async (query, options = {}) => {
+	const includeInactive =
+		options.include_inactive === true ||
+		options.include_inactive === 1 ||
+		options.include_inactive === 'true' ||
+		options.include_inactive === '1';
+
 	const searchPattern = `%${query}%`;
+	const studentWhere = includeInactive ? {} : { status: true };
+	const userWhere = {
+		[Op.or]: [
+			{ name: { [Op.like]: searchPattern } },
+			{ last_name: { [Op.like]: searchPattern } },
+			{ email: { [Op.like]: searchPattern } },
+		],
+	};
+	if (!includeInactive) {
+		userWhere.is_active = true;
+	}
+
 	const users = await User.findAll({
-		where: {
-			[Op.or]: [
-				{ name: { [Op.like]: searchPattern } },
-				{ last_name: { [Op.like]: searchPattern } },
-				{ email: { [Op.like]: searchPattern } },
-			],
-		},
+		where: userWhere,
 		include: [
 			{
 				model: Student,
 				required: true,
+				...(includeInactive ? {} : { where: studentWhere }),
 			},
 			{
 				model: UserDocType,
@@ -304,5 +385,7 @@ export {
 	removeStudentByUserId,
 	removeInstructorByUserId,
 	updateInstructorStatus,
+	assertStudentRoleActiveById,
+	assertInstructorRoleActiveById,
 	searchStudents,
 };

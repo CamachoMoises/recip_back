@@ -396,6 +396,9 @@ export const UpdateCourseStudent = async (req, res) => {
 		res.send(courseStudentEdited);
 	} catch (error) {
 		console.log(error);
+		if (error.status) {
+			return res.status(error.status).json({ message: error.message });
+		}
 		res.status(500).send(`Internal Server Error ${error}`);
 	}
 };
@@ -479,6 +482,9 @@ export const UpdateSchedule = async (req, res) => {
 		res.send(SC);
 	} catch (error) {
 		console.log(error);
+		if (error.status) {
+			return res.status(error.status).json({ message: error.message });
+		}
 		res.status(500).send(`Internal Server Error ${error}`);
 	}
 };

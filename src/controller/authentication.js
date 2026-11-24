@@ -1,4 +1,4 @@
-import { getUserByEmail } from '../database/repositories/user.js';
+import { getUserByEmail, getUserById } from '../database/repositories/user.js';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
@@ -50,6 +50,78 @@ export const Login = async (req, res) => {
 				res.status(500).send('Internal Server Error');
 				break;
 		}
+	}
+};
+
+/*
+ * Suplantación de usuario solo para administradores.
+ *
+ * El token resultante lleva el id del usuario suplantado (para que el resto de
+ * la API siga funcionando sin cambios) más dos claims de auditoría:
+ * `impersonated_by` (admin que lo generó) e `is_impersonation`. dura 1 h, menos
+ * que una sesión normal (8 h), porque su único fin es inspeccionar contenido.
+ *
+ * La ruta debe montarse con `authenticateJWT` + `requireSuperuser`: el admin se
+ * autentica con su token real y recibe un token nuevo para el usuario destino.
+ * Los tokens ya emitidos no se revocan (JWT stateless).
+ */
+export const ImpersonateUser = async (req, res) => {
+	try {
+		const adminId = Number(req.user?.id);
+		const targetId = Number(req.params.user_id);
+
+		if (!Number.isInteger(targetId) || targetId <= 0) {
+			return res.status(400).json({ message: 'ID de usuario inválido' });
+		}
+		if (targetId === adminId) {
+			return res
+				.status(400)
+				.json({ message: 'No puedes suplantarte a ti mismo' });
+		}
+
+		const target = await getUserById(targetId); // lanza 'User not found'
+
+		if (target.is_superuser) {
+			return res.status(403).json({
+				message: 'No se puede suplantar a un administrador',
+			});
+		}
+
+		const token = jwt.sign(
+			{
+				id: target.id,
+				impersonated_by: adminId,
+				is_impersonation: true,
+			},
+			SECRET_KEY,
+			{ expiresIn: '1h' },
+		);
+
+		// Auditoría: quién suplantó a quién y cuándo. No guarda el token.
+		console.warn(
+			JSON.stringify({
+				event: 'user_impersonation',
+				admin_id: adminId,
+				target_user_id: target.id,
+				timestamp: new Date().toISOString(),
+			}),
+		);
+
+		const safeUser = target.toJSON();
+		delete safeUser.password;
+		return res.json({
+			email: target.email,
+			user: safeUser,
+			token,
+			impersonated_by: adminId,
+			expires_in: '1h',
+		});
+	} catch (error) {
+		if (error.message === 'User not found') {
+			return res.status(404).json({ message: 'Usuario no encontrado' });
+		}
+		console.error('Error al suplantar usuario:', error.message);
+		return res.status(500).json({ message: 'Internal Server Error' });
 	}
 };
 
