@@ -145,7 +145,9 @@ arranque usa `alter: false` y no las crea).
 
 ### GET /api/users/
 - Auth: sí
-- `200` → array de User con alias `student`, `instructor`, `user_doc_type`
+- Query: `pageSize` (opcional, default `20`; `-1` devuelve todos), `currentPage` (opcional, default `1`)
+- `200` → `{ data: User[], totalItems, currentPage, pageSize, totalPages }`. Cada User incluye
+  `student`, `instructor`, `user_doc_type`. Ordenado por `id ASC`.
 
 ### GET /api/users/me
 - Auth: sí (usa el `id` del token)
@@ -164,14 +166,18 @@ arranque usa `alter: false` y no las crea).
 - `200` → array de UserDocType
 
 ### GET /api/users/student
-- Query: `status` (`"true"`/`"false"`, opcional)
-- `200` → array de User que tienen Student, con `student`, `user_doc_type`
+- Query: `status` (`"true"`/`"false"`, opcional), `pageSize` (opcional, default `20`; `-1` devuelve
+  todos), `currentPage` (opcional, default `1`)
+- `200` → `{ data: User[], totalItems, currentPage, pageSize, totalPages }`. Cada User tiene
+  `Student` (required) y `user_doc_type`. Ordenado por `id ASC`.
 - Sin `status` devuelve todos (incluidos roles desactivados). Para selectores operativos, el front
   debe pedir `?status=true`; el histórico/admin puede omitirlo o usar `status=false`.
 
 ### GET /api/users/instructor
-- Query: `status` (`"true"`/`"false"`, opcional)
-- `200` → array de User que tienen Instructor, con `instructor`, `user_doc_type`
+- Query: `status` (`"true"`/`"false"`, opcional), `pageSize` (opcional, default `20`; `-1` devuelve
+  todos), `currentPage` (opcional, default `1`)
+- `200` → `{ data: User[], totalItems, currentPage, pageSize, totalPages }`. Cada User tiene
+  `Instructor` (required) y `user_doc_type`. Ordenado por `id ASC`.
 - Sin `status` devuelve todos (incluidos roles desactivados). Para selectores operativos, el front
   debe pedir `?status=true`. Los dashboards/reportes `/api/instructor/*` mantienen visibilidad
   histórica aunque el rol esté desactivado.

@@ -18,12 +18,10 @@ import {
 	removeInstructorByUserId,
 	searchStudents,
 } from '../database/repositories/user.js';
-import { stringToBoolean } from './utilities.js';
 export const ListUsers = async (req, res) => {
 	try {
-		const users = await getAllUsers();
-
-		res.send(users);
+		const result = await getAllUsers(req.query);
+		res.send(result);
 	} catch (error) {
 		console.log(error);
 		res.status(500).send('Internal Server Error');
@@ -64,13 +62,8 @@ export const ListUserDocType = async (req, res) => {
 };
 export const ListStudents = async (req, res) => {
 	try {
-		let { status } = req.query;
-		if (status) {
-			status = stringToBoolean(status);
-		}
-		const students = await getUsersStudents(status);
-
-		res.send(students);
+		const result = await getUsersStudents(req.query);
+		res.send(result);
 	} catch (error) {
 		console.log(error);
 		res.status(500).send('Internal Server Error');
@@ -79,13 +72,8 @@ export const ListStudents = async (req, res) => {
 
 export const ListInstructors = async (req, res) => {
 	try {
-		let { status } = req.query;
-		if (status) {
-			status = stringToBoolean(status);
-		}
-		const instructors = await getUsersInstructors(status);
-
-		res.send(instructors);
+		const result = await getUsersInstructors(req.query);
+		res.send(result);
 	} catch (error) {
 		console.log(error);
 		res.status(500).send('Internal Server Error');

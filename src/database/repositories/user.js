@@ -4,8 +4,16 @@ import { Op } from 'sequelize';
 
 const { User, Student, Instructor, UserDocType } = models;
 
-const getAllUsers = async () =>
-	User.findAll({
+const getAllUsers = async (filters = {}) => {
+	const pageSizeRaw = parseInt(filters.pageSize, 10);
+	const pageSize =
+		pageSizeRaw === -1 ? -1 : Number.isNaN(pageSizeRaw) ? 20 : pageSizeRaw;
+	const currentPage = Math.max(parseInt(filters.currentPage, 10) || 1, 1);
+	const offset = pageSize === -1 ? 0 : (currentPage - 1) * pageSize;
+
+	const result = await User.findAndCountAll({
+		distinct: true,
+		col: 'id',
 		include: [
 			{
 				model: Student,
@@ -17,7 +25,20 @@ const getAllUsers = async () =>
 				model: UserDocType,
 			},
 		],
+		order: [['id', 'ASC']],
+		...(pageSize === -1 ? {} : { limit: pageSize, offset }),
 	});
+
+	const totalItems = result.count;
+	return {
+		data: result.rows,
+		totalItems,
+		currentPage: pageSize === -1 ? 1 : currentPage,
+		pageSize,
+		totalPages:
+			pageSize === -1 ? 1 : totalItems === 0 ? 0 : Math.ceil(totalItems / pageSize),
+	};
+};
 const getUserByUUID = async ({ uuid }) =>
 	User.findOne({
 		where: { uuid },
@@ -280,14 +301,34 @@ const editUser = async ({
 		return null;
 	}
 };
-const getUsersStudents = async (status) => {
+const getUsersStudents = async (filters = {}) => {
+	const status =
+		typeof filters === 'boolean' || filters === undefined
+			? filters
+			: filters.status;
+	const normalizedStatus =
+		status === undefined
+			? undefined
+			: typeof status === 'string'
+				? status === 'true'
+				: Boolean(status);
+
 	const whereCondition = {};
 	const whereStudentCondition = {};
-	if (status !== undefined) {
-		whereCondition.is_active = status;
-		whereStudentCondition.status = status;
+	if (normalizedStatus !== undefined) {
+		whereCondition.is_active = normalizedStatus;
+		whereStudentCondition.status = normalizedStatus;
 	}
-	const students = await User.findAll({
+
+	const pageSizeRaw = parseInt(filters?.pageSize, 10);
+	const pageSize =
+		pageSizeRaw === -1 ? -1 : Number.isNaN(pageSizeRaw) ? 20 : pageSizeRaw;
+	const currentPage = Math.max(parseInt(filters?.currentPage, 10) || 1, 1);
+	const offset = pageSize === -1 ? 0 : (currentPage - 1) * pageSize;
+
+	const result = await User.findAndCountAll({
+		distinct: true,
+		col: 'id',
 		where: whereCondition,
 		include: [
 			{
@@ -299,20 +340,49 @@ const getUsersStudents = async (status) => {
 				model: UserDocType,
 			},
 		],
+		order: [['id', 'ASC']],
+		...(pageSize === -1 ? {} : { limit: pageSize, offset }),
 	});
-	return students;
+
+	const totalItems = result.count;
+	return {
+		data: result.rows,
+		totalItems,
+		currentPage: pageSize === -1 ? 1 : currentPage,
+		pageSize,
+		totalPages:
+			pageSize === -1 ? 1 : totalItems === 0 ? 0 : Math.ceil(totalItems / pageSize),
+	};
 };
 
-const getUsersInstructors = async (status) => {
+const getUsersInstructors = async (filters = {}) => {
+	const status =
+		typeof filters === 'boolean' || filters === undefined
+			? filters
+			: filters.status;
+	const normalizedStatus =
+		status === undefined
+			? undefined
+			: typeof status === 'string'
+				? status === 'true'
+				: Boolean(status);
+
 	const whereCondition = {};
 	const whereInstructorCondition = {};
-
-	if (status !== undefined) {
-		whereCondition.is_active = status;
-		whereInstructorCondition.status = status;
+	if (normalizedStatus !== undefined) {
+		whereCondition.is_active = normalizedStatus;
+		whereInstructorCondition.status = normalizedStatus;
 	}
 
-	const instructors = await User.findAll({
+	const pageSizeRaw = parseInt(filters?.pageSize, 10);
+	const pageSize =
+		pageSizeRaw === -1 ? -1 : Number.isNaN(pageSizeRaw) ? 20 : pageSizeRaw;
+	const currentPage = Math.max(parseInt(filters?.currentPage, 10) || 1, 1);
+	const offset = pageSize === -1 ? 0 : (currentPage - 1) * pageSize;
+
+	const result = await User.findAndCountAll({
+		distinct: true,
+		col: 'id',
 		where: whereCondition,
 		include: [
 			{
@@ -324,8 +394,19 @@ const getUsersInstructors = async (status) => {
 				model: UserDocType,
 			},
 		],
+		order: [['id', 'ASC']],
+		...(pageSize === -1 ? {} : { limit: pageSize, offset }),
 	});
-	return instructors;
+
+	const totalItems = result.count;
+	return {
+		data: result.rows,
+		totalItems,
+		currentPage: pageSize === -1 ? 1 : currentPage,
+		pageSize,
+		totalPages:
+			pageSize === -1 ? 1 : totalItems === 0 ? 0 : Math.ceil(totalItems / pageSize),
+	};
 };
 // repositories/user.js
 
